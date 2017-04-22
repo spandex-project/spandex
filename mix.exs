@@ -29,6 +29,10 @@ defmodule Spandex.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    []
+    [
+      {:plug, "~> 1.0"},
+      {:httpoison, "~> 0.11.1"},
+      {:poison, "~> 3.0"}
+    ]
   end
 end
