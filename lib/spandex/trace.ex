@@ -173,7 +173,7 @@ defmodule Spandex.Trace do
   end
 
   def log_info(state, func) do
-    if state[:log_info] do
+    if state[:info_logs] do
       Logger.info(func)
     else
       :ok
