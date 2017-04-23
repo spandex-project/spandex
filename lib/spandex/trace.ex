@@ -1,15 +1,54 @@
 defmodule Spandex.Trace do
+  @moduledoc """
+  Examples:
+
+  require Spandex.Trace
+  alias Spandex.Trace
+
+  trace = Trace.start(service: "my_service")
+
+  defmodule Thing do
+    require Spandex.Trace
+    alias Spandex.Trace
+
+    def trace_me(tracer) do
+      Trace.span(tracer) do
+        :timer.sleep(500)
+      end
+    end
+  end
+
+  Trace.span(trace, "foo") do
+    Trace.update_span(trace, %{
+      service: "mandark",
+      resource: "mandark",
+      type: "web",
+      env: "test",
+
+    })
+
+    Thing.trace_me(trace)
+
+    Trace.span(trace, "bar", fn _ ->
+      :timer.sleep(1000)
+    end)
+  end
+
+  Trace.publish(trace)
+  """
   use GenServer
 
-  require Logger
-
-  def start_link(opts \\ []) do
-    server_state = setup_state(opts)
-    GenServer.start_link(
-      __MODULE__,
-      server_state,
-      name: server_state[:name]
-    )
+  def start(opts \\ []) do
+    if Application.get_env(:spandex, :disabled?) do
+      :disabled
+    else
+      server_state = setup_state(opts)
+      GenServer.start(
+        __MODULE__,
+        server_state,
+        name: server_state[:name]
+      )
+    end
   end
 
   def init(state) do
@@ -17,39 +56,132 @@ defmodule Spandex.Trace do
     {:ok, state}
   end
 
-  def span(name, type, trace_pid, parent, func), do: do_span(name, type, trace_pid, func, parent)
-  def span(name, type, trace_pid, func), do: do_span(name, type, trace_pid, func, nil)
-
-  def publish(trace_pid) do
-    GenServer.cast(trace_pid, :publish)
-    GenServer.stop(trace_pid)
-  end
-
-  def update(trace_pid, attribute, value) do
-    GenServer.cast(trace_pid, {:update, attribute, value})
-  end
-
-  defp do_span(name, type, trace_pid, func, parent) do
-    start = DateTime.utc_now |> DateTime.to_unix(:nanoseconds)
-    span_id = trace_id()
-
-    case try_span(func, span_id) do
-      {:ok, return_value} ->
-        duration = (DateTime.utc_now |> DateTime.to_unix(:nanoseconds)) - start
-        GenServer.cast(trace_pid, {:add_span, span_id, type, name, start, duration, parent})
-        return_value
-      {:error, exception} ->
-        duration = (DateTime.utc_now |> DateTime.to_unix(:nanoseconds)) - start
-        GenServer.cast(trace_pid, {:add_error_span, span_id, type, name, start, duration, parent, exception})
-        GenServer.cast(trace_pid, :publish)
-        raise exception
+  defmacro span(tracer, name, do: block) do
+    if Application.get_env(:spandex, :disabled?) do
+      quote do
+        _ = unquote(tracer)
+        _ = unquote(name)
+        unquote(block)
+      end
+    else
+      quote do
+        trace_pid = Spandex.Trace.get_trace_pid(unquote(tracer))
+        if trace_pid do
+          name = unquote(name)
+          _ = Spandex.Trace.start_span(trace_pid, name)
+          try do
+            return_value = unquote(block)
+            Spandex.Trace.end_span(trace_pid)
+            return_value
+          rescue
+            exception ->
+              Spandex.Trace.span_error(trace_pid, exception)
+            raise exception
+          end
+        else
+          unquote(block)
+        end
+      end
     end
   end
 
-  defp try_span(func, span_id) do
-    {:ok, func.(span_id)}
-  rescue
-    exception -> {:error, exception}
+  defmacro span(tracer, name, func) do
+    if Application.get_env(:spandex, :disabled?) do
+      quote do
+        unquote(func).(unquote(tracer))
+      end
+    else
+      quote do
+        tracer = unquote(tracer)
+        trace_pid = Spandex.Trace.get_trace_pid(unquote(tracer))
+        if trace_pid do
+          name = unquote(name)
+          _ = Spandex.Trace.start_span(trace_pid, name)
+          try do
+            return_value = unquote(func).(tracer)
+            Spandex.Trace.end_span(trace_pid)
+            return_value
+          rescue
+            exception ->
+              Spandex.Trace.span_error(trace_pid, exception)
+            raise exception
+          end
+        else
+          unquote(func).(unquote(tracer))
+        end
+      end
+    end
+  end
+
+  defmacro span(tracer, rest) do
+    quote do
+      Spandex.Trace.span(unquote(tracer), unquote(query_name(__CALLER__)), unquote(rest))
+    end
+  end
+
+  @spec query_name(map) :: String.t
+  defp query_name(%{function: {function, arity}, module: module}) do
+    function_name = Atom.to_string(function)
+
+    "#{inspect(module)}.#{function_name}/#{arity}"
+  end
+
+  def get_trace_pid({:ok, trace_pid}) when is_pid(trace_pid), do: trace_pid
+  def get_trace_pid(%{trace: trace_pid}) when is_pid(trace_pid), do: trace_pid
+  def get_trace_pid(trace_pid) when is_pid(trace_pid), do: trace_pid
+  def get_trace_pid(%{trace: trace}), do: get_trace_pid(trace)
+  def get_trace_pid(%{assigns: trace}), do: get_trace_pid(trace)
+  def get_trace_pid(_), do: nil
+
+  def publish(tracer) do
+    trace_pid = get_trace_pid(tracer)
+    if trace_pid do
+      GenServer.cast(trace_pid, {:publish, Spandex.Span.now()})
+      GenServer.stop(trace_pid)
+    end
+    tracer
+  end
+
+  def start_span(tracer, name) do
+    trace_pid = get_trace_pid(tracer)
+    GenServer.cast(trace_pid, {:start_span, name, Spandex.Span.now()})
+  end
+
+  def end_span(tracer) do
+    trace_pid = get_trace_pid(tracer)
+    GenServer.cast(trace_pid, {:end_span, Spandex.Span.now()})
+  end
+
+  def update_span(tracer, update, override? \\ true) do
+    trace_pid = get_trace_pid(tracer)
+    GenServer.cast(trace_pid, {:update_span, update, override?})
+  end
+
+  def update_all_spans(tracer, update, override? \\ true) do
+    trace_pid = get_trace_pid(tracer)
+    GenServer.cast(trace_pid, {:update_all_spans, update, override?})
+  end
+
+  def span_error(tracer, exception) do
+    trace_pid = get_trace_pid(tracer)
+    message = Exception.message(exception)
+    stacktrace = Exception.format_stacktrace(System.stacktrace)
+
+    update_span(trace_pid, %{error: 1, error_message: message, stacktrace: stacktrace})
+    end_span(trace_pid)
+  end
+
+  defp do_publish(%{spans: spans, host: host, port: port}) do
+    all_spans =
+      spans
+      |> Map.values
+      |> Enum.map(&Spandex.Span.to_json/1)
+
+    json = Poison.encode!([all_spans])
+    case HTTPoison.put "#{host}:#{port}/v0.3/traces", json, [{"Content-Type", "application/json"}] do
+      {:ok, body} -> {:ok, body}
+      {:error, body} -> {:error, body}
+    end
   end
 
   defp kill_me_in(seconds) do
@@ -63,123 +195,104 @@ defmodule Spandex.Trace do
     trace_id = trace_id()
     opts
     |> Enum.into(%{})
-    |> Map.put_new(:trace_id, trace_id)
-    |> Map.put_new(:resource, "unknown")
+    |> Map.put_new(:resource, Application.get_env(:spandex, :resource, "unknown"))
     |> Map.put_new(:service, Application.get_env(:spandex, :service, "unknown"))
-    |> Map.put_new(:process_name, :"Spandex.Trace:#{trace_id}")
     |> Map.put_new(:ttl_seconds, Application.get_env(:spandex, :ttl_seconds, 30))
     |> Map.put_new(:host, Application.get_env(:spandex, :host, "localhost"))
     |> Map.put_new(:port, port(Application.get_env(:spandex, :port, 8126)))
-    |> Map.put_new(:info_logs, Application.get_env(:spandex, :info_logs, false))
-    |> Map.put_new(:error_logs, Application.get_env(:spandex, :error_logs, true))
     |> Map.put_new(:env, Application.get_env(:spandex, :env, "unknown"))
-    |> Map.put_new(:top_level_span_type, Application.get_env(:spandex, :top_level_span_type, "web"))
-    |> Map.put_new(:trace_start, DateTime.utc_now |> DateTime.to_unix(:nanoseconds))
-    |> Map.put_new(:top_level_span_id, trace_id())
-    |> Map.put_new(:trace_name, "top")
-    |> Map.put_new(:spans, [])
+    |> Map.put_new(:top_level_span_name, Application.get_env(:spandex, :top_level_span_name, false))
+    |> Map.put_new(:process_name, :"Spandex.Trace:#{trace_id}")
+    |> Map.put_new(:trace_id, trace_id)
+    |> Map.put_new(:spans, %{})
+    |> Map.put(:span_stack, [])
+    |> add_top_level_span()
+  end
+
+  defp add_top_level_span(state = %{top_level_span_name: name}) do
+    put_span(state, new_span(name, state))
   end
 
   defp trace_id(), do: :rand.uniform(9223372036854775807)
 
-  # Callbacks
-  def handle_cast(:publish, state) do
-    do_publish(state)
-    {:noreply, state}
-  end
-
-  def handle_cast({:update, attribute, value}, state = %{spans: spans}) do
-    new_state = %{state | spans: Enum.map(spans, &update_attribute(&1, attribute, value))}
-
-    {:noreply, Map.put(new_state, attribute, value)}
-  end
-
-  def handle_cast(
-    {:add_span, span_id, type, name, start, duration, parent_id},
-    state = %{spans: spans, top_level_span_id: top_level_span_id})
-  do
-    new_span = span_json(span_id, name, type, start, duration, state, parent_id || top_level_span_id)
-    log_info(state, fn -> "Adding span #{inspect new_span}" end)
-    new_state = %{state | spans: [ new_span | spans]}
-    {:noreply, new_state}
-  end
-
-  def handle_cast(
-    {:add_error_span, span_id, type, name, start, duration, parent_id, exception},
-    state = %{spans: spans, top_level_span_id: top_level_span_id})
-  do
-    message = Exception.message(exception)
-    stacktrace = Exception.format_stacktrace(System.stacktrace())
-    new_span =
-      span_id
-      |> span_json(name, type, start, duration, state, parent_id || top_level_span_id)
-      |> Map.put_new(:meta, %{})
-      |> put_in([:meta, :message], message)
-      |> put_in([:meta, :stacktrace], stacktrace)
-      |> Map.put(:error, 1)
-
-    log_info(state, fn -> "Adding error span #{inspect new_span}" end)
-
-    {:noreply, %{state | spans: [new_span | spans]}}
-  end
-
-  defp span_json(id, name, type, start, duration, state, parent_id) do
-    %{
-      trace_id: state[:trace_id],
-      span_id: id,
-      name: name,
-      resource: state[:resource],
-      service: state[:service],
-      type: type,
-      start: start,
-      duration: duration,
-      parent_id: parent_id,
-      meta: %{
-        env: state[:env]
-      }
-    }
-  end
-
-  defp update_attribute(span, :env, value) do
-    span
-    |> Map.put_new(:meta, %{})
-    |> put_in([:meta, :env], value)
-  end
-
-  defp update_attribute(span, attribute, value) do
-    Map.put(span, attribute, value)
-  end
-
-  defp do_publish(state = %{
-  spans: spans, host: host, port: port, trace_start: trace_start,
-  top_level_span_id: top_level_span_id, top_level_span_type: top_level_span_type, trace_name: trace_name
-  }) do
-    trace_duration = (DateTime.utc_now |> DateTime.to_unix(:nanoseconds)) - trace_start
-    parent_span = span_json(top_level_span_id, trace_name, top_level_span_type, trace_start, trace_duration, state, nil)
-    all_traces = [[parent_span | spans]]
-    json = Poison.encode!(all_traces)
-    case HTTPoison.put "#{host}:#{port}/v0.3/traces", json, [{"Content-Type", "application/json"}] do
-      {:ok, _} -> :ok
-      {:error, body} -> log_error(state, fn -> "Attempted to publish `#{inspect json}` to datadog APM, but received error response: `#{inspect body}`" end)
-    end
-  end
-
-  defp log_error(state, func) do
-    if state[:error_logs] do
-      Logger.error(func)
-    else
-      :ok
-    end
-  end
-
-  def log_info(state, func) do
-    if state[:info_logs] do
-      Logger.info(func)
-    else
-      :ok
-    end
-  end
-
   defp port(string) when is_bitstring(string), do: String.to_integer(string)
   defp port(integer) when is_integer(integer), do: integer
+
+  defp new_span(name, state, time \\ nil) do
+    parent_id = Enum.at(state[:span_stack], 0)
+
+    if parent_id do
+      state
+      |> Map.get(:spans)
+      |> Map.get(parent_id)
+      |> Spandex.Span.child_of(name, trace_id())
+      |> Spandex.Span.begin(time)
+    else
+      %Spandex.Span{
+        id: trace_id(),
+        trace_id: state[:trace_id],
+        parent_id: parent_id,
+        resource: state[:resource],
+        service: state[:service],
+        env: state[:env],
+        type: state[:type],
+        name: name
+      }
+      |> Spandex.Span.begin(time)
+    end
+  end
+
+  defp put_span(state = %{spans: spans, span_stack: stack}, span = %{id: id}) do
+    %{state | spans: Map.put(spans, id, span), span_stack: [id | stack]}
+  end
+
+  defp complete_span(state, time) do
+    state
+    |> edit_span(%{completion_time: time || Spandex.Span.now()}, false)
+    |> pop_span
+  end
+
+  defp edit_span(state = %{spans: spans, span_stack: stack}, update, override?) do
+    span_id = Enum.at(stack, 0)
+    if spans[span_id] do
+      updated_spans = Map.update!(spans, span_id, &Spandex.Span.update(&1, update, override?))
+
+      Map.put(state, :spans, updated_spans)
+    else
+      state
+    end
+  end
+
+  defp edit_all_spans(state = %{spans: spans}, update, override?) do
+    new_spans = Enum.into(spans, %{}, fn {span_id, span} ->
+      {span_id, Spandex.Span.update(span, update, override?)}
+    end)
+    %{state | spans: new_spans}
+  end
+
+  defp pop_span(state = %{span_stack: []}), do: state
+  defp pop_span(state = %{span_stack: [_|tail]}), do: %{state | span_stack: tail}
+
+  # # Callbacks
+  def handle_cast({:start_span, name, time}, state) do
+    {:noreply, put_span(state, new_span(name, state, time))}
+  end
+
+  def handle_cast({:end_span, time}, state) do
+    {:noreply, complete_span(state, time)}
+  end
+
+  def handle_cast({:update_span, update, override?}, state) do
+    {:noreply, edit_span(state, update, override?)}
+  end
+
+  def handle_cast({:update_all_spans, update, override?}, state) do
+    {:noreply, edit_all_spans(state, update, override?)}
+  end
+
+  def handle_cast({:publish, time}, state) do
+    new_state = edit_all_spans(state, %{completion_time: time}, false)
+    _ = do_publish(new_state)
+    {:noreply, new_state}
+  end
 end
