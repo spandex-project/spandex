@@ -140,6 +140,8 @@ defmodule Spandex.Trace do
       GenServer.stop(trace_pid)
     end
     tracer
+  rescue
+    _exception -> tracer
   end
 
   def start_span(tracer, name) do
