@@ -135,7 +135,7 @@ defmodule Spandex.Trace do
 
   def publish(tracer) do
     trace_pid = get_trace_pid(tracer)
-    if trace_pid do
+    if !Application.get_env(:spandex, :disabled?) && trace_pid do
       GenServer.cast(trace_pid, {:publish, Spandex.Span.now()})
       GenServer.stop(trace_pid)
     end
