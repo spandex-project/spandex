@@ -147,26 +147,31 @@ defmodule Spandex.Trace do
   def start_span(tracer, name) do
     trace_pid = get_trace_pid(tracer)
     GenServer.cast(trace_pid, {:start_span, name, Spandex.Span.now()})
+    tracer
   end
 
   def end_span(tracer) do
     trace_pid = get_trace_pid(tracer)
     GenServer.cast(trace_pid, {:end_span, Spandex.Span.now()})
+    tracer
   end
 
   def update_span(tracer, update, override? \\ true) do
     trace_pid = get_trace_pid(tracer)
     GenServer.cast(trace_pid, {:update_span, update, override?})
+    tracer
   end
 
   def update_span_branch(tracer, update, override? \\ true) do
     trace_pid = get_trace_pid(tracer)
     GenServer.cast(trace_pid, {:update_span_branch, update, override?})
+    tracer
   end
 
   def update_all_spans(tracer, update, override? \\ true) do
     trace_pid = get_trace_pid(tracer)
     GenServer.cast(trace_pid, {:update_all_spans, update, override?})
+    tracer
   end
 
   def span_error(tracer, exception) do

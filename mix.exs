@@ -3,7 +3,7 @@ defmodule Spandex.Mixfile do
 
   def project do
     [app: :spandex,
-     version: "0.0.4",
+     version: "0.0.7",
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
