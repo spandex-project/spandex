@@ -52,7 +52,7 @@ defmodule Spandex.Trace do
   end
 
   def init(state) do
-    kill_me_in(state[:ttl_seconds])
+    kill_me_in(state[:ttl_seconds], self())
     {:ok, state}
   end
 
@@ -137,7 +137,7 @@ defmodule Spandex.Trace do
     trace_pid = get_trace_pid(tracer)
     if !Application.get_env(:spandex, :disabled?) && trace_pid do
       GenServer.cast(trace_pid, {:publish, Spandex.Span.now()})
-      GenServer.stop(trace_pid)
+      GenServer.cast(trace_pid, :stop)
     end
     tracer
   rescue
@@ -192,9 +192,10 @@ defmodule Spandex.Trace do
     end
   end
 
-  defp kill_me_in(seconds) do
+  defp kill_me_in(seconds, pid) do
     spawn_link fn ->
       :timer.sleep(seconds * 1000)
+      GenServer.cast(pid, :stop)
       Process.exit(self(), :kill)
     end
   end
@@ -333,5 +334,11 @@ defmodule Spandex.Trace do
     new_state = edit_all_spans(state, %{completion_time: time}, false)
     _ = do_publish(new_state)
     {:noreply, new_state}
+  end
+
+  def handle_cast(:stop, state) do
+    GenServer.stop(self())
+
+    {:noreply, state}
   end
 end
