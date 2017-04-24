@@ -1,15 +1,11 @@
 # Spandex
 
-A platform agnostic span/trace reporting library.
+A datadog tracing library.
 
 ## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `spandex` to your list of dependencies in `mix.exs`:
-
 ```elixir
 def deps do
-  [{:spandex, "~> 0.1.0"}]
+  [{:spandex, github: "albert-io/spandex", tag: "0.0.7"}]
 end
 ```
 
