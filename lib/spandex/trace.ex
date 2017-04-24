@@ -186,7 +186,7 @@ defmodule Spandex.Trace do
       |> Enum.map(&Spandex.Span.to_json/1)
 
     json = Poison.encode!([[Spandex.Span.to_json(init_span) | all_spans]])
-    case HTTPoison.put "#{host}:#{port}/v0.3/traces", json |> IO.inspect, [{"Content-Type", "application/json"}] do
+    case HTTPoison.put "#{host}:#{port}/v0.3/traces", json, [{"Content-Type", "application/json"}] do
       {:ok, body} -> {:ok, body}
       {:error, body} -> {:error, body}
     end
