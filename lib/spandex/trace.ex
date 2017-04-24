@@ -300,8 +300,12 @@ defmodule Spandex.Trace do
     new_spans = Enum.into(spans, %{}, fn {span_id, span} ->
       {span_id, Spandex.Span.update(span, update, override?)}
     end)
-    %{state | spans: new_spans, init_span: Spandex.Span.update(init_span, update, override?)}
+    new_state = merge_update(state, update, override?)
+    %{new_state | spans: new_spans, init_span: Spandex.Span.update(init_span, update, override?)}
   end
+
+  defp merge_update(state, update, true), do: Map.merge(state, update)
+  defp merge_update(state, update, false), do: Map.merge(update, state)
 
   defp pop_span(state = %{span_stack: []}), do: state
   defp pop_span(state = %{span_stack: [_|tail]}), do: %{state | span_stack: tail}
