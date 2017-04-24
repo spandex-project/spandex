@@ -2,10 +2,14 @@ defmodule Spandex.Span do
   defstruct [
     :id, :trace_id, :parent_id, :name, :resource,
     :service, :env, :start, :completion_time, :error,
-    :error_message, :stacktrace, :type
+    :error_message, :stacktrace, :type, :error_type,
+    :url, :status, :method
   ]
 
-  @updateable_keys [:name, :resource, :service, :env, :start, :completion_time, :error, :error_message, :stacktrace, :type]
+  @updateable_keys [
+    :name, :resource, :service, :env, :start, :completion_time, :error,
+    :error_message, :stacktrace, :error_type, :start, :status, :url, :method
+  ]
 
   def begin(span, time) do
     %{span | start: time || now()}
@@ -57,13 +61,23 @@ defmodule Spandex.Span do
       meta: %{
         env: span.env
       }
-    } |> add_error_data(span)
+    }
+    |> add_error_data(span)
+    |> add_http_data(span)
   end
 
-  defp add_error_data(json, %{error: 1, error_message: error_message, stacktrace: stacktrace}) do
+  defp add_http_data(json, %{url: url, status: status, method: method}) do
     json
-    |> put_in([:meta, :error_message], error_message)
-    |> put_in([:meta, :stacktrace], stacktrace)
+    |> put_in([:meta, "http.url"], url)
+    |> put_in([:meta, "http.status"], to_string(status))
+    |> put_in([:meta, "http.method"], method)
+  end
+
+  defp add_error_data(json, %{error: 1, error_message: error_message, stacktrace: stacktrace, error_type: error_type}) do
+    json
+    |> put_in([:meta, "error.msg"], error_message)
+    |> put_in([:meta, "error.stack"], stacktrace)
+    |> put_in([:meta, "error.type"], error_type)
   end
 
   defp add_error_data(json, _), do: json

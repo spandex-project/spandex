@@ -159,6 +159,11 @@ defmodule Spandex.Trace do
     GenServer.cast(trace_pid, {:update_span, update, override?})
   end
 
+  def update_span_branch(tracer, update, override? \\ true) do
+    trace_pid = get_trace_pid(tracer)
+    GenServer.cast(trace_pid, {:update_span_branch, update, override?})
+  end
+
   def update_all_spans(tracer, update, override? \\ true) do
     trace_pid = get_trace_pid(tracer)
     GenServer.cast(trace_pid, {:update_all_spans, update, override?})
@@ -168,19 +173,20 @@ defmodule Spandex.Trace do
     trace_pid = get_trace_pid(tracer)
     message = Exception.message(exception)
     stacktrace = Exception.format_stacktrace(System.stacktrace)
+    type = exception.__struct__
 
-    update_span(trace_pid, %{error: 1, error_message: message, stacktrace: stacktrace})
+    update_span_branch(trace_pid, %{error: 1, error_message: message, stacktrace: stacktrace, error_type: type})
     end_span(trace_pid)
   end
 
-  defp do_publish(%{spans: spans, host: host, port: port}) do
+  defp do_publish(%{spans: spans, host: host, port: port, init_span: init_span}) do
     all_spans =
       spans
       |> Map.values
       |> Enum.map(&Spandex.Span.to_json/1)
 
-    json = Poison.encode!([all_spans])
-    case HTTPoison.put "#{host}:#{port}/v0.3/traces", json, [{"Content-Type", "application/json"}] do
+    json = Poison.encode!([[Spandex.Span.to_json(init_span) | all_spans]])
+    case HTTPoison.put "#{host}:#{port}/v0.3/traces", json |> IO.inspect, [{"Content-Type", "application/json"}] do
       {:ok, body} -> {:ok, body}
       {:error, body} -> {:error, body}
     end
@@ -203,16 +209,13 @@ defmodule Spandex.Trace do
     |> Map.put_new(:host, Application.get_env(:spandex, :host, "localhost"))
     |> Map.put_new(:port, port(Application.get_env(:spandex, :port, 8126)))
     |> Map.put_new(:env, Application.get_env(:spandex, :env, "unknown"))
-    |> Map.put_new(:top_level_span_name, Application.get_env(:spandex, :top_level_span_name, false))
+    |> Map.put_new(:type, Application.get_env(:spandex, :type, "web"))
     |> Map.put_new(:process_name, :"Spandex.Trace:#{trace_id}")
     |> Map.put_new(:trace_id, trace_id)
     |> Map.put_new(:spans, %{})
+    |> Map.put_new(:init_span, nil)
     |> Map.put(:span_stack, [])
-    |> add_top_level_span()
-  end
-
-  defp add_top_level_span(state = %{top_level_span_name: name}) do
-    put_span(state, new_span(name, state))
+    |> init_span
   end
 
   defp trace_id(), do: :rand.uniform(9223372036854775807)
@@ -220,7 +223,22 @@ defmodule Spandex.Trace do
   defp port(string) when is_bitstring(string), do: String.to_integer(string)
   defp port(integer) when is_integer(integer), do: integer
 
-  defp new_span(name, state, time \\ nil) do
+  defp init_span(state) do
+    init_span = %Spandex.Span{
+      id: trace_id(),
+      trace_id: state[:trace_id],
+      resource: state[:resource],
+      service: state[:service],
+      env: state[:env],
+      type: state[:type],
+      name: "Initialization"
+    }
+    |> Spandex.Span.begin(nil)
+
+    %{state | init_span: init_span}
+  end
+
+  defp new_span(name, state, time) do
     parent_id = Enum.at(state[:span_stack], 0)
 
     if parent_id do
@@ -233,7 +251,6 @@ defmodule Spandex.Trace do
       %Spandex.Span{
         id: trace_id(),
         trace_id: state[:trace_id],
-        parent_id: parent_id,
         resource: state[:resource],
         service: state[:service],
         env: state[:env],
@@ -265,19 +282,35 @@ defmodule Spandex.Trace do
     end
   end
 
-  defp edit_all_spans(state = %{spans: spans}, update, override?) do
+  defp edit_span_branch(state = %{spans: spans, span_stack: stack}, update, override?) do
+    new_spans = Enum.reduce(stack, spans, fn span_id, span_map ->
+      Map.update!(span_map, span_id, &Spandex.Span.update(&1, update, override?))
+    end)
+
+    %{state | spans: new_spans}
+  end
+
+  defp edit_all_spans(state = %{spans: spans, init_span: init_span}, update, override?) do
     new_spans = Enum.into(spans, %{}, fn {span_id, span} ->
       {span_id, Spandex.Span.update(span, update, override?)}
     end)
-    %{state | spans: new_spans}
+    %{state | spans: new_spans, init_span: Spandex.Span.update(init_span, update, override?)}
   end
 
   defp pop_span(state = %{span_stack: []}), do: state
   defp pop_span(state = %{span_stack: [_|tail]}), do: %{state | span_stack: tail}
 
+  defp end_init_span(state = %{init_span: span = %{completion_time: nil}}, time), do: %{state | init_span: %{span | completion_time: time}}
+  defp end_init_span(state, _), do: state
+
   # # Callbacks
   def handle_cast({:start_span, name, time}, state) do
-    {:noreply, put_span(state, new_span(name, state, time))}
+    new_state =
+      state
+      |> put_span(new_span(name, state, time))
+      |> end_init_span(time)
+
+    {:noreply, new_state}
   end
 
   def handle_cast({:end_span, time}, state) do
@@ -286,6 +319,10 @@ defmodule Spandex.Trace do
 
   def handle_cast({:update_span, update, override?}, state) do
     {:noreply, edit_span(state, update, override?)}
+  end
+
+  def handle_cast({:update_span_branch, update, override?}, state) do
+    {:noreply, edit_span_branch(state, update, override?)}
   end
 
   def handle_cast({:update_all_spans, update, override?}, state) do
