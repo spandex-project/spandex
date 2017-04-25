@@ -83,7 +83,7 @@ defmodule Spandex.Span do
   defp add_http_data(json, %{url: url, status: status, method: method}) do
     json
     |> put_in([:meta, "http.url"], url)
-    |> put_in([:meta, "http.status"], to_string(status))
+    |> put_in([:meta, "http.status_code"], to_string(status))
     |> put_in([:meta, "http.method"], method)
   end
 
