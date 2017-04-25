@@ -25,15 +25,15 @@ defmodule Spandex.TraceDecorator do
     else
       quote do
         name = "#{unquote(context.name)}/#{unquote(context.arity)}"
-        Spandex.Trace.start_span(name)
+        _ = Spandex.Trace.start_span(name)
 
         try do
           return_value = unquote(body)
-          Spandex.Trace.end_span()
+          _ = Spandex.Trace.end_span()
           return_value
         rescue
           exception ->
-            Spandex.Trace.span_error(exception)
+            _ = Spandex.Trace.span_error(exception)
           raise exception
         end
       end
@@ -49,17 +49,17 @@ defmodule Spandex.TraceDecorator do
       quote do
         attributes = unquote(attributes)
         name = attributes[:name] || "#{unquote(context.name)}/#{unquote(context.arity)}"
-        Spandex.Trace.start_span(name)
+        _ = Spandex.Trace.start_span(name)
 
-        Spandex.Trace.update_span(attributes |> Enum.into(%{}))
+        _ = Spandex.Trace.update_span(attributes |> Enum.into(%{}))
 
         try do
           return_value = unquote(body)
-          Spandex.Trace.end_span()
+          _ = Spandex.Trace.end_span()
           return_value
         rescue
           exception ->
-            Spandex.Trace.span_error(exception)
+            _ = Spandex.Trace.span_error(exception)
           raise exception
         end
       end

@@ -17,7 +17,7 @@ defmodule Spandex.Plug.AddContext do
         type: :web
       }
 
-      Spandex.Trace.update_all_spans(trace_context, false)
+      _ = Spandex.Trace.update_all_spans(trace_context, false)
 
       Plug.Conn.assign(conn, :trace_context, trace_context)
     end

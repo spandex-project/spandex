@@ -10,15 +10,15 @@ defmodule Spandex.Trace do
     else
       quote do
         name = unquote(name)
-        Spandex.Trace.start_span(name)
+        _ = Spandex.Trace.start_span(name)
 
         try do
           return_value = unquote(body)
-          Spandex.Trace.end_span()
+          _ = Spandex.Trace.end_span()
           return_value
         rescue
           exception ->
-            Spandex.Trace.span_error(exception)
+            _ = Spandex.Trace.span_error(exception)
           raise exception
         end
       end
@@ -87,6 +87,7 @@ defmodule Spandex.Trace do
       |> Enum.at(0)
       |> Kernel.||({nil, nil})
       |> elem(1)
+
     if Application.get_env(:spandex, :disabled?) do
       :ok
     else
@@ -96,7 +97,7 @@ defmodule Spandex.Trace do
       :ok
     end
   rescue
-    exception -> {:error, exception}
+    _exception -> :ok
   end
 
   defp do_publish(%{spans: spans, host: host, port: port, protocol: protocol}) do
