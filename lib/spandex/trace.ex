@@ -1,42 +1,29 @@
 defmodule Spandex.Trace do
-  @moduledoc """
-  Examples:
+  use GenServer
 
-  require Spandex.Trace
-  alias Spandex.Trace
+  defmacro span(name, do: body) do
+    if Application.get_env(:spandex, :disabled?) do
+      quote do
+        _ = unquote(name)
+        unquote(body)
+      end
+    else
+      quote do
+        name = unquote(name)
+        Spandex.Trace.start_span(name)
 
-  trace = Trace.start(service: "my_service")
-
-  defmodule Thing do
-    require Spandex.Trace
-    alias Spandex.Trace
-
-    def trace_me(tracer) do
-      Trace.span(tracer) do
-        :timer.sleep(500)
+        try do
+          return_value = unquote(body)
+          Spandex.Trace.end_span()
+          return_value
+        rescue
+          exception ->
+            Spandex.Trace.span_error(exception)
+          raise exception
+        end
       end
     end
   end
-
-  Trace.span(trace, "foo") do
-    Trace.update_span(trace, %{
-      service: "mandark",
-      resource: "mandark",
-      type: "web",
-      env: "test",
-
-    })
-
-    Thing.trace_me(trace)
-
-    Trace.span(trace, "bar", fn _ ->
-      :timer.sleep(1000)
-    end)
-  end
-
-  Trace.publish(trace)
-  """
-  use GenServer
 
   def start(opts \\ []) do
     if Application.get_env(:spandex, :disabled?) do
@@ -56,141 +43,69 @@ defmodule Spandex.Trace do
     {:ok, state}
   end
 
-  defmacro span(tracer, name, do: block) do
-    if Application.get_env(:spandex, :disabled?) do
-      quote do
-        _ = unquote(tracer)
-        _ = unquote(name)
-        unquote(block)
-      end
-    else
-      quote do
-        trace_pid = Spandex.Trace.get_trace_pid(unquote(tracer))
-        if trace_pid do
-          name = unquote(name)
-          _ = Spandex.Trace.start_span(trace_pid, name)
-          try do
-            return_value = unquote(block)
-            Spandex.Trace.end_span(trace_pid)
-            return_value
-          rescue
-            exception ->
-              Spandex.Trace.span_error(trace_pid, exception)
-            raise exception
-          end
-        else
-          unquote(block)
-        end
-      end
-    end
-  end
-
-  defmacro span(tracer, name, func) do
-    if Application.get_env(:spandex, :disabled?) do
-      quote do
-        unquote(func).(unquote(tracer))
-      end
-    else
-      quote do
-        tracer = unquote(tracer)
-        trace_pid = Spandex.Trace.get_trace_pid(unquote(tracer))
-        if trace_pid do
-          name = unquote(name)
-          _ = Spandex.Trace.start_span(trace_pid, name)
-          try do
-            return_value = unquote(func).(tracer)
-            Spandex.Trace.end_span(trace_pid)
-            return_value
-          rescue
-            exception ->
-              Spandex.Trace.span_error(trace_pid, exception)
-            raise exception
-          end
-        else
-          unquote(func).(unquote(tracer))
-        end
-      end
-    end
-  end
-
-  defmacro span(tracer, rest) do
-    quote do
-      Spandex.Trace.span(unquote(tracer), unquote(query_name(__CALLER__)), unquote(rest))
-    end
-  end
-
-  @spec query_name(map) :: String.t
-  defp query_name(%{function: {function, arity}, module: module}) do
-    function_name = Atom.to_string(function)
-
-    "#{inspect(module)}.#{function_name}/#{arity}"
-  end
-
-  def get_trace_pid({:ok, trace_pid}) when is_pid(trace_pid), do: trace_pid
-  def get_trace_pid(%{trace: trace_pid}) when is_pid(trace_pid), do: trace_pid
-  def get_trace_pid(trace_pid) when is_pid(trace_pid), do: trace_pid
-  def get_trace_pid(%{trace: trace}), do: get_trace_pid(trace)
-  def get_trace_pid(%{assigns: trace}), do: get_trace_pid(trace)
-  def get_trace_pid(_), do: nil
-
-  def publish(tracer) do
-    trace_pid = get_trace_pid(tracer)
-    if !Application.get_env(:spandex, :disabled?) && trace_pid do
+  def publish() do
+    safely_with_enabled_and_active_trace(fn trace_pid ->
       GenServer.cast(trace_pid, {:publish, Spandex.Span.now()})
       GenServer.cast(trace_pid, :stop)
-    end
-    tracer
-  rescue
-    _exception -> tracer
+    end)
   end
 
-  def start_span(tracer, name) do
-    trace_pid = get_trace_pid(tracer)
-    GenServer.cast(trace_pid, {:start_span, name, Spandex.Span.now()})
-    tracer
+  def start_span(name) do
+    safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:start_span, name, Spandex.Span.now()}))
   end
 
-  def end_span(tracer) do
-    trace_pid = get_trace_pid(tracer)
-    GenServer.cast(trace_pid, {:end_span, Spandex.Span.now()})
-    tracer
+  def end_span() do
+    safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:end_span, Spandex.Span.now()}))
   end
 
-  def update_span(tracer, update, override? \\ true) do
-    trace_pid = get_trace_pid(tracer)
-    GenServer.cast(trace_pid, {:update_span, update, override?})
-    tracer
+  def update_span(update, override? \\ true) do
+    safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:update_span, update, override?}))
   end
 
-  def update_span_branch(tracer, update, override? \\ true) do
-    trace_pid = get_trace_pid(tracer)
-    GenServer.cast(trace_pid, {:update_span_branch, update, override?})
-    tracer
+  def update_span_branch(update, override? \\ true) do
+    safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:update_span_branch, update, override?}))
   end
 
-  def update_all_spans(tracer, update, override? \\ true) do
-    trace_pid = get_trace_pid(tracer)
-    GenServer.cast(trace_pid, {:update_all_spans, update, override?})
-    tracer
+  def update_all_spans(update, override? \\ true) do
+    safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:update_all_spans, update, override?}))
   end
 
-  def span_error(tracer, exception) do
-    trace_pid = get_trace_pid(tracer)
+  def span_error(exception) do
     message = Exception.message(exception)
     stacktrace = Exception.format_stacktrace(System.stacktrace)
     type = exception.__struct__
 
-    update_span_branch(trace_pid, %{error: 1, error_message: message, stacktrace: stacktrace, error_type: type})
-    end_span(trace_pid)
+    update_span_branch(%{error: 1, error_message: message, stacktrace: stacktrace, error_type: type})
+
+    end_span()
   end
 
-  defp do_publish(%{spans: spans, host: host, port: port, init_span: init_span}) do
+  defp safely_with_enabled_and_active_trace(func) do
+    trace_pid =
+      :spandex_trace
+      |> :ets.lookup(self())
+      |> Enum.at(0)
+      |> Kernel.||({nil, nil})
+      |> elem(1)
+    if Application.get_env(:spandex, :disabled?) do
+      :ok
+    else
+      if trace_pid do
+        func.(trace_pid)
+      end
+      :ok
+    end
+  rescue
+    exception -> {:error, exception}
+  end
+
+  defp do_publish(%{spans: spans, host: host, port: port}) do
     all_spans =
       spans
       |> Map.values
       |> Enum.map(&Spandex.Span.to_json/1)
 
-    json = Poison.encode!([[Spandex.Span.to_json(init_span) | all_spans]])
+    json = Poison.encode!([all_spans])
     case HTTPoison.put "#{host}:#{port}/v0.3/traces", json, [{"Content-Type", "application/json"}] do
       {:ok, body} -> {:ok, body}
       {:error, body} -> {:error, body}
@@ -216,12 +131,12 @@ defmodule Spandex.Trace do
     |> Map.put_new(:port, port(Application.get_env(:spandex, :port, 8126)))
     |> Map.put_new(:env, Application.get_env(:spandex, :env, "unknown"))
     |> Map.put_new(:type, Application.get_env(:spandex, :type, "web"))
+    |> Map.put_new(:top_span_name, Application.get_env(:spandex, :top_span_name, "top"))
     |> Map.put_new(:process_name, :"Spandex.Trace:#{trace_id}")
     |> Map.put_new(:trace_id, trace_id)
     |> Map.put_new(:spans, %{})
-    |> Map.put_new(:init_span, nil)
     |> Map.put(:span_stack, [])
-    |> init_span
+    |> top_span
   end
 
   defp trace_id(), do: :rand.uniform(9223372036854775807)
@@ -229,19 +144,19 @@ defmodule Spandex.Trace do
   defp port(string) when is_bitstring(string), do: String.to_integer(string)
   defp port(integer) when is_integer(integer), do: integer
 
-  defp init_span(state) do
-    init_span = %Spandex.Span{
+  defp top_span(state = %{span_stack: stack, spans: spans}) do
+    top_span = %Spandex.Span{
       id: trace_id(),
       trace_id: state[:trace_id],
       resource: state[:resource],
       service: state[:service],
       env: state[:env],
       type: state[:type],
-      name: "Initialization"
+      name: state[:top_span_name]
     }
     |> Spandex.Span.begin(nil)
 
-    %{state | init_span: init_span}
+    %{state | spans: Map.put(spans, top_span.id, top_span), span_stack: [top_span.id | stack]}
   end
 
   defp new_span(name, state, time) do
@@ -296,12 +211,12 @@ defmodule Spandex.Trace do
     %{state | spans: new_spans}
   end
 
-  defp edit_all_spans(state = %{spans: spans, init_span: init_span}, update, override?) do
+  defp edit_all_spans(state = %{spans: spans}, update, override?) do
     new_spans = Enum.into(spans, %{}, fn {span_id, span} ->
       {span_id, Spandex.Span.update(span, update, override?)}
     end)
     new_state = merge_update(state, update, override?)
-    %{new_state | spans: new_spans, init_span: Spandex.Span.update(init_span, update, override?)}
+    %{new_state | spans: new_spans}
   end
 
   defp merge_update(state, update, true), do: Map.merge(state, update)
@@ -310,15 +225,11 @@ defmodule Spandex.Trace do
   defp pop_span(state = %{span_stack: []}), do: state
   defp pop_span(state = %{span_stack: [_|tail]}), do: %{state | span_stack: tail}
 
-  defp end_init_span(state = %{init_span: span = %{completion_time: nil}}, time), do: %{state | init_span: %{span | completion_time: time}}
-  defp end_init_span(state, _), do: state
-
-  # # Callbacks
+  # Callbacks
   def handle_cast({:start_span, name, time}, state) do
     new_state =
       state
       |> put_span(new_span(name, state, time))
-      |> end_init_span(time)
 
     {:noreply, new_state}
   end

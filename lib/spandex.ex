@@ -16,7 +16,7 @@ defmodule Spandex do
         }
       }
 
-      HTTPoison.put("#{host}:#{port}/v0.3/services", Poison.encode!(body) |> IO.inspect, [{"Content-Type", "application/json"}]) |> IO.inspect
+      HTTPoison.put("#{host}:#{port}/v0.3/services", Poison.encode!(body), [{"Content-Type", "application/json"}])
     end
   end
 end

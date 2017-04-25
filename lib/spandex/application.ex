@@ -11,7 +11,7 @@ defmodule Spandex.Application do
       :ignore
     else
       Spandex.create_services()
-
+      _ = ensure_table()
       # Define workers and child supervisors to be supervised
       children = [
         # Starts a worker by calling: Spandex.Worker.start_link(arg1, arg2, arg3)
@@ -23,5 +23,11 @@ defmodule Spandex.Application do
       opts = [strategy: :one_for_one, name: Spandex.Supervisor]
       Supervisor.start_link(children, opts)
     end
+  end
+
+  defp ensure_table() do
+    :ets.new(:spandex_trace, [:set, :public, :named_table])
+  rescue
+    _exception -> :ok
   end
 end
