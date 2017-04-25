@@ -7,6 +7,10 @@ defmodule Spandex.Mixfile do
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     description: description(),
+     package: package(),
+     name: "Spandex",
+     source_url: "https://github.com/albert-io/spandex"
      deps: deps()]
   end
 
@@ -17,6 +21,24 @@ defmodule Spandex.Mixfile do
     # Specify extra applications you'll use from Erlang/Elixir
     [extra_applications: [:logger],
      mod: {Spandex.Application, []}]
+  end
+
+  defp description do
+    """
+    A Datadog APM tracing library. Still young, under active development, but is under active use.
+    Contributions welcome.
+    """
+  end
+
+  defp package do
+    # These are the default files included in the package
+    [
+      name: :spandex,
+      files: ["lib", "mix.exs", "README*", "readme*", "LICENSE*", "license*"],
+      maintainers: ["Zachary Daniel", "Andrew Summers"],
+      licenses: ["MIT License"],
+      links: %{"GitHub" => "https://github.com/albert-io/spandex"}
+    ]
   end
 
   # Dependencies can be Hex packages:
