@@ -58,9 +58,9 @@ defmodule Spandex.Span do
       trace_id: span.trace_id,
       span_id: span.id,
       name: span.name,
-      resource: span.resource,
-      service: span.service,
-      type: span.type,
+      resource: span.resource || "unknown",
+      service: span.service || "unknown",
+      type: span.type || "unknown",
       start: span.start,
       duration: duration(span.completion_time || now(), span.start || now()),
       parent_id: span.parent_id,
@@ -75,7 +75,7 @@ defmodule Spandex.Span do
   defp add_meta(json, %{env: env, user: user, meta: meta}) do
     json
     |> Map.put(:meta, %{})
-    |> put_in([:meta, :env], env)
+    |> put_in([:meta, :env], env || "dev")
     |> put_in([:meta, :user], user)
     |> Map.update!(:meta, fn current_meta -> Map.merge(current_meta, meta) end)
   end

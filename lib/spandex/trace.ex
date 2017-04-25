@@ -99,14 +99,13 @@ defmodule Spandex.Trace do
     exception -> {:error, exception}
   end
 
-  defp do_publish(%{spans: spans, host: host, port: port}) do
+  defp do_publish(%{spans: spans, host: host, port: port, protocol: protocol}) do
     all_spans =
       spans
       |> Map.values
       |> Enum.map(&Spandex.Span.to_json/1)
 
-    json = Poison.encode!([all_spans])
-    case HTTPoison.put "#{host}:#{port}/v0.3/traces", json, [{"Content-Type", "application/json"}] do
+    case Spandex.Datadog.Api.create_trace(all_spans, host, port, protocol) do
       {:ok, body} -> {:ok, body}
       {:error, body} -> {:error, body}
     end
@@ -124,14 +123,15 @@ defmodule Spandex.Trace do
     trace_id = trace_id()
     opts
     |> Enum.into(%{})
-    |> Map.put_new(:resource, Application.get_env(:spandex, :resource, "unknown"))
-    |> Map.put_new(:service, Application.get_env(:spandex, :service, "unknown"))
+    |> Map.put_new(:resource, Application.get_env(:spandex, :resource))
+    |> Map.put_new(:service, Application.get_env(:spandex, :service))
     |> Map.put_new(:ttl_seconds, Application.get_env(:spandex, :ttl_seconds, 30))
     |> Map.put_new(:host, Application.get_env(:spandex, :host, "localhost"))
     |> Map.put_new(:port, port(Application.get_env(:spandex, :port, 8126)))
-    |> Map.put_new(:env, Application.get_env(:spandex, :env, "unknown"))
-    |> Map.put_new(:type, Application.get_env(:spandex, :type, "web"))
+    |> Map.put_new(:env, Application.get_env(:spandex, :env))
+    |> Map.put_new(:type, Application.get_env(:spandex, :type))
     |> Map.put_new(:top_span_name, Application.get_env(:spandex, :top_span_name, "top"))
+    |> Map.put_new(:protocol, Application.get_env(:spandex, :protocol, :msgpack))
     |> Map.put_new(:process_name, :"Spandex.Trace:#{trace_id}")
     |> Map.put_new(:trace_id, trace_id)
     |> Map.put_new(:spans, %{})

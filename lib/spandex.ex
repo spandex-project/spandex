@@ -8,15 +8,9 @@ defmodule Spandex do
     application_name = Application.get_env(:spandex, :application_name)
     host = Application.get_env(:spandex, :host)
     port = Application.get_env(:spandex, :port)
+    protocol = Application.get_env(:spandex, :protocol, :msgpack)
     for {service_name, type} <- services do
-      body = %{
-        service_name => %{
-          app: application_name,
-          app_type: type
-        }
-      }
-
-      HTTPoison.put("#{host}:#{port}/v0.3/services", Poison.encode!(body), [{"Content-Type", "application/json"}])
+      Spandex.Datadog.Api.create_service(host, port, protocol, service_name, application_name, type)
     end
   end
 end

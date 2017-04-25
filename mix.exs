@@ -31,6 +31,7 @@ defmodule Spandex.Mixfile do
   defp deps do
     [
       {:decorator, "~> 1.2.0"},
+      {:msgpax, "~> 1.1"},
       {:plug, "~> 1.0"},
       {:httpoison, "~> 0.11.1"},
       {:poison, "~> 3.0"}
