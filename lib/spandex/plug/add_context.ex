@@ -9,7 +9,7 @@ defmodule Spandex.Plug.AddContext do
     unless Application.get_env(:spandex, :disabled?) do
       Spandex.Trace.update_all_spans(
         %{
-          resource: "#{String.upcase(conn.method}) #{route_name(conn)}",
+          resource: "#{String.upcase(conn.method)} #{route_name(conn)}",
           method: conn.method,
           url: conn.request_path,
           service: Application.get_env(:spandex, :service, "spandex"),
