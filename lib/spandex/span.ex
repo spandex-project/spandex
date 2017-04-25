@@ -3,7 +3,8 @@ defmodule Spandex.Span do
     :id, :trace_id, :parent_id, :name, :resource,
     :service, :env, :start, :completion_time, :error,
     :error_message, :stacktrace, :type, :error_type,
-    :url, :status, :method, :user
+    :url, :status, :method, :user, :sql_rows, :sql_db, :sql_query,
+    meta: %{}
   ]
 
   @updateable_keys [
@@ -24,6 +25,11 @@ defmodule Spandex.Span do
         span
       end
     end)
+    |> merge_meta(updates[:meta] || %{})
+  end
+
+  defp merge_meta(span = %{meta: meta}, new_meta) do
+    %{span | meta: Map.merge(meta, new_meta)}
   end
 
   def child_of(parent = %{id: parent_id}, name, id) do
@@ -59,13 +65,19 @@ defmodule Spandex.Span do
       duration: duration(span.completion_time || now(), span.start || now()),
       parent_id: span.parent_id,
       error: span.error,
-      meta: %{
-        env: span.env,
-        user: span.user
-      }
     }
+    |> add_meta(span)
     |> add_error_data(span)
     |> add_http_data(span)
+    |> add_sql_data(span)
+  end
+
+  defp add_meta(json, %{env: env, user: user, meta: meta}) do
+    json
+    |> Map.put(:meta, %{})
+    |> put_in([:meta, :env], env)
+    |> put_in([:meta, :user], user)
+    |> Map.update!(:meta, fn current_meta -> Map.merge(current_meta, meta) end)
   end
 
   defp add_http_data(json, %{url: url, status: status, method: method}) do
@@ -73,6 +85,13 @@ defmodule Spandex.Span do
     |> put_in([:meta, "http.url"], url)
     |> put_in([:meta, "http.status"], to_string(status))
     |> put_in([:meta, "http.method"], method)
+  end
+
+  defp add_sql_data(json, span) do
+    json
+    |> add_if_not_nil([:meta, "sql.query"], span.sql_query)
+    |> add_if_not_nil([:meta, "sql.rows"], span.sql_rows)
+    |> add_if_not_nil([:meta, "sql.db"], span.sql_db)
   end
 
   defp add_error_data(json, %{error: 1, error_message: error_message, stacktrace: stacktrace, error_type: error_type}) do
@@ -83,4 +102,7 @@ defmodule Spandex.Span do
   end
 
   defp add_error_data(json, _), do: json
+
+  defp add_if_not_nil(map, _path, nil), do: map
+  defp add_if_not_nil(map, path, value), do: put_in(map, path, value)
 end

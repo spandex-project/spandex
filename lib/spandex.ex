@@ -11,8 +11,8 @@ defmodule Spandex do
     for {service_name, type} <- services do
       body = %{
         service_name => %{
-          "app" => application_name,
-          "type" => type
+          app: application_name,
+          app_type: type
         }
       }
 

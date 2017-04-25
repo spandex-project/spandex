@@ -19,7 +19,7 @@ defmodule Spandex.Plug.AddContext do
 
       Spandex.Trace.update_all_spans(trace_context)
 
-      Plug.Conn.assign(:trace_context, trace_context)
+      Plug.Conn.assign(conn, :trace_context, trace_context)
     end
   end
 
