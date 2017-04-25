@@ -6,19 +6,33 @@ defmodule Spandex.Plug.AddContext do
 
   @spec call(Plug.Conn.t, Keyword.t) :: Plug.Conn.t
   def call(conn, _opts) do
-    unless Application.get_env(:spandex, :disabled?) do
-      Spandex.Trace.update_all_spans(
-        %{
-          resource: "#{String.upcase(conn.method)} #{route_name(conn)}",
-          method: conn.method,
-          url: conn.request_path,
-          service: Application.get_env(:spandex, :service, "spandex"),
-          type: "web"
-        }
-      )
-    end
+    if Application.get_env(:spandex, :disabled?) do
+      conn
+    else
+      trace_context = %{
+        resource: "#{String.upcase(conn.method)} #{route_name(conn)}",
+        method: conn.method,
+        url: conn.request_path,
+        service: Application.get_env(:spandex, :service, :web),
+        type: :web
+      }
 
+      Spandex.Trace.update_all_spans(trace_context)
+
+      Plug.Conn.assign(:trace_context, trace_context)
+    end
+  end
+
+  @spec trace_context(Plug.Conn.t) :: map
+  def trace_context(conn) do
+    conn.assigns[:trace_context] || %{}
+  end
+
+  @spec update_from_trace_context(Plug.Conn.t) :: Plug.Conn.t
+  def update_from_trace_context(conn) do
     conn
+    |> trace_context
+    |> Spandex.Trace.update_span
   end
 
   @spec route_name(Plug.Conn.t) :: String.t
