@@ -3,12 +3,13 @@ defmodule Spandex.Span do
     :id, :trace_id, :parent_id, :name, :resource,
     :service, :env, :start, :completion_time, :error,
     :error_message, :stacktrace, :type, :error_type,
-    :url, :status, :method
+    :url, :status, :method, :user
   ]
 
   @updateable_keys [
     :name, :resource, :service, :env, :start, :completion_time, :error,
-    :error_message, :stacktrace, :error_type, :start, :status, :url, :method
+    :error_message, :stacktrace, :error_type, :start, :status, :url, :method,
+    :user
   ]
 
   def begin(span, time) do
@@ -59,7 +60,8 @@ defmodule Spandex.Span do
       parent_id: span.parent_id,
       error: span.error,
       meta: %{
-        env: span.env
+        env: span.env,
+        user: span.user
       }
     }
     |> add_error_data(span)
