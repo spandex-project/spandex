@@ -10,7 +10,7 @@ defmodule Spandex.Mixfile do
      description: description(),
      package: package(),
      name: "Spandex",
-     source_url: "https://github.com/albert-io/spandex"
+     source_url: "https://github.com/albert-io/spandex",
      deps: deps()]
   end
 
