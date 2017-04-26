@@ -3,7 +3,7 @@ defmodule Spandex.Mixfile do
 
   def project do
     [app: :spandex,
-     version: "0.1.0",
+     version: "0.1.1",
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -34,7 +34,6 @@ defmodule Spandex.Mixfile do
     # These are the default files included in the package
     [
       name: :spandex,
-      files: ["lib", "mix.exs", "README*", "readme*", "LICENSE*", "license*"],
       maintainers: ["Zachary Daniel", "Andrew Summers"],
       licenses: ["MIT License"],
       links: %{"GitHub" => "https://github.com/albert-io/spandex"}
@@ -53,9 +52,10 @@ defmodule Spandex.Mixfile do
   defp deps do
     [
       {:decorator, "~> 1.2.0"},
+      {:ex_doc, ">= 0.0.0", only: :dev},
+      {:httpoison, "~> 0.11.1"},
       {:msgpax, "~> 1.1"},
       {:plug, "~> 1.0"},
-      {:httpoison, "~> 0.11.1"},
       {:poison, "~> 3.0"}
     ]
   end
