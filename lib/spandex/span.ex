@@ -10,7 +10,7 @@ defmodule Spandex.Span do
   @updateable_keys [
     :name, :resource, :service, :env, :start, :completion_time, :error,
     :error_message, :stacktrace, :error_type, :start, :status, :url, :method,
-    :user
+    :user, :type
   ]
 
   def begin(span, time) do
@@ -57,14 +57,14 @@ defmodule Spandex.Span do
     %{
       trace_id: span.trace_id,
       span_id: span.id,
-      name: span.name,
+      name: span.name || "unknown",
       resource: span.resource || "unknown",
       service: span.service || "unknown",
       type: span.type || "unknown",
-      start: span.start,
+      start: span.start || now(),
       duration: duration(span.completion_time || now(), span.start || now()),
       parent_id: span.parent_id,
-      error: span.error,
+      error: span.error || 0
     }
     |> add_meta(span)
     |> add_error_data(span)
@@ -75,16 +75,16 @@ defmodule Spandex.Span do
   defp add_meta(json, %{env: env, user: user, meta: meta}) do
     json
     |> Map.put(:meta, %{})
-    |> put_in([:meta, :env], env || "dev")
-    |> put_in([:meta, :user], user)
+    |> add_if_not_nil([:meta, :env], env || "dev")
+    |> add_if_not_nil([:meta, :user], user)
     |> Map.update!(:meta, fn current_meta -> Map.merge(current_meta, meta) end)
   end
 
   defp add_http_data(json, %{url: url, status: status, method: method}) do
     json
-    |> put_in([:meta, "http.url"], url)
-    |> put_in([:meta, "http.status_code"], to_string(status))
-    |> put_in([:meta, "http.method"], method)
+    |> add_if_not_nil([:meta, "http.url"], url)
+    |> add_string_if_not_nil([:meta, "http.status_code"], status)
+    |> add_if_not_nil([:meta, "http.method"], method)
   end
 
   defp add_sql_data(json, span) do
@@ -96,13 +96,16 @@ defmodule Spandex.Span do
 
   defp add_error_data(json, %{error: 1, error_message: error_message, stacktrace: stacktrace, error_type: error_type}) do
     json
-    |> put_in([:meta, "error.msg"], error_message)
-    |> put_in([:meta, "error.stack"], stacktrace)
-    |> put_in([:meta, "error.type"], error_type)
+    |> add_if_not_nil([:meta, "error.msg"], error_message)
+    |> add_if_not_nil([:meta, "error.stack"], stacktrace)
+    |> add_if_not_nil([:meta, "error.type"], error_type)
   end
 
   defp add_error_data(json, _), do: json
 
   defp add_if_not_nil(map, _path, nil), do: map
   defp add_if_not_nil(map, path, value), do: put_in(map, path, value)
+
+  defp add_string_if_not_nil(map, _path, nil), do: map
+  defp add_string_if_not_nil(map, path, value), do: put_in(map, path, to_string(value))
 end
