@@ -19,6 +19,10 @@ defmodule Spandex.Plug.AddContext do
 
       _ = Spandex.Trace.update_all_spans(trace_context, false)
 
+      if Application.get_env(:spandex, :logger_metadata?) do
+        Logger.metadata(trace_id: Spandex.Trace.current_trace_id())
+      end
+
       Logger.metadata(trace_id: Spandex.Trace.current_trace_id())
 
       Plug.Conn.assign(conn, :trace_context, trace_context)

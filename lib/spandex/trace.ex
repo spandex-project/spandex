@@ -11,6 +11,10 @@ defmodule Spandex.Trace do
       quote do
         name = unquote(name)
         _ = Spandex.Trace.start_span(name)
+        if Application.get_env(:spandex, :logger_metadata?) do
+          span_id = Spandex.Trace.current_span_id()
+          Logger.metadata([span_id: span_id])
+        end
 
         try do
           return_value = unquote(body)
@@ -43,6 +47,20 @@ defmodule Spandex.Trace do
     {:ok, state}
   end
 
+  def continue_trace(trace_id, span_id, opts) when is_integer(trace_id) and is_integer(span_id) do
+    new_config =
+      opts
+      |> Keyword.put(:trace_id, trace_id)
+      |> Keyword.put(:parent_id, span_id)
+
+    case start(new_config) do
+      {:ok, pid} ->
+        :ets.insert(:spandex_trace, {self(), pid})
+      _ -> :error
+    end
+  end
+  def continue_trace(_, _, _), do: :ok
+
   def publish() do
     safely_with_enabled_and_active_trace(fn trace_pid ->
       GenServer.cast(trace_pid, {:publish, Spandex.Span.now()})
@@ -62,10 +80,6 @@ defmodule Spandex.Trace do
     safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:update_span, update, override?}))
   end
 
-  def update_span_branch(update, override? \\ true) do
-    safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:update_span_branch, update, override?}))
-  end
-
   def update_all_spans(update, override? \\ true) do
     safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:update_all_spans, update, override?}))
   end
@@ -76,6 +90,10 @@ defmodule Spandex.Trace do
 
   def current_trace_id() do
     safely_with_enabled_and_active_trace(&GenServer.call(&1, :trace_id))
+  end
+
+  def current_span_id() do
+    safely_with_enabled_and_active_trace(&GenServer.call(&1, :span_id))
   end
 
   def span_error(exception) do
@@ -128,7 +146,6 @@ defmodule Spandex.Trace do
   end
 
   defp setup_state(opts) do
-    trace_id = trace_id()
     opts
     |> Enum.into(%{})
     |> Map.put_new(:resource, Application.get_env(:spandex, :resource))
@@ -140,8 +157,7 @@ defmodule Spandex.Trace do
     |> Map.put_new(:type, Application.get_env(:spandex, :type))
     |> Map.put_new(:top_span_name, Application.get_env(:spandex, :top_span_name, "top"))
     |> Map.put_new(:protocol, Application.get_env(:spandex, :protocol, :msgpack))
-    |> Map.put_new(:process_name, :"Spandex.Trace:#{trace_id}")
-    |> Map.put_new(:trace_id, trace_id)
+    |> Map.put_new(:trace_id, trace_id())
     |> Map.put_new(:spans, %{})
     |> Map.put(:span_stack, [])
     |> top_span
@@ -156,6 +172,7 @@ defmodule Spandex.Trace do
     top_span = %Spandex.Span{
       id: trace_id(),
       trace_id: state[:trace_id],
+      parent_id: state[:parent_id],
       resource: state[:resource],
       service: state[:service],
       env: state[:env],
@@ -211,14 +228,6 @@ defmodule Spandex.Trace do
     end
   end
 
-  defp edit_span_branch(state = %{spans: spans, span_stack: stack}, update, override?) do
-    new_spans = Enum.reduce(stack, spans, fn span_id, span_map ->
-      Map.update!(span_map, span_id, &Spandex.Span.update(&1, update, override?))
-    end)
-
-    %{state | spans: new_spans}
-  end
-
   defp edit_all_spans(state = %{spans: spans}, update, override?) do
     new_spans = Enum.into(spans, %{}, fn {span_id, span} ->
       {span_id, Spandex.Span.update(span, update, override?)}
@@ -264,10 +273,6 @@ defmodule Spandex.Trace do
     {:noreply, edit_span(state, update, override?)}
   end
 
-  def handle_cast({:update_span_branch, update, override?}, state) do
-    {:noreply, edit_span_branch(state, update, override?)}
-  end
-
   def handle_cast({:update_all_spans, update, override?}, state) do
     {:noreply, edit_all_spans(state, update, override?)}
   end
@@ -290,5 +295,9 @@ defmodule Spandex.Trace do
 
   def handle_call(:trace_id, _from, state) do
     {:reply, state.trace_id, state}
+  end
+
+  def handle_call(:span_id, _from, state) do
+    {:reply, Enum.at(state[:span_stack] || [], 0), state}
   end
 end
