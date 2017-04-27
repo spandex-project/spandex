@@ -70,12 +70,20 @@ defmodule Spandex.Trace do
     safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:update_all_spans, update, override?}))
   end
 
+  def update_top_level_span(update, override? \\ true) do
+    safely_with_enabled_and_active_trace(&GenServer.cast(&1, {:update_top_level_span, update, override?}))
+  end
+
+  def current_trace_id() do
+    safely_with_enabled_and_active_trace(&GenServer.call(&1, :trace_id))
+  end
+
   def span_error(exception) do
     message = Exception.message(exception)
     stacktrace = Exception.format_stacktrace(System.stacktrace)
     type = exception.__struct__
 
-    update_span_branch(%{error: 1, error_message: message, stacktrace: stacktrace, error_type: type})
+    update_span(%{error: 1, error_message: message, stacktrace: stacktrace, error_type: type})
 
     end_span()
   end
@@ -94,7 +102,6 @@ defmodule Spandex.Trace do
       if trace_pid do
         func.(trace_pid)
       end
-      :ok
     end
   rescue
     _exception -> :ok
@@ -220,6 +227,20 @@ defmodule Spandex.Trace do
     %{new_state | spans: new_spans}
   end
 
+  def edit_top_level_span(state = %{spans: spans, span_stack: stack}, update, override?) do
+    top_level_span_id = stack |> Enum.reverse |> Enum.at(0)
+    if top_level_span_id do
+      new_span =
+        spans
+        |> Map.get(top_level_span_id)
+        |> Spandex.Span.update(update, override?)
+
+      %{state | spans: Map.put(spans, top_level_span_id, new_span)}
+    else
+      state
+    end
+  end
+
   defp merge_update(state, update, true), do: Map.merge(state, update)
   defp merge_update(state, update, false), do: Map.merge(update, state)
 
@@ -251,6 +272,10 @@ defmodule Spandex.Trace do
     {:noreply, edit_all_spans(state, update, override?)}
   end
 
+  def handle_cast({:update_top_level_span, update, override?}, state) do
+    {:noreply, edit_top_level_span(state, update, override?)}
+  end
+
   def handle_cast({:publish, time}, state) do
     new_state = edit_all_spans(state, %{completion_time: time}, false)
     _ = do_publish(new_state)
@@ -261,5 +286,9 @@ defmodule Spandex.Trace do
     GenServer.stop(self())
 
     {:noreply, state}
+  end
+
+  def handle_call(:trace_id, _from, state) do
+    {:reply, state.trace_id, state}
   end
 end
