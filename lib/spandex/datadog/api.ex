@@ -21,7 +21,7 @@ defmodule Spandex.Datadog.Api do
     if Application.get_env(:spandex, :log_traces?) do
       {body, content_type} = encode(protocol, [spans])
 
-      _ = Logger.info(fn -> "Trace: #{inspect(body)}" end)
+      _ = Logger.info(fn -> "Trace: #{inspect([spans])}" end)
 
       response = HTTPoison.put(
         "#{host}:#{port}/v0.3/traces",
