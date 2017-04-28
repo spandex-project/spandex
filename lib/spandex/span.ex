@@ -78,6 +78,7 @@ defmodule Spandex.Span do
     |> add_if_not_nil([:meta, :env], env || "dev")
     |> add_if_not_nil([:meta, :user], user)
     |> Map.update!(:meta, fn current_meta -> Map.merge(current_meta, meta) end)
+    |> filter_nils
   end
 
   defp add_http_data(json, %{url: url, status: status, method: method}) do
@@ -108,4 +109,11 @@ defmodule Spandex.Span do
 
   defp add_string_if_not_nil(map, _path, nil), do: map
   defp add_string_if_not_nil(map, path, value), do: put_in(map, path, to_string(value))
+
+  defp filter_nils(map) when is_map(map) do
+    map
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    |> Enum.into(%{}, fn {key, value} -> {key, filter_nils(value)} end)
+  end
+  defp filter_nils(other), do: other
 end
