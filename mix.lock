@@ -1,4 +1,5 @@
 %{"certifi": {:hex, :certifi, "1.0.0", "1c787a85b1855ba354f0b8920392c19aa1d06b0ee1362f9141279620a5be2039", [:rebar3], []},
+  "confex": {:hex, :confex, "2.0.0", "dcb83f6c00029444b799efa430692bcb2d72cefb3428523f5e64f56d2e56a314", [:mix], []},
   "decorator": {:hex, :decorator, "1.2.0", "b2440e8865a0b2a99db733880e0183319a1959197943376eef3e9231d491e777", [:mix], []},
   "earmark": {:hex, :earmark, "1.2.0", "bf1ce17aea43ab62f6943b97bd6e3dc032ce45d4f787504e3adf738e54b42f3a", [:mix], []},
   "ex_doc": {:hex, :ex_doc, "0.15.1", "d5f9d588fd802152516fccfdb96d6073753f77314fcfee892b15b6724ca0d596", [:mix], [{:earmark, "~> 1.1", [hex: :earmark, optional: false]}]},

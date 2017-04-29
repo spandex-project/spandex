@@ -22,16 +22,16 @@ defmodule Spandex.Plug.StartTrace do
   end
 
   defp disabled?() do
-    !!Application.get_env(:spandex, :disabled?)
+    !!Confex.get(:spandex, :disabled?)
   end
 
   defp ignored_method?(conn) do
-    ignored_methods = Application.get_env(:spandex, :ignored_methods, [])
+    ignored_methods = Confex.get(:spandex, :ignored_methods, [])
     conn.method in ignored_methods
   end
 
   defp ignored_route?(conn) do
-    ignored_routes = Application.get_env(:spandex, :ignored_routes, [])
+    ignored_routes = Confex.get(:spandex, :ignored_routes, [])
     Enum.any?(ignored_routes, fn ignored_route ->
       String.match?(conn.request_path, ignored_route)
     end)

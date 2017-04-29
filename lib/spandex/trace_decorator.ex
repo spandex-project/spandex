@@ -18,7 +18,7 @@ defmodule Spandex.TraceDecorator do
   use Decorator.Define, [traced: 0, traced: 1]
 
   def traced(body, context) do
-    if Application.get_env(:spandex, :disabled?) do
+    if Confex.get(:spandex, :disabled?) do
       quote do
         unquote(body)
       end
@@ -41,7 +41,7 @@ defmodule Spandex.TraceDecorator do
   end
 
   def traced(attributes, body, context) do
-    if Application.get_env(:spandex, :disabled?) do
+    if Confex.get(:spandex, :disabled?) do
       quote do
         unquote(body)
       end

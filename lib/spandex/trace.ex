@@ -2,7 +2,7 @@ defmodule Spandex.Trace do
   use GenServer
 
   defmacro span(name, do: body) do
-    if Application.get_env(:spandex, :disabled?) do
+    if Confex.get(:spandex, :disabled?) do
       quote do
         _ = unquote(name)
         unquote(body)
@@ -11,7 +11,7 @@ defmodule Spandex.Trace do
       quote do
         name = unquote(name)
         _ = Spandex.Trace.start_span(name)
-        if Application.get_env(:spandex, :logger_metadata?) do
+        if Confex.get(:spandex, :logger_metadata?) do
           span_id = Spandex.Trace.current_span_id()
           Logger.metadata([span_id: span_id])
         end
@@ -30,7 +30,7 @@ defmodule Spandex.Trace do
   end
 
   def start(opts \\ []) do
-    if Application.get_env(:spandex, :disabled?) do
+    if Confex.get(:spandex, :disabled?) do
       :disabled
     else
       server_state = setup_state(opts)
@@ -114,7 +114,7 @@ defmodule Spandex.Trace do
       |> Kernel.||({nil, nil})
       |> elem(1)
 
-    if Application.get_env(:spandex, :disabled?) do
+    if Confex.get(:spandex, :disabled?) do
       :ok
     else
       if trace_pid do
@@ -148,15 +148,15 @@ defmodule Spandex.Trace do
   defp setup_state(opts) do
     opts
     |> Enum.into(%{})
-    |> Map.put_new(:resource, Application.get_env(:spandex, :resource))
-    |> Map.put_new(:service, Application.get_env(:spandex, :service))
-    |> Map.put_new(:ttl_seconds, Application.get_env(:spandex, :ttl_seconds, 30))
-    |> Map.put_new(:host, Application.get_env(:spandex, :host, "localhost"))
-    |> Map.put_new(:port, port(Application.get_env(:spandex, :port, 8126)))
-    |> Map.put_new(:env, Application.get_env(:spandex, :env))
-    |> Map.put_new(:type, Application.get_env(:spandex, :type))
-    |> Map.put_new(:top_span_name, Application.get_env(:spandex, :top_span_name, "top"))
-    |> Map.put_new(:protocol, Application.get_env(:spandex, :protocol, :msgpack))
+    |> Map.put_new(:resource, Confex.get(:spandex, :resource))
+    |> Map.put_new(:service, Confex.get(:spandex, :service))
+    |> Map.put_new(:ttl_seconds, Confex.get(:spandex, :ttl_seconds, 30))
+    |> Map.put_new(:host, Confex.get(:spandex, :host, "localhost"))
+    |> Map.put_new(:port, port(Confex.get(:spandex, :port, 8126)))
+    |> Map.put_new(:env, Confex.get(:spandex, :env))
+    |> Map.put_new(:type, Confex.get(:spandex, :type))
+    |> Map.put_new(:top_span_name, Confex.get(:spandex, :top_span_name, "top"))
+    |> Map.put_new(:protocol, Confex.get(:spandex, :protocol, :msgpack))
     |> Map.put_new(:trace_id, trace_id())
     |> Map.put_new(:spans, %{})
     |> Map.put(:span_stack, [])
