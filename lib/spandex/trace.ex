@@ -2,28 +2,33 @@ defmodule Spandex.Trace do
   use GenServer
 
   defmacro span(name, do: body) do
-    if Confex.get(:spandex, :disabled?) do
+    if Confex.get(:spandex, :compile_away_spans?) do
       quote do
         _ = unquote(name)
         unquote(body)
       end
     else
       quote do
-        name = unquote(name)
-        _ = Spandex.Trace.start_span(name)
-        if Confex.get(:spandex, :logger_metadata?) do
-          span_id = Spandex.Trace.current_span_id()
-          Logger.metadata([span_id: span_id])
-        end
+        if Confex.get(:disabled?) do
+          _ = unqoute(name)
+          unquote(body)
+        else
+          name = unquote(name)
+          _ = Spandex.Trace.start_span(name)
+          if Confex.get(:spandex, :logger_metadata?) do
+            span_id = Spandex.Trace.current_span_id()
+            Logger.metadata([span_id: span_id])
+          end
 
-        try do
-          return_value = unquote(body)
-          _ = Spandex.Trace.end_span()
-          return_value
-        rescue
-          exception ->
-            _ = Spandex.Trace.span_error(exception)
-          raise exception
+          try do
+            return_value = unquote(body)
+            _ = Spandex.Trace.end_span()
+            return_value
+          rescue
+            exception ->
+              _ = Spandex.Trace.span_error(exception)
+            raise exception
+          end
         end
       end
     end
