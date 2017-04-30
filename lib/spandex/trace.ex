@@ -9,8 +9,8 @@ defmodule Spandex.Trace do
       end
     else
       quote do
-        if Confex.get(:disabled?) do
-          _ = unqoute(name)
+        if Confex.get(:spandex, :disabled?) do
+          _ = unquote(name)
           unquote(body)
         else
           name = unquote(name)
