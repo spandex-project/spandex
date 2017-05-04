@@ -71,6 +71,8 @@ defmodule Spandex.Trace do
       GenServer.cast(trace_pid, {:publish, Spandex.Span.now()})
       GenServer.cast(trace_pid, :stop)
     end)
+  after
+    :ets.delete(:spandex_trace, self())
   end
 
   def start_span(name) do
