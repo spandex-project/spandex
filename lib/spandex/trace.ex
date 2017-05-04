@@ -35,7 +35,7 @@ defmodule Spandex.Trace do
   end
 
   def start(opts \\ []) do
-    if Confex.get(:spandex, :disabled?) do
+    if Confex.get(:spandex, :disabled?) || Confex.get(:spandex, :compile_away_spans?) do
       :disabled
     else
       server_state = setup_state(opts)

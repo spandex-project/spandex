@@ -30,6 +30,11 @@ defmodule Spandex.TraceDecorator do
           name = "#{unquote(context.name)}/#{unquote(context.arity)}"
           _ = Spandex.Trace.start_span(name)
 
+          if Confex.get(:spandex, :logger_metadata?) do
+            span_id = Spandex.Trace.current_span_id()
+            Logger.metadata([span_id: span_id])
+          end
+
           try do
             return_value = unquote(body)
             _ = Spandex.Trace.end_span()
@@ -57,6 +62,10 @@ defmodule Spandex.TraceDecorator do
           attributes = unquote(attributes)
           name = attributes[:name] || "#{unquote(context.name)}/#{unquote(context.arity)}"
           _ = Spandex.Trace.start_span(name)
+          if Confex.get(:spandex, :logger_metadata?) do
+            span_id = Spandex.Trace.current_span_id()
+            Logger.metadata([span_id: span_id])
+          end
 
           _ = Spandex.Trace.update_span(attributes |> Enum.into(%{}))
 
