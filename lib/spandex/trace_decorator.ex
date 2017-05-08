@@ -49,12 +49,14 @@ defmodule Spandex.TraceDecorator do
     end
   end
 
-  def traced(attributes, body, context) do
+  def traced(attributes, body, context = %{args: arguments}) do
     if Confex.get(:spandex, :compile_away_spans?) do
       quote do
         unquote(body)
       end
     else
+      traceable_args = traceable_args(attributes, arguments)
+
       quote do
         if Confex.get(:spandex, :disabled?) do
           unquote(body)
@@ -67,7 +69,13 @@ defmodule Spandex.TraceDecorator do
             Logger.metadata([span_id: span_id])
           end
 
-          _ = Spandex.Trace.update_span(attributes |> Enum.into(%{}))
+          _ =
+            attributes
+            |> Enum.into(%{})
+            |> Map.put_new(:meta, %{})
+            |> put_in([:meta, :args], unquote(traceable_args))
+            |> Map.delete(:args)
+            |> Spandex.Trace.update_span()
 
           try do
             return_value = unquote(body)
@@ -81,5 +89,26 @@ defmodule Spandex.TraceDecorator do
         end
       end
     end
+  end
+
+  defp traceable_args(attributes, arguments) do
+    attributes
+    |> Keyword.get(:args, [])
+    |> Enum.with_index()
+    |> Enum.map(fn {filter, index} ->
+      argument_value = Enum.at(arguments, index)
+      list_filter = List.wrap(filter)
+      cond do
+        filter == false -> {index, "_"}
+        filter == true -> {index, inspect(argument_value)}
+        is_map(argument_value) -> {index, inspect(Map.take(argument_value, list_filter))}
+        Keyword.keyword?(argument_value) -> {index, inspect(Enum.filter(argument_value, fn {key, _value} -> key in list_filter end))}
+        is_list(argument_value) -> {index, inspect(Enum.map(list_filter, &Enum.at(argument_value, &1)))}
+        true -> {index, inspect(argument_value)}
+      end
+    end)
+    |> Enum.into(%{})
+  rescue
+    %{}
   end
 end

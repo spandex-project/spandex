@@ -1,6 +1,8 @@
 defmodule Spandex.Trace do
   use GenServer
 
+  require Ex2ms
+
   defmacro span(name, do: body) do
     if Confex.get(:spandex, :compile_away_spans?) do
       quote do
@@ -295,6 +297,9 @@ defmodule Spandex.Trace do
   end
 
   def handle_cast(:stop, state) do
+    match_spec = Ex2ms.fun do { _key, value } -> value == self() end
+    :ets.select_delete(:spandex_trace, match_spec)
+
     GenServer.stop(self())
 
     {:noreply, state}
