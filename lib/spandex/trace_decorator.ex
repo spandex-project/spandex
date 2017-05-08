@@ -55,27 +55,7 @@ defmodule Spandex.TraceDecorator do
         unquote(body)
       end
     else
-      traceable_args =
-        attributes
-        |> Keyword.get(:args, [])
-        |> Enum.with_index()
-        |> Enum.reject(fn {filter, index} -> filter end)
-        |> Enum.map(fn {filter, index} ->
-          argument_value = Enum.at(arguments, index)
-          list_filter = List.wrap(filter)
-          cond do
-            filter == true ->
-              {index, argument_value}
-            is_map(argument_value) ->
-              {index, Map.take(argument_value, list_filter)}
-            Keyword.keyword?(argument_value) ->
-              {index, Enum.filter(argument_value, fn {key, _value} -> key in list_filter end)}
-            is_list(argument_value) ->
-              {index, Enum.map(filter, &Enum.at(argument_value, &1))}
-            true ->
-              {index, "Could not filter"}
-          end
-        end)
+      traceable_args = traceable_args(attributes, arguments)
 
       quote do
         if Confex.get(:spandex, :disabled?) do
@@ -108,5 +88,26 @@ defmodule Spandex.TraceDecorator do
         end
       end
     end
+  end
+
+  defp traceable_args(attributes, arguments) do
+    attributes
+    |> Keyword.get(:args, [])
+    |> Enum.with_index()
+    |> Enum.map(fn {filter, index} ->
+      argument_value = Enum.at(arguments, index)
+      list_filter = List.wrap(filter)
+      cond do
+        filter == false -> {index, "_"}
+        filter == true -> {index, inspect(argument_value)}
+        is_map(argument_value) -> {index, inspect(Map.take(argument_value, list_filter))}
+        Keyword.keyword?(argument_value) -> {index, inspect(Enum.filter(argument_value, fn {key, _value} -> key in list_filter end))}
+        is_list(argument_value) -> {index, inspect(Enum.map(list_filter, &Enum.at(argument_value, &1)))}
+        true -> {index, inspect(argument_value)}
+      end
+    end)
+    |> Enum.into(%{})
+  rescue
+    %{}
   end
 end
