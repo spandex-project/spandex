@@ -69,12 +69,13 @@ defmodule Spandex.TraceDecorator do
             Logger.metadata([span_id: span_id])
           end
 
-            _ = attributes
-              |> Enum.into(%{})
-              |> Map.put_new(:meta, %{})
-              |> put_in([:meta, :args], unquote(traceable_args))
-              |> Map.delete(:args)
-              |> Spandex.Trace.update_span()
+          _ =
+            attributes
+            |> Enum.into(%{})
+            |> Map.put_new(:meta, %{})
+            |> put_in([:meta, :args], unquote(traceable_args))
+            |> Map.delete(:args)
+            |> Spandex.Trace.update_span()
 
           try do
             return_value = unquote(body)
