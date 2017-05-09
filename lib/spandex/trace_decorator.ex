@@ -109,6 +109,6 @@ defmodule Spandex.TraceDecorator do
     end)
     |> Enum.into(%{})
   rescue
-    %{}
+    _ -> %{}
   end
 end
