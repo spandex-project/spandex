@@ -23,19 +23,19 @@ defmodule Spandex.Ecto.Trace do
           }
         )
 
-        if queue_time do
+        if queue_time != 0 do
           Spandex.Trace.span("queue") do
             Spandex.Trace.update_span(%{start: start, completion_time: start + queue_time})
           end
         end
 
-        if query_time do
+        if query_time != 0 do
           Spandex.Trace.span("run_query") do
             Spandex.Trace.update_span(%{start: start + queue_time, completion_time: start + queue_time + query_time})
           end
         end
 
-        if decoding_time do
+        if decoding_time != 0 do
           Spandex.Trace.span("decode") do
             Spandex.Trace.update_span(%{start: start + queue_time + query_time, completion_time: now})
           end
@@ -48,19 +48,19 @@ defmodule Spandex.Ecto.Trace do
     if caller_pid == self() do
       :ok
     else
-      trace_pid =
-        :spandex_trace
-        |> :ets.lookup(caller_pid)
-        |> Enum.at(0)
-        |> Kernel.||({nil, nil})
-        |> elem(1)
+      trace_id =
+        caller_pid
+        |> GenServer.call(:trace_id)
+        |> ok_or_nil
 
-      if trace_pid do
-        _ = :ets.insert(:spandex_trace, {self(), trace_pid})
-        :ok
-      else
-        :no_trace
-      end
+      span_id =
+        caller_pid
+        |> GenServer.call(:span_id)
+        |> ok_or_nil
+
+      _ = Spandex.Trace.continue_trace(trace_id, span_id, [])
+
+      :ok
     end
   end
 
@@ -78,6 +78,9 @@ defmodule Spandex.Ecto.Trace do
       :no_trace
     end
   end
+
+  defp ok_or_nil({:ok, value}), do: value
+  defp ok_or_nil(_), do: nil
 
   defp report_error(%{result: {:ok, _}}), do: :ok
   defp report_error(%{result: _}) do
