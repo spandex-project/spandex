@@ -48,20 +48,26 @@ defmodule Spandex.Ecto.Trace do
     if caller_pid == self() do
       :ok
     else
-      trace_id =
-        caller_pid
-        |> GenServer.call(:trace_id)
-        |> ok_or_nil
+      if Process.whereis(caller_pid) do
+        trace_id =
+          caller_pid
+          |> GenServer.call(:trace_id)
+          |> ok_or_nil
 
-      span_id =
-        caller_pid
-        |> GenServer.call(:span_id)
-        |> ok_or_nil
+        span_id =
+          caller_pid
+          |> GenServer.call(:span_id)
+          |> ok_or_nil
 
-      _ = Spandex.Trace.continue_trace(trace_id, span_id, [])
+        _ = Spandex.Trace.continue_trace(trace_id, span_id, [])
 
-      :ok
+        :ok
+      else
+        :no_trace
+      end
     end
+  rescue
+    _ -> :no_trace
   end
 
   defp setup(_) do
@@ -88,8 +94,8 @@ defmodule Spandex.Ecto.Trace do
     :ok
   end
 
-  defp string_query(%{query: query}) when is_function(query), do: query.()
-  defp string_query(%{query: query}) when is_bitstring(query), do: query
+  defp string_query(%{query: query}) when is_function(query), do: Macro.unescape_string(query.() || "")
+  defp string_query(%{query: query}) when is_bitstring(query), do: Macro.unescape_string(query || "")
   defp string_query(_), do: ""
 
   defp num_rows(%{result: {:ok, %{num_rows: num_rows}}}), do: num_rows
