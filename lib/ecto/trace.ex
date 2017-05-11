@@ -19,7 +19,8 @@ defmodule Spandex.Ecto.Trace do
             start: start,
             completion_time: now,
             service: :ecto,
-            meta: %{"sql.query" => inspect(query), "sql.rows" => inspect(num_rows)}
+            resource: query,
+            meta: %{"sql.query" => query, "sql.rows" => inspect(num_rows)}
           }
         )
 
