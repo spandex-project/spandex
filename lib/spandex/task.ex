@@ -15,7 +15,7 @@ defmodule Spandex.Task do
             fun.()
           end
         after
-          :ets.delete(:spandex_trace, self())
+          _ = Spandex.Trace.publish()
         end
       end)
     else
