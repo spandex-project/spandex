@@ -25,7 +25,7 @@ defmodule Spandex.TraceDecorator do
         adapter = Confex.get(:spandex, :adapter)
 
         name = "#{unquote(context.name)}/#{unquote(context.arity)}"
-        _ = adapter.start_trace("request")
+        _ = adapter.start_trace(name)
         return_value = unquote(body)
         _ = adapter.finish_trace()
         return_value
@@ -50,13 +50,13 @@ defmodule Spandex.TraceDecorator do
 
         try do
           return_value = unquote(body)
-          _ = adapter.end_span()
+          _ = adapter.finish_span()
           return_value
         rescue
           exception ->
             stacktrace = System.stacktrace()
             _ = adapter.span_error(exception)
-            _ = adapter.end_span()
+            _ = adapter.finish_span()
 
             reraise(exception, stacktrace)
         end
@@ -92,13 +92,13 @@ defmodule Spandex.TraceDecorator do
 
         try do
           return_value = unquote(body)
-          _ = adapter.end_span()
+          _ = adapter.finish_span()
           return_value
         rescue
           exception ->
             stacktrace = System.stacktrace()
             _ = adapter.span_error(exception)
-            _ = adapter.end_span()
+            _ = adapter.finish_span()
 
             reraise(exception, stacktrace)
         end

@@ -18,9 +18,8 @@ defmodule Spandex.Datadog.Api do
         app_type: type
       }
     }
-    adapter = Confex.get_map(:spandex, :datadog)[:api_adapter]
-    adapter.send_serivces(data)
-
+    adapter = Confex.get_map(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
+    adapter.send_services(data)
   end
 
   @doc """
@@ -28,7 +27,7 @@ defmodule Spandex.Datadog.Api do
   """
   @spec create_trace([map]) :: {:ok, HTTPoison.Response.t | HTTPoison.AsyncResponse.t} | {:error, HTTPoison.Error.t}
   def create_trace(spans) do
-    adapter = Confex.get_map(:spandex, :datadog)[:api_adapter]
+    adapter = Confex.get_map(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
     adapter.send_spans(spans)
   end
 end

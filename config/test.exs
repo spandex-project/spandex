@@ -6,7 +6,10 @@ config :spandex,
   adapter: Spandex.Adapters.Datadog,
   disabled?: false,
   env: "test",
-  application_name: :spandex
+  application: :spandex,
+  ignored_methods: ["OPTIONS"],
+  ignored_routes: [~r/healthz/],
+  log_traces?: false
 
 
 
@@ -16,11 +19,5 @@ config :spandex, :datadog,
   services: [
     ecto: :sql,
     spandex: :web
-  ]
-
-
-  application_name: :mandark,
-  logger_metadata?: true,
-  ignored_methods: ["OPTIONS"],
-  ignored_routes: [~r/healthz/],
-  log_traces?: false,
+  ],
+  api_adapter: Spandex.Datadog.TestApiAdapter

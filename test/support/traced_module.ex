@@ -1,4 +1,4 @@
-defmodule Test.Support.TracedModule do
+defmodule Spandex.Test.TracedModule do
   use Spandex.TraceDecorator
 
   @decorate trace()
