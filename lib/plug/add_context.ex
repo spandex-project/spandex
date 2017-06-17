@@ -6,37 +6,25 @@ defmodule Spandex.Plug.AddContext do
 
   @spec call(Plug.Conn.t, Keyword.t) :: Plug.Conn.t
   def call(conn, _opts) do
-    if Confex.get(:spandex, :disabled?) || Confex.get(:spandex, :compile_away_spans?) do
+    if Confex.get(:spandex, :disabled?) do
       conn
     else
+      adapter = Confex.get(:spandex, :adapter)
+
       trace_context = %{
         resource: "#{String.upcase(conn.method)} #{route_name(conn)}",
         method: conn.method,
         url: conn.request_path,
-        service: Confex.get(:spandex, :service, :web),
+        service: Confex.get(:spandex, :primary_service, :web),
         type: :web
       }
 
-      _ = Spandex.Trace.update_top_level_span(trace_context, true)
+      _ = adapter.update_span(trace_context, true)
 
-      if Confex.get(:spandex, :logger_metadata?) do
-        Logger.metadata(trace_id: Spandex.Trace.current_trace_id(), span_id: Spandex.Trace.current_span_id())
-      end
+      _ = Logger.metadata(trace_id: adapter.current_trace_id(), span_id: adapter.current_span_id())
 
-      Plug.Conn.assign(conn, :trace_context, trace_context)
+      conn
     end
-  end
-
-  @spec trace_context(Plug.Conn.t) :: map
-  def trace_context(conn) do
-    conn.assigns[:trace_context] || %{}
-  end
-
-  @spec update_from_trace_context(Plug.Conn.t) :: Plug.Conn.t
-  def update_from_trace_context(conn) do
-    conn
-    |> trace_context
-    |> Spandex.Trace.update_span
   end
 
   @spec route_name(Plug.Conn.t) :: String.t

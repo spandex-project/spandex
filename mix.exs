@@ -17,11 +17,11 @@ defmodule Spandex.Mixfile do
   # Configuration for the OTP application
   #
   # Type "mix help compile.app" for more information
-  def application do
-    # Specify extra applications you'll use from Erlang/Elixir
-    [extra_applications: [:logger],
-     mod: {Spandex.Application, []}]
-  end
+  # def application do
+  #   # Specify extra applications you'll use from Erlang/Elixir
+  #   [extra_applications: [:logger],
+  #    mod: {Spandex.Application, []}]
+  # end
 
   defp description do
     """
@@ -57,8 +57,7 @@ defmodule Spandex.Mixfile do
       {:ex2ms, "~> 1.0"},
       {:httpoison, "~> 0.11.1"},
       {:msgpax, "~> 1.1"},
-      {:plug, "~> 1.0"},
-      {:poison, "~> 3.0"}
+      {:plug, "~> 1.0"}
     ]
   end
 end

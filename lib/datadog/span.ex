@@ -1,4 +1,4 @@
-defmodule Spandex.Span do
+defmodule Spandex.Datadog.Span do
   defstruct [
     :id, :trace_id, :parent_id, :name, :resource,
     :service, :env, :start, :completion_time, :error,
@@ -32,8 +32,8 @@ defmodule Spandex.Span do
     %{span | meta: Map.merge(meta, new_meta)}
   end
 
-  def child_of(parent = %{id: parent_id}, name, id) do
-    %{parent | id: id, name: name, parent_id: parent_id}
+  def child_of(parent = %{id: parent_id, trace_id: trace_id}, name, id) do
+    %{parent | id: id, name: name, parent_id: parent_id, trace_id: trace_id}
   end
 
   def now(), do: DateTime.utc_now |> DateTime.to_unix(:nanoseconds)
