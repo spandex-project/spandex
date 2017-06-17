@@ -14,15 +14,6 @@ defmodule Spandex.Mixfile do
      deps: deps()]
   end
 
-  # Configuration for the OTP application
-  #
-  # Type "mix help compile.app" for more information
-  # def application do
-  #   # Specify extra applications you'll use from Erlang/Elixir
-  #   [extra_applications: [:logger],
-  #    mod: {Spandex.Application, []}]
-  # end
-
   defp description do
     """
     A Datadog APM tracing library. Still young, under active development, but is under active use.
@@ -54,7 +45,6 @@ defmodule Spandex.Mixfile do
       {:confex, "2.0.0"},
       {:decorator, "~> 1.2.0"},
       {:ex_doc, ">= 0.0.0", only: :dev},
-      {:ex2ms, "~> 1.0"},
       {:httpoison, "~> 0.11.1"},
       {:msgpax, "~> 1.1"},
       {:plug, "~> 1.0"}
