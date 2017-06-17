@@ -5,11 +5,11 @@ defmodule Spandex.Adapters.Datadog do
   @behaviour Spandex.Adapters.Adapter
 
   @doc """
-  Gets passed the adapter specific configuration, and does any required setup.
+  Does any required setup on application start.
   """
-  def startup(config) do
-    services = Keyword.get(config, :services, [])
-    application_name = Keyword.get(config, :application_name, "")
+  def startup() do
+    services = Confex.get_map(:spandex, :datadog)[:services]
+    application_name = Confex.get(:spandex, :application)
 
     for {service_name, type} <- services do
       Spandex.Datadog.Api.create_service(service_name, application_name, type)
@@ -21,7 +21,6 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Starts a trace context in process local storage.
   """
-  #TODO: Make sure this gets resource, service, env, and type
   def start_trace(name) do
     trace_id = datadog_id()
     top_span =

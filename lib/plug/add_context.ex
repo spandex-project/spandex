@@ -15,11 +15,12 @@ defmodule Spandex.Plug.AddContext do
         resource: "#{String.upcase(conn.method)} #{route_name(conn)}",
         method: conn.method,
         url: conn.request_path,
-        service: Confex.get(:spandex, :primary_service, :web),
-        type: :web
+        service: Confex.get(:spandex, :service, :web),
+        type: :web,
+        env: Confex.get(:spandex, :env, "unknown")
       }
 
-      _ = adapter.update_span(trace_context, true)
+      _ = adapter.update_top_span(trace_context, true)
 
       _ = Logger.metadata(trace_id: adapter.current_trace_id(), span_id: adapter.current_span_id())
 

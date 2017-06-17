@@ -15,20 +15,36 @@ defmodule Spandex.TraceDecorator do
     end
   end
   """
-  use Decorator.Define, [traced: 0, traced: 1]
-  require Logger
+  use Decorator.Define, [span: 0, span: 1, trace: 0]
 
-  def traced(body, context) do
+  def trace(body, context) do
     quote do
-      adapter = Confex.get(:spandex, :adapter)
       if Confex.get(:spandex, :disabled?) do
         unquote(body)
       else
+        adapter = Confex.get(:spandex, :adapter)
+
+        name = "#{unquote(context.name)}/#{unquote(context.arity)}"
+        _ = adapter.start_trace("request")
+        return_value = unquote(body)
+        _ = adapter.finish_trace()
+        return_value
+      end
+    end
+  end
+
+  def span(body, context) do
+    quote do
+      if Confex.get(:spandex, :disabled?) do
+        unquote(body)
+      else
+        adapter = Confex.get(:spandex, :adapter)
         name = "#{unquote(context.name)}/#{unquote(context.arity)}"
         case adapter.start_span(name) do
           {:ok, span_id} ->
             Logger.metadata([span_id: span_id])
           {:error, error} ->
+            require Logger
             Logger.warn("Failed to create span with error: #{error}")
         end
 
@@ -48,7 +64,7 @@ defmodule Spandex.TraceDecorator do
     end
   end
 
-  def traced(attributes, body, context = %{args: arguments}) do
+  def span(attributes, body, context = %{args: arguments}) do
     traceable_args = traceable_args(attributes, arguments)
     quote do
       adapter = Confex.get(:spandex, :adapter)
@@ -62,6 +78,7 @@ defmodule Spandex.TraceDecorator do
           {:ok, span_id} ->
             Logger.metadata([span_id: span_id])
           {:error, span_id} ->
+            require Logger
             Logger.warn("Failed to create span with error: #{error}")
         end
 
