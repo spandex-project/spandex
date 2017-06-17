@@ -51,7 +51,7 @@ defmodule Spandex.Ecto.Trace do
   end
 
   defp finish_ecto_trace(adapter, %{caller_pid: caller_pid}) do
-    if caller_pid != caller_pid do
+    if caller_pid != self() do
       adapter.finish_trace()
     else
       :ok
@@ -63,14 +63,11 @@ defmodule Spandex.Ecto.Trace do
     adapter.continue_trace("query", caller_pid)
   end
 
-  defp setup(_) do
+  defp setup(_, _) do
     :ok
   end
 
-  defp ok_or_nil({:ok, value}), do: value
-  defp ok_or_nil(_), do: nil
-
-  defp report_error(adapter, %{result: {:ok, _}}), do: :ok
+  defp report_error(_adapter, %{result: {:ok, _}}), do: :ok
   defp report_error(adapter, %{result: {:error, error}}) do
     adapter.span_error(%Error{message: inspect(error)})
   end

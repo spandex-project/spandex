@@ -12,7 +12,8 @@ defmodule Spandex.Adapters.Datadog do
     application_name = Keyword.get(config, :application_name, "")
 
     for {service_name, type} <- services do
-      Spandex.Datadog.Api.create_service(service_name, application_name, type)
+      api_adapter = Confex.get_map(:spandex, :datadog)[:api_adapter]
+      api_adapter.create_service(service_name, application_name, type)
     end
 
     :ok
@@ -42,11 +43,10 @@ defmodule Spandex.Adapters.Datadog do
   """
   def start_span(name) do
     trace = Process.get(:spandex_trace, :undefined)
-
-    cond do
-      trace == :undefined ->
+    case trace do
+      :undefined ->
         {:error, :no_trace_context}
-      current_span = Enum.at(trace.stack, 0) ->
+      %{stack: [current_span|_]} ->
         new_span =
           current_span
           |> Spandex.Datadog.Span.child_of(name, datadog_id())
@@ -55,7 +55,7 @@ defmodule Spandex.Adapters.Datadog do
         _ = Process.put(:spandex_trace, %{trace | stack: [new_span | trace.stack]})
 
         {:ok, new_span.id}
-      true ->
+      _ ->
         new_span =
           %Spandex.Datadog.Span{
             id: datadog_id(),
@@ -148,10 +148,11 @@ defmodule Spandex.Adapters.Datadog do
     if trace == :undefined do
       {:error, :no_trace_context}
     else
+      api_adapter = Confex.get_map(:spandex, :datadog)[:api_adapter]
       trace.spans
       |> Enum.map(&Spandex.Datadog.Span.update(&1, %{completion_time: now()}, false))
       |> Enum.map(&Spandex.Datadog.Span.to_json/1)
-      |> Spandex.Datadog.Api.create_trace()
+      |> api_adapter.create_trace()
 
       :ok
     end
@@ -176,12 +177,12 @@ defmodule Spandex.Adapters.Datadog do
   def current_span_id() do
     trace = Process.get(:spandex_trace, :undefined)
 
-    cond do
-      trace == :undefined ->
+    case trace do
+      :undefined ->
         {:error, :no_trace_context}
-      current_span = Enum.at(trace.stack, 0) ->
-        current_span.id
-      true ->
+      %{stack: [%{id: current_span_id}|_]} ->
+        current_span_id
+      _ ->
         nil
     end
   end

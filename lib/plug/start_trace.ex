@@ -5,7 +5,7 @@ defmodule Spandex.Plug.StartTrace do
   def init(opts), do: opts
 
   @spec call(Plug.Conn.t, Keyword.t) :: Plug.Conn.t
-  def call(conn, opts) do
+  def call(conn, _opts) do
     unless ignoring_request?(conn) do
       adapter = Confex.get(:spandex, :adapter)
 
