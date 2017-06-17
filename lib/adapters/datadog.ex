@@ -12,8 +12,7 @@ defmodule Spandex.Adapters.Datadog do
     application_name = Keyword.get(config, :application_name, "")
 
     for {service_name, type} <- services do
-      api_adapter = Confex.get_map(:spandex, :datadog)[:api_adapter]
-      api_adapter.create_service(service_name, application_name, type)
+      Spandex.Datadog.Api.create_service(service_name, application_name, type)
     end
 
     :ok
@@ -148,11 +147,10 @@ defmodule Spandex.Adapters.Datadog do
     if trace == :undefined do
       {:error, :no_trace_context}
     else
-      api_adapter = Confex.get_map(:spandex, :datadog)[:api_adapter]
       trace.spans
       |> Enum.map(&Spandex.Datadog.Span.update(&1, %{completion_time: now()}, false))
       |> Enum.map(&Spandex.Datadog.Span.to_json/1)
-      |> api_adapter.create_trace()
+      |> Spandex.Datadog.Api.create_trace()
 
       :ok
     end
