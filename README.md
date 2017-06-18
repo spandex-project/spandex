@@ -15,6 +15,31 @@ def deps do
 end
 ```
 
+## Configuration
+
+Spandex uses `Confex` under the hood. See the formats usable for declaring values at their [documentation](https://github.com/Nebo15/confex)
+
+```
+config :spandex,
+  service: "my_api", # required
+  adapter: Spandex.Adapters.Datadog, # required
+  disabled?: {:system, "DISABLE_SPANDEX", false},
+  env: {:system, "APM_ENVIRONMENT", "unknown"},
+  application: :my_app,
+  ignored_methods: ["OPTIONS"],
+  ignored_routes: [~r/health_check/],
+  log_traces?: false # You probably don't want this to be on. This is helpful for debugging though.
+
+config :spandex, :datadog,
+  host: {:system, "DATADOG_HOST", "localhost"},
+  port: {:system, "DATADOG_PORT", 8126},
+  services: [ # We create these services in datadog on application startup
+    ecto: :sql,
+    my_app: :web,
+    my_cache: :cache
+  ]
+```
+
 ## Phoenix Plugs
 
 There are 3 plugs provided for usage w/ Phoenix:
