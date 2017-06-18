@@ -257,6 +257,6 @@ defmodule Spandex.Adapters.Datadog do
 
   @spec datadog_id() :: non_neg_integer
   defp datadog_id() do
-    :rand.uniform(9223372036854775807)
+    :rand.uniform(9_223_372_036_854_775_807)
   end
 end

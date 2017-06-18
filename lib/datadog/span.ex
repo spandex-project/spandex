@@ -18,7 +18,8 @@ defmodule Spandex.Datadog.Span do
   end
 
   def update(span, updates, override? \\ true) do
-    Enum.reduce(@updateable_keys, span, fn key, span ->
+    @updateable_keys
+    |> Enum.reduce(span, fn key, span ->
       if Map.has_key?(updates, key) do
         put_update(span, key, updates[key], override?)
       else

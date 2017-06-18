@@ -33,8 +33,9 @@ defmodule Spandex do
           return_value
         rescue
           exception ->
+            stacktrace = System.stacktrace()
             _ = Spandex.span_error(exception)
-          raise exception
+          reraise exception, stacktrace
         end
       end
     end
