@@ -86,7 +86,7 @@ defmodule Spandex.TraceDecorator do
           attributes
           |> Enum.into(%{})
           |> Map.put_new(:meta, %{})
-          |> put_in([:meta, :args], unquote(traceable_args))
+          |> put_in([:meta, :args], inspect(unquote(traceable_args)))
           |> Map.delete(:args)
           |> adapter.update_span()
 
@@ -115,15 +115,14 @@ defmodule Spandex.TraceDecorator do
       list_filter = List.wrap(filter)
       cond do
         filter == false -> {index, "_"}
-        filter == true -> {index, inspect(argument_value)}
-        is_map(argument_value) -> {index, inspect(Map.take(argument_value, list_filter))}
-        Keyword.keyword?(argument_value) -> {index, inspect(Enum.filter(argument_value, fn {key, _value} -> key in list_filter end))}
-        is_list(argument_value) -> {index, inspect(Enum.map(list_filter, &Enum.at(argument_value, &1)))}
-        true -> {index, inspect(argument_value)}
+        filter == true -> {index, argument_value}
+        is_map(argument_value) -> {index, Map.take(argument_value, list_filter)}
+        Keyword.keyword?(argument_value) -> {index, Enum.filter(argument_value, fn {key, _value} -> key in list_filter end)}
+        is_list(argument_value) -> {index, Enum.map(list_filter, &Enum.at(argument_value, &1))}
+        true -> {index, argument_value}
       end
     end)
     |> Enum.into(%{})
-    |> inspect
   rescue
     _ -> %{}
   end
