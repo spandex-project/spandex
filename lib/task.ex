@@ -1,24 +1,25 @@
 defmodule Spandex.Task do
+  @moduledoc """
+  Provides an alternative to `Task.async/1` that takes a name
+  and makes sure that the child task's spans are appropriately
+  tied to the current span of the caller.
+  """
+  require Spandex
+
   def async(name, fun) do
-    if Confex.get(:spandex, :disabled?) do
-      Task.async(fun)
-    else
-      adapter = Confex.get(:spandex, :adapter)
-      this_pid = self()
-
+    with false <- Confex.get(:spandex, :disabled?, false),
+         trace_id when not(is_tuple(trace_id)) <- Spandex.current_trace_id(),
+         span_id when not(is_tuple(span_id)) <- Spandex.current_span_id()
+    do
       Task.async(fn ->
-        _ = adapter.continue_trace("task.async", this_pid)
+        _ = Spandex.continue_trace("Task.async/0", trace_id, span_id)
 
-        try do
-          _ = adapter.start_span(name)
-          return_value = fun.()
-          _ = adapter.finish_span()
-
-          return_value
-        after
-          _ = adapter.finish_trace()
+        Spandex.span(name) do
+          fun.()
         end
       end)
+    else
+      _error -> Task.async(fun)
     end
   end
 

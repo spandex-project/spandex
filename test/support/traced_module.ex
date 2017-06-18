@@ -13,6 +13,13 @@ defmodule Spandex.Test.TracedModule do
     end
   end
 
+  @decorate trace()
+  def trace_one_task() do
+    Spandex.Task.async("one_task", fn ->
+      do_one_thing()
+    end)
+  end
+
   @decorate span()
   def do_one_thing() do
     :timer.sleep(100)

@@ -1,4 +1,10 @@
 defmodule Spandex.Datadog.Span do
+  @moduledoc """
+  In charge of holding the datadog span attributes, and for starting/ending
+  spans. This also handles serialization via `to_map/1`, and span inheritance
+  via `child_of/3`
+  """
+
   defstruct [
     :id, :trace_id, :parent_id, :name, :resource,
     :service, :env, :start, :completion_time, :error,
@@ -54,7 +60,7 @@ defmodule Spandex.Datadog.Span do
     end
   end
 
-  def to_json(span) do
+  def to_map(span) do
     %{
       trace_id: span.trace_id,
       span_id: span.id,

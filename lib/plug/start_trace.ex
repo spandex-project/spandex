@@ -1,4 +1,7 @@
 defmodule Spandex.Plug.StartTrace do
+  @moduledoc """
+  Starts a trace, skipping ignored routes or methods.
+  """
   @behaviour Plug
 
   @spec init(Keyword.t) :: Keyword.t

@@ -1,4 +1,9 @@
 defmodule Spandex do
+  @moduledoc """
+  Provides the entry point for the application, in addition to a standardized
+  interface. The functions here call the corresponding functions on the
+  configured adapter.
+  """
   use Application
   require Logger
 

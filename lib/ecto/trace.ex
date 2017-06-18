@@ -1,4 +1,16 @@
 defmodule Spandex.Ecto.Trace do
+  @moduledoc """
+
+  A trace builder that can be given to ecto as a logger. It will try to get
+  the trace_id and span_id from the caller pid in the case that the particular
+  query is being run asynchronously (as in the case of parallel preloads).
+
+  To configure, set it up as an ecto logger like so:
+
+  config :my_app, MyApp.Repo,
+    loggers: [{Ecto.LogEntry, :log, [:info]}, {Spandex.Ecto.Trace, :trace, []}]
+
+  """
   defmodule Error do
     defexception [:message]
   end

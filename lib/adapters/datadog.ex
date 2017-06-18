@@ -48,7 +48,7 @@ defmodule Spandex.Adapters.Datadog do
     trace = Process.get(:spandex_trace, :undefined)
     case trace do
       :undefined ->
-        start_trace(name)
+        {:error, :no_trace_context}
       %{stack: [current_span|_]} ->
         new_span =
           current_span
@@ -173,7 +173,7 @@ defmodule Spandex.Adapters.Datadog do
       trace.spans
       |> Kernel.++(unfinished_spans)
       |> Enum.map(&Spandex.Datadog.Span.update(&1, %{completion_time: now()}, false))
-      |> Enum.map(&Spandex.Datadog.Span.to_json/1)
+      |> Enum.map(&Spandex.Datadog.Span.to_map/1)
       |> Spandex.Datadog.Api.create_trace()
 
       Process.delete(:spandex_trace)

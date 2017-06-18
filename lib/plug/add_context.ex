@@ -1,4 +1,8 @@
 defmodule Spandex.Plug.AddContext do
+  @moduledoc """
+  Adds request context to the top span of the trace, setting
+  the resource, method, url, service, type and env
+  """
   @behaviour Plug
 
   @spec init(Keyword.t) :: Keyword.t

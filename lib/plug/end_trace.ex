@@ -1,4 +1,7 @@
 defmodule Spandex.Plug.EndTrace do
+  @moduledoc """
+  Finishes a trace, setting status and error based on the HTTP status.
+  """
   @behaviour Plug
 
   def init(opts), do: opts
