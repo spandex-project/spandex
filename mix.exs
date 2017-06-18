@@ -12,7 +12,7 @@ defmodule Spandex.Mixfile do
      package: package(),
      name: "Spandex",
      docs: docs(),
-     source_url: "https://github.com/albert-io/spandex",
+     source_url: "https://github.com/zachdaniel/spandex",
      deps: deps()]
   end
 
@@ -25,8 +25,7 @@ defmodule Spandex.Mixfile do
 
   defp description do
     """
-    A Datadog APM tracing library. Still young, under active development, but is under active use.
-    Contributions welcome.
+    A platform agnostic tracing library. Contributors welcome.
     """
   end
 
@@ -36,7 +35,7 @@ defmodule Spandex.Mixfile do
       name: :spandex,
       maintainers: ["Zachary Daniel", "Andrew Summers"],
       licenses: ["MIT License"],
-      links: %{"GitHub" => "https://github.com/albert-io/spandex"}
+      links: %{"GitHub" => "https://github.com/zachdaniel/spandex"}
     ]
   end
 
