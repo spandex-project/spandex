@@ -13,6 +13,8 @@ defmodule Spandex.Mixfile do
      name: "Spandex",
      docs: docs(),
      source_url: "https://github.com/zachdaniel/spandex",
+     test_coverage: [tool: ExCoveralls],
+     preferred_cli_env: ["coveralls": :test, "coveralls.detail": :test, "coveralls.post": :test, "coveralls.html": :test],
      deps: deps()]
   end
 
@@ -67,6 +69,7 @@ defmodule Spandex.Mixfile do
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
       {:decorator, "~> 1.2.0"},
       {:ex_doc, ">= 0.0.0", only: :dev},
+      {:excoveralls, "~> 0.6", only: :test},
       {:httpoison, "~> 0.11.1"},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
       {:msgpax, "~> 1.1"},
