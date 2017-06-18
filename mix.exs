@@ -11,6 +11,7 @@ defmodule Spandex.Mixfile do
      description: description(),
      package: package(),
      name: "Spandex",
+     docs: docs(),
      source_url: "https://github.com/albert-io/spandex",
      deps: deps()]
   end
@@ -36,6 +37,15 @@ defmodule Spandex.Mixfile do
       maintainers: ["Zachary Daniel", "Andrew Summers"],
       licenses: ["MIT License"],
       links: %{"GitHub" => "https://github.com/albert-io/spandex"}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: [
+       "README.md"
+      ]
     ]
   end
 
