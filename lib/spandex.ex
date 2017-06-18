@@ -80,6 +80,8 @@ defmodule Spandex do
     adapter = Confex.get(:spandex, :adapter)
 
     adapter.continue_trace(name, trace_id, span_id)
+  rescue
+    exception -> {:error, exception}
   end
 
   def current_trace_id() do

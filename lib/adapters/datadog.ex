@@ -189,7 +189,7 @@ defmodule Spandex.Adapters.Datadog do
     trace = Process.get(:spandex_trace, :undefined)
 
     if trace == :undefined do
-      {:error, :no_trace_context}
+      nil
     else
       trace.id
     end
@@ -203,7 +203,7 @@ defmodule Spandex.Adapters.Datadog do
 
     case trace do
       :undefined ->
-        {:error, :no_trace_context}
+        nil
       %{stack: [%{id: current_span_id}|_]} ->
         current_span_id
       _ ->
