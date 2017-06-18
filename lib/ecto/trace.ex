@@ -3,12 +3,8 @@ defmodule Spandex.Ecto.Trace do
     defexception [:message]
   end
 
-  require IEx
-
   def trace(log_entry) do
     adapter = Confex.get(:spandex, :adapter)
-
-    IEx.pry
 
     now = adapter.now()
     _ = setup(adapter, log_entry)
