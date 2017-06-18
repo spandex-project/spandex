@@ -185,35 +185,21 @@ defmodule Spandex.Adapters.Datadog do
   end
 
   @doc """
-  continues a trace given a span id and
+  Continues a trace given a name, a trace_id and a span_id
   """
-  def continue_trace(name, other_pid) do
-    cond do
-      other_pid == self() ->
-        :ok
-      info = Process.info(other_pid) ->
-        trace_id = info[:dictionary][:spandex_trace][:id]
-        span_id =
-          info
-          |> get_in([:dictionary, :spandex_trace, :stack, Access.at(0)])
-          |> Kernel.||(%{})
-          |> Map.get(:id)
+  def continue_trace(name, trace_id, span_id) do
+    top_span =
+      %Spandex.Datadog.Span{
+        id: datadog_id(),
+        trace_id: trace_id,
+        parent_id: span_id,
+        name: name
+      }
+      |> Spandex.Datadog.Span.begin(now())
 
-        top_span =
-          %Spandex.Datadog.Span{
-            id: datadog_id(),
-            trace_id: trace_id,
-            parent_id: span_id,
-            name: name
-          }
-          |> Spandex.Datadog.Span.begin(now())
+    _ = Process.put(:spandex_trace, %{id: trace_id, stack: [top_span], spans: [], start: now()})
 
-        _ = Process.put(:spandex_trace, %{id: trace_id, stack: [top_span], spans: [], start: now()})
-
-        {:ok, trace_id}
-      true ->
-        start_trace(name)
-    end
+    {:ok, trace_id}
   end
 
   @doc """

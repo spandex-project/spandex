@@ -57,15 +57,15 @@ defmodule Spandex.Datadog.Span do
     %{
       trace_id: span.trace_id,
       span_id: span.id,
-      name: span.name || "unknown",
-      resource: span.resource || "unknown",
-      service: span.service || "unknown",
-      type: span.type || "unknown",
+      name: span.name,
       start: span.start || now(),
       duration: duration(span.completion_time || now(), span.start || now()),
       parent_id: span.parent_id,
       error: span.error || 0
     }
+    |> add_if_not_nil([:resource], span.resource)
+    |> add_if_not_nil([:service], span.service)
+    |> add_if_not_nil([:type], span.type)
     |> add_meta(span)
     |> add_error_data(span)
     |> add_http_data(span)

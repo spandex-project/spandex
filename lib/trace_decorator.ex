@@ -77,7 +77,7 @@ defmodule Spandex.TraceDecorator do
         case adapter.start_span(name) do
           {:ok, span_id} ->
             Logger.metadata([span_id: span_id])
-          {:error, span_id} ->
+          {:error, error} ->
             require Logger
             Logger.warn("Failed to create span with error: #{error}")
         end
