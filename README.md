@@ -3,6 +3,9 @@
 [![Build Status](https://travis-ci.org/zachdaniel/spandex.svg?branch=master)](https://travis-ci.org/zachdaniel/spandex)
 [![Inline docs](http://inch-ci.org/github/zachdaniel/spandex.svg)](http://inch-ci.org/github/zachdaniel/spandex)
 [![Coverage Status](https://coveralls.io/repos/github/zachdaniel/spandex/badge.svg)](https://coveralls.io/github/zachdaniel/spandex)
+[![Hex pm](http://img.shields.io/hexpm/v/spandex.svg?style=flat)](https://hex.pm/packages/spandex)
+[![Deps Status](https://beta.hexfaktor.org/badge/all/github/zachdaniel/spandex.svg)](https://beta.hexfaktor.org/github/zachdaniel/spandex)
+[![Ebert](https://ebertapp.io/github/zachdaniel/spandex.svg)](https://ebertapp.io/github/zachdaniel/spandex)
 
 View the [documentation](https://hexdocs.pm/spandex)
 
