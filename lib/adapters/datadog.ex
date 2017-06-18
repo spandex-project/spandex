@@ -151,7 +151,7 @@ defmodule Spandex.Adapters.Datadog do
         completed_span =
           trace.stack
           |> hd()
-          |> Spandex.Datadog.Span.update(%{completion_time: now()})
+          |> Spandex.Datadog.Span.update(%{completion_time: now()}, false)
 
         _ = Process.put(:spandex_trace, %{trace | stack: new_stack, spans: [completed_span | trace.spans]})
 
