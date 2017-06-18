@@ -16,6 +16,30 @@ defmodule Spandex do
     Supervisor.start_link([], opts)
   end
 
+  defmacro span(name, do: body) do
+    quote do
+      if Confex.get(:spandex, :disabled?) do
+        _ = unquote(name)
+        unquote(body)
+      else
+        name = unquote(name)
+        _ = Spandex.start_span(name)
+        span_id = Spandex.current_span_id()
+        Logger.metadata([span_id: span_id])
+
+        try do
+          return_value = unquote(body)
+          _ = Spandex.finish_span()
+          return_value
+        rescue
+          exception ->
+            _ = Spandex.span_error(exception)
+          raise exception
+        end
+      end
+    end
+  end
+
   def update_span(context) do
     adapter = Confex.get(:spandex, :adapter)
 
@@ -31,9 +55,13 @@ defmodule Spandex do
   def finish_trace() do
     adapter = Confex.get(:spandex, :adapter)
 
-    adapter.finish_span()
-
     adapter.finish_trace()
+  end
+
+  def finish_span() do
+    adapter = Confex.get(:spandex, :adapter)
+
+    adapter.finish_span()
   end
 
   def span_error(error) do
@@ -58,5 +86,17 @@ defmodule Spandex do
     adapter = Confex.get(:spandex, :adapter)
 
     adapter.current_span_id()
+  end
+
+  def start_trace(name) do
+    adapter = Confex.get(:spandex, :adapter)
+
+    adapter.start_trace(name)
+  end
+
+  def start_span(name) do
+    adapter = Confex.get(:spandex, :adapter)
+
+    adapter.start_span(name)
   end
 end

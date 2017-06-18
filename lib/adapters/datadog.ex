@@ -163,13 +163,15 @@ defmodule Spandex.Adapters.Datadog do
   Sends the trace to datadog and clears out the current trace data
   """
   def finish_trace() do
-    _ = finish_span()
     trace = Process.get(:spandex_trace, :undefined)
 
     if trace == :undefined do
       {:error, :no_trace_context}
     else
+      unfinished_spans = Enum.map(trace.stack, &Spandex.Datadog.Span.update(&1, %{completion_time: now()}, false))
+
       trace.spans
+      |> Kernel.++(unfinished_spans)
       |> Enum.map(&Spandex.Datadog.Span.update(&1, %{completion_time: now()}, false))
       |> Enum.map(&Spandex.Datadog.Span.to_json/1)
       |> Spandex.Datadog.Api.create_trace()
