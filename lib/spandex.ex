@@ -105,4 +105,10 @@ defmodule Spandex do
 
     adapter.start_span(name)
   end
+
+  def now() do
+    adapter = Confex.get(:spandex, :adapter)
+
+    adapter.now()
+  end
 end

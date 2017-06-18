@@ -22,12 +22,10 @@ defmodule Spandex.TraceDecorator do
       if Confex.get(:spandex, :disabled?) do
         unquote(body)
       else
-        adapter = Confex.get(:spandex, :adapter)
-
         name = "#{unquote(context.name)}/#{unquote(context.arity)}"
-        _ = adapter.start_trace(name)
+        _ = Spandex.start_trace(name)
         return_value = unquote(body)
-        _ = adapter.finish_trace()
+        _ = Spandex.finish_trace()
         return_value
       end
     end
@@ -38,25 +36,25 @@ defmodule Spandex.TraceDecorator do
       if Confex.get(:spandex, :disabled?) do
         unquote(body)
       else
-        adapter = Confex.get(:spandex, :adapter)
         name = "#{unquote(context.name)}/#{unquote(context.arity)}"
-        case adapter.start_span(name) do
-          {:ok, span_id} ->
-            _ = Logger.metadata([span_id: span_id])
-          {:error, error} ->
-            require Logger
-            _ = Logger.warn("Failed to create span with error: #{error}")
-        end
+        _ =
+          case Spandex.start_span(name) do
+            {:ok, span_id} ->
+              Logger.metadata([span_id: span_id])
+            {:error, error} ->
+              require Logger
+              Logger.warn("Failed to create span with error: #{error}")
+          end
 
         try do
           return_value = unquote(body)
-          _ = adapter.finish_span()
+          _ = Spandex.finish_span()
           return_value
         rescue
           exception ->
             stacktrace = System.stacktrace()
-            _ = adapter.span_error(exception)
-            _ = adapter.finish_span()
+            _ = Spandex.span_error(exception)
+            _ = Spandex.finish_span()
 
             reraise(exception, stacktrace)
         end
@@ -66,30 +64,29 @@ defmodule Spandex.TraceDecorator do
 
   def span(attributes, body, context) do
     quote do
-      adapter = Confex.get(:spandex, :adapter)
-
+      require Logger
       if Confex.get(:spandex, :disabled?) do
         unquote(body)
       else
         attributes = unquote(attributes)
         name = attributes[:name] || "#{unquote(context.name)}/#{unquote(context.arity)}"
-        case adapter.start_span(name) do
-          {:ok, span_id} ->
-            _ = Logger.metadata([span_id: span_id])
-          {:error, error} ->
-            require Logger
-            _ = Logger.warn("Failed to create span with error: #{error}")
-        end
+        _ =
+          case Spandex.start_span(name) do
+            {:ok, span_id} ->
+              Logger.metadata([span_id: span_id])
+            {:error, error} ->
+              Logger.warn("Failed to create span with error: #{error}")
+          end
 
         try do
           return_value = unquote(body)
-          _ = adapter.finish_span()
+          _ = Spandex.finish_span()
           return_value
         rescue
           exception ->
             stacktrace = System.stacktrace()
-            _ = adapter.span_error(exception)
-            _ = adapter.finish_span()
+            _ = Spandex.span_error(exception)
+            _ = Spandex.finish_span()
 
             reraise(exception, stacktrace)
         end

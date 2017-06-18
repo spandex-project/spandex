@@ -9,11 +9,10 @@ defmodule Spandex.Plug.StartTrace do
 
   @spec call(Plug.Conn.t, Keyword.t) :: Plug.Conn.t
   def call(conn, _opts) do
-    unless ignoring_request?(conn) do
-      adapter = Confex.get(:spandex, :adapter)
-
-      _ = adapter.start_trace("request")
-    end
+    _ =
+      unless ignoring_request?(conn) do
+        Spandex.start_trace("request")
+      end
 
     conn
   end

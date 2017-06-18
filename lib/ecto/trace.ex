@@ -16,10 +16,8 @@ defmodule Spandex.Ecto.Trace do
   end
 
   def trace(log_entry) do
-    adapter = Confex.get(:spandex, :adapter)
-
-    now = adapter.now()
-    _ = setup(adapter, log_entry)
+    now = Spandex.now()
+    _ = setup(log_entry)
     query = string_query(log_entry)
     num_rows = num_rows(log_entry)
 
@@ -29,7 +27,7 @@ defmodule Spandex.Ecto.Trace do
 
     start = now - (queue_time + query_time + decoding_time)
 
-    adapter.update_span(
+    Spandex.update_span(
       %{
         start: start,
         completion_time: now,
@@ -40,41 +38,41 @@ defmodule Spandex.Ecto.Trace do
       }
     )
 
-    _ = report_error(adapter, log_entry)
+    _ = report_error(log_entry)
 
     if queue_time != 0 do
-      _ = adapter.start_span("queue")
-      _ = adapter.update_span(%{start: start, completion_time: start + queue_time})
-      _ = adapter.finish_span()
+      _ = Spandex.start_span("queue")
+      _ = Spandex.update_span(%{start: start, completion_time: start + queue_time})
+      _ = Spandex.finish_span()
     end
 
     if query_time != 0 do
-      _ = adapter.start_span("run_query")
-      _ = adapter.update_span(%{start: start + queue_time, completion_time: start + queue_time + query_time})
-      _ = adapter.finish_span()
+      _ = Spandex.start_span("run_query")
+      _ = Spandex.update_span(%{start: start + queue_time, completion_time: start + queue_time + query_time})
+      _ = Spandex.finish_span()
     end
 
     if decoding_time != 0 do
-      _ = adapter.start_span("decode")
-      _ = adapter.update_span(%{start: start + queue_time + query_time, completion_time: now})
-      _ = adapter.finish_span()
+      _ = Spandex.start_span("decode")
+      _ = Spandex.update_span(%{start: start + queue_time + query_time, completion_time: now})
+      _ = Spandex.finish_span()
     end
 
-    finish_ecto_trace(adapter, log_entry)
+    finish_ecto_trace(log_entry)
   end
 
-  defp finish_ecto_trace(adapter, %{caller_pid: caller_pid}) do
+  defp finish_ecto_trace(%{caller_pid: caller_pid}) do
     if caller_pid != self() do
-      adapter.finish_trace()
+      Spandex.finish_trace()
     else
-      adapter.finish_span()
+      Spandex.finish_span()
     end
   end
-  defp finish_ecto_trace(_, _), do: :ok
+  defp finish_ecto_trace(_), do: :ok
 
-  defp setup(adapter, %{caller_pid: caller_pid}) when is_pid(caller_pid) do
+  defp setup(%{caller_pid: caller_pid}) when is_pid(caller_pid) do
     if caller_pid == self() do
-      adapter.start_span("query")
+      Spandex.start_span("query")
     else
       trace = Process.info(caller_pid)[:dictionary][:spandex_trace]
 
@@ -85,21 +83,21 @@ defmodule Spandex.Ecto.Trace do
         |> Enum.at(0, %{})
         |> Map.get(:id)
 
-      adapter.continue_trace("query", trace_id, span_id)
+      Spandex.continue_trace("query", trace_id, span_id)
     end
   end
 
-  defp setup(_, _) do
+  defp setup(_) do
     :ok
   end
 
-  defp report_error(_adapter, %{result: {:ok, _}}), do: :ok
-  defp report_error(adapter, %{result: {:error, error}}) do
-    adapter.span_error(%Error{message: inspect(error)})
+  defp report_error(%{result: {:ok, _}}), do: :ok
+  defp report_error(%{result: {:error, error}}) do
+    Spandex.span_error(%Error{message: inspect(error)})
   end
 
   defp string_query(%{query: query}) when is_function(query), do: Macro.unescape_string(query.() || "")
-  defp string_query(%{query: query}) when is_bitstring(query), do: Macro.unescape_string(query || "")
+  defp string_query(%{query: query}) when is_bitstring(query), do: Macro.unescape_string(query)
   defp string_query(_), do: ""
 
   defp num_rows(%{result: {:ok, %{num_rows: num_rows}}}), do: num_rows

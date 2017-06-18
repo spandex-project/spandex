@@ -13,8 +13,6 @@ defmodule Spandex.Plug.AddContext do
     if Confex.get(:spandex, :disabled?) do
       conn
     else
-      adapter = Confex.get(:spandex, :adapter)
-
       trace_context = %{
         resource: "#{String.upcase(conn.method)} #{route_name(conn)}",
         method: conn.method,
@@ -24,9 +22,9 @@ defmodule Spandex.Plug.AddContext do
         env: Confex.get(:spandex, :env, "unknown")
       }
 
-      _ = adapter.update_top_span(trace_context)
+      _ = Spandex.update_top_span(trace_context)
 
-      _ = Logger.metadata(trace_id: adapter.current_trace_id(), span_id: adapter.current_span_id())
+      _ = Logger.metadata(trace_id: Spandex.current_trace_id(), span_id: Spandex.current_span_id())
 
       conn
     end
