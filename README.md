@@ -1,5 +1,7 @@
 # Spandex
 
+[![Build Status](https://travis-ci.org/zachdaniel/spandex.svg?branch=master)](https://travis-ci.org/zachdaniel/spandex)
+
 A datadog tracing library.
 
 ## Installation
