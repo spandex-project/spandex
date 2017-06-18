@@ -30,7 +30,7 @@ defmodule Spandex do
         name = unquote(name)
         _ = Spandex.start_span(name)
         span_id = Spandex.current_span_id()
-        Logger.metadata([span_id: span_id])
+        _ = Logger.metadata([span_id: span_id])
 
         try do
           return_value = unquote(body)

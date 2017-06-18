@@ -42,10 +42,10 @@ defmodule Spandex.TraceDecorator do
         name = "#{unquote(context.name)}/#{unquote(context.arity)}"
         case adapter.start_span(name) do
           {:ok, span_id} ->
-            Logger.metadata([span_id: span_id])
+            _ = Logger.metadata([span_id: span_id])
           {:error, error} ->
             require Logger
-            Logger.warn("Failed to create span with error: #{error}")
+            _ = Logger.warn("Failed to create span with error: #{error}")
         end
 
         try do
@@ -75,10 +75,10 @@ defmodule Spandex.TraceDecorator do
         name = attributes[:name] || "#{unquote(context.name)}/#{unquote(context.arity)}"
         case adapter.start_span(name) do
           {:ok, span_id} ->
-            Logger.metadata([span_id: span_id])
+            _ = Logger.metadata([span_id: span_id])
           {:error, error} ->
             require Logger
-            Logger.warn("Failed to create span with error: #{error}")
+            _ = Logger.warn("Failed to create span with error: #{error}")
         end
 
         try do
