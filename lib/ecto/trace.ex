@@ -3,8 +3,12 @@ defmodule Spandex.Ecto.Trace do
     defexception [:message]
   end
 
+  require IEx
+
   def trace(log_entry) do
     adapter = Confex.get(:spandex, :adapter)
+
+    IEx.pry
 
     now = adapter.now()
     _ = setup(adapter, log_entry)
@@ -15,19 +19,20 @@ defmodule Spandex.Ecto.Trace do
     query_time = get_time(log_entry, :query_time)
     decoding_time = get_time(log_entry, :decode_time)
 
-    adapter.start_span("query")
-
     start = now - (queue_time + query_time + decoding_time)
-    _ = report_error(adapter, log_entry)
+
     adapter.update_span(
       %{
         start: start,
         completion_time: now,
         service: :ecto,
         resource: query,
+        type: :db,
         meta: %{"sql.query" => query, "sql.rows" => inspect(num_rows)}
       }
     )
+
+    _ = report_error(adapter, log_entry)
 
     if queue_time != 0 do
       _ = adapter.start_span("queue")
@@ -54,13 +59,26 @@ defmodule Spandex.Ecto.Trace do
     if caller_pid != self() do
       adapter.finish_trace()
     else
-      :ok
+      adapter.finish_span()
     end
   end
   defp finish_ecto_trace(_, _), do: :ok
 
   defp setup(adapter, %{caller_pid: caller_pid}) when is_pid(caller_pid) do
-    adapter.continue_trace("query", caller_pid)
+    if caller_pid == self() do
+      adapter.start_span("query")
+    else
+      trace = Process.info(caller_pid)[:dictionary][:spandex_trace]
+
+      trace_id = trace.id
+      span_id =
+        trace
+        |> Map.get(:stack)
+        |> Enum.at(0, %{})
+        |> Map.get(:id)
+
+      adapter.continue_trace("query", trace_id, span_id)
+    end
   end
 
   defp setup(_, _) do

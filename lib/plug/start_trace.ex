@@ -20,7 +20,7 @@ defmodule Spandex.Plug.StartTrace do
   end
 
   defp disabled?() do
-    !!Confex.get(:spandex, :disabled?)
+    Confex.get(:spandex, :disabled?)
   end
 
   defp ignored_method?(conn) do

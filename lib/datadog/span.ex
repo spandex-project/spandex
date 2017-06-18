@@ -61,11 +61,11 @@ defmodule Spandex.Datadog.Span do
       start: span.start || now(),
       duration: duration(span.completion_time || now(), span.start || now()),
       parent_id: span.parent_id,
-      error: span.error || 0
+      error: span.error || 0,
+      resource: span.resource || "unknown",
+      service: span.service || "unknown",
+      type: span.type || "unknown"
     }
-    |> add_if_not_nil([:resource], span.resource)
-    |> add_if_not_nil([:service], span.service)
-    |> add_if_not_nil([:type], span.type)
     |> add_meta(span)
     |> add_error_data(span)
     |> add_http_data(span)
@@ -75,7 +75,7 @@ defmodule Spandex.Datadog.Span do
   defp add_meta(json, %{env: env, user: user, meta: meta}) do
     json
     |> Map.put(:meta, %{})
-    |> add_if_not_nil([:meta, :env], env || "dev")
+    |> put_in([:meta, :env], env || "unknown")
     |> add_if_not_nil([:meta, :user], user)
     |> Map.update!(:meta, fn current_meta -> Map.merge(current_meta, meta) end)
     |> filter_nils

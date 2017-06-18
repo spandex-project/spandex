@@ -4,11 +4,9 @@ defmodule Spandex.Plug.EndTrace do
   def init(opts), do: opts
 
   def call(conn, _opts) do
-    unless Confex.get(:spandex, :disabled?) do
-      adapter = Confex.get(:spandex, :adapter)
-      _ = update_trace_with_conn_status(adapter, conn)
-      _ = adapter.finish_trace()
-    end
+    adapter = Confex.get(:spandex, :adapter)
+    _ = update_trace_with_conn_status(adapter, conn)
+    _ = adapter.finish_trace()
 
     conn
   end

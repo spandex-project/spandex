@@ -32,6 +32,8 @@ defmodule Spandex do
     adapter = Confex.get(:spandex, :adapter)
 
     adapter.finish_span()
+
+    adapter.finish_trace()
   end
 
   def span_error(error) do

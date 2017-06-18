@@ -20,7 +20,7 @@ defmodule Spandex.Plug.AddContext do
         env: Confex.get(:spandex, :env, "unknown")
       }
 
-      _ = adapter.update_top_span(trace_context, true)
+      _ = adapter.update_top_span(trace_context)
 
       _ = Logger.metadata(trace_id: adapter.current_trace_id(), span_id: adapter.current_span_id())
 

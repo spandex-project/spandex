@@ -10,24 +10,32 @@ defmodule Spandex.Datadog.Api do
   @doc """
   Creates a service in datadog.
   """
-  @spec create_service(String.t, String.t, String.t) :: {:ok, HTTPoison.Response.t | HTTPoison.AsyncResponse.t} | {:error, HTTPoison.Error.t}
+  @spec create_service(String.t, String.t, String.t) :: {:ok, HTTPoison.Response.t | HTTPoison.AsyncResponse.t} | {:error, HTTPoison.Error.t} | :disabled
   def create_service(service_name, application_name, type) do
-    data = %{
-      service_name => %{
-        app: application_name,
-        app_type: type
+    if Confex.get(:spandex, :disabled?) do
+      :disabled
+    else
+      data = %{
+        service_name => %{
+          app: application_name,
+          app_type: type
+        }
       }
-    }
-    adapter = Confex.get_map(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
-    adapter.send_services(data)
+      adapter = Confex.get_map(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
+      adapter.send_services(data)
+    end
   end
 
   @doc """
   Creates a trace in datadog API, which in reality is just a list of spans
   """
-  @spec create_trace([map]) :: {:ok, HTTPoison.Response.t | HTTPoison.AsyncResponse.t} | {:error, HTTPoison.Error.t}
+  @spec create_trace([map]) :: {:ok, HTTPoison.Response.t | HTTPoison.AsyncResponse.t} | {:error, HTTPoison.Error.t} | :disabled
   def create_trace(spans) do
-    adapter = Confex.get_map(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
-    adapter.send_spans(spans)
+    if Confex.get(:spandex, :disabled?) do
+      :disabled
+    else
+      adapter = Confex.get_map(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
+      adapter.send_spans(spans)
+    end
   end
 end
