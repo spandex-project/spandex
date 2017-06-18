@@ -16,49 +16,53 @@ defmodule Spandex.Ecto.Trace do
   end
 
   def trace(log_entry) do
-    now = Spandex.now()
-    _ = setup(log_entry)
-    query = string_query(log_entry)
-    num_rows = num_rows(log_entry)
+    if Confex.get(:spandex, :disabled?) do
+      :ok
+    else
+      now = Spandex.now()
+      _ = setup(log_entry)
+      query = string_query(log_entry)
+      num_rows = num_rows(log_entry)
 
-    queue_time = get_time(log_entry, :queue_time)
-    query_time = get_time(log_entry, :query_time)
-    decoding_time = get_time(log_entry, :decode_time)
+      queue_time = get_time(log_entry, :queue_time)
+      query_time = get_time(log_entry, :query_time)
+      decoding_time = get_time(log_entry, :decode_time)
 
-    start = now - (queue_time + query_time + decoding_time)
+      start = now - (queue_time + query_time + decoding_time)
 
-    Spandex.update_span(
-      %{
-        start: start,
-        completion_time: now,
-        service: :ecto,
-        resource: query,
-        type: :db,
-        meta: %{"sql.query" => query, "sql.rows" => inspect(num_rows)}
-      }
-    )
+      Spandex.update_span(
+        %{
+          start: start,
+          completion_time: now,
+          service: :ecto,
+          resource: query,
+          type: :db,
+          meta: %{"sql.query" => query, "sql.rows" => inspect(num_rows)}
+        }
+      )
 
-    _ = report_error(log_entry)
+      _ = report_error(log_entry)
 
-    if queue_time != 0 do
-      _ = Spandex.start_span("queue")
-      _ = Spandex.update_span(%{start: start, completion_time: start + queue_time})
-      _ = Spandex.finish_span()
+      if queue_time != 0 do
+        _ = Spandex.start_span("queue")
+        _ = Spandex.update_span(%{start: start, completion_time: start + queue_time})
+        _ = Spandex.finish_span()
+      end
+
+      if query_time != 0 do
+        _ = Spandex.start_span("run_query")
+        _ = Spandex.update_span(%{start: start + queue_time, completion_time: start + queue_time + query_time})
+        _ = Spandex.finish_span()
+      end
+
+      if decoding_time != 0 do
+        _ = Spandex.start_span("decode")
+        _ = Spandex.update_span(%{start: start + queue_time + query_time, completion_time: now})
+        _ = Spandex.finish_span()
+      end
+
+      finish_ecto_trace(log_entry)
     end
-
-    if query_time != 0 do
-      _ = Spandex.start_span("run_query")
-      _ = Spandex.update_span(%{start: start + queue_time, completion_time: start + queue_time + query_time})
-      _ = Spandex.finish_span()
-    end
-
-    if decoding_time != 0 do
-      _ = Spandex.start_span("decode")
-      _ = Spandex.update_span(%{start: start + queue_time + query_time, completion_time: now})
-      _ = Spandex.finish_span()
-    end
-
-    finish_ecto_trace(log_entry)
   end
 
   defp finish_ecto_trace(%{caller_pid: caller_pid}) do
@@ -76,14 +80,18 @@ defmodule Spandex.Ecto.Trace do
     else
       trace = Process.info(caller_pid)[:dictionary][:spandex_trace]
 
-      trace_id = trace.id
-      span_id =
-        trace
-        |> Map.get(:stack)
-        |> Enum.at(0, %{})
-        |> Map.get(:id)
+      if trace do
+        trace_id = trace.id
+        span_id =
+          trace
+          |> Map.get(:stack)
+          |> Enum.at(0, %{})
+          |> Map.get(:id)
 
-      Spandex.continue_trace("query", trace_id, span_id)
+        Spandex.continue_trace("query", trace_id, span_id)
+      else
+        Spandex.start_trace("query")
+      end
     end
   end
 
