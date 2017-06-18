@@ -5,7 +5,6 @@ otp_release:
   - 19.0
 script:
   - mix credo --strict
-  - mix test
   - mix coveralls.travis
 after_script:
   - mix deps.get --only docs
