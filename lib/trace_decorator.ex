@@ -64,8 +64,7 @@ defmodule Spandex.TraceDecorator do
     end
   end
 
-  def span(attributes, body, context = %{args: arguments}) do
-    traceable_args = traceable_args(attributes, arguments)
+  def span(attributes, body, context) do
     quote do
       adapter = Confex.get(:spandex, :adapter)
 
@@ -82,14 +81,6 @@ defmodule Spandex.TraceDecorator do
             Logger.warn("Failed to create span with error: #{error}")
         end
 
-        _ =
-          attributes
-          |> Enum.into(%{})
-          |> Map.put_new(:meta, %{})
-          |> put_in([:meta, :args], inspect(unquote(traceable_args)))
-          |> Map.delete(:args)
-          |> adapter.update_span()
-
         try do
           return_value = unquote(body)
           _ = adapter.finish_span()
@@ -104,26 +95,5 @@ defmodule Spandex.TraceDecorator do
         end
       end
     end
-  end
-
-  defp traceable_args(attributes, arguments) do
-    attributes
-    |> Keyword.get(:args, [])
-    |> Enum.with_index()
-    |> Enum.map(fn {filter, index} ->
-      argument_value = Enum.at(arguments, index)
-      list_filter = List.wrap(filter)
-      cond do
-        filter == false -> {index, "_"}
-        filter == true -> {index, argument_value}
-        is_map(argument_value) -> {index, Map.take(argument_value, list_filter)}
-        Keyword.keyword?(argument_value) -> {index, Enum.filter(argument_value, fn {key, _value} -> key in list_filter end)}
-        is_list(argument_value) -> {index, Enum.map(list_filter, &Enum.at(argument_value, &1))}
-        true -> {index, argument_value}
-      end
-    end)
-    |> Enum.into(%{})
-  rescue
-    _ -> %{}
   end
 end
