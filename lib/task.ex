@@ -7,7 +7,7 @@ defmodule Spandex.Task do
   require Spandex
 
   def async(name, fun) do
-    with false <- Confex.get(:spandex, :disabled?, false),
+    with false <- Spandex.disabled?(),
          trace_id when not(is_tuple(trace_id)) <- Spandex.current_trace_id(),
          span_id when not(is_tuple(span_id)) <- Spandex.current_span_id()
     do

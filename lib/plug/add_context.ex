@@ -10,7 +10,7 @@ defmodule Spandex.Plug.AddContext do
 
   @spec call(Plug.Conn.t, Keyword.t) :: Plug.Conn.t
   def call(conn, _opts) do
-    if Confex.get(:spandex, :disabled?) do
+    if Spandex.disabled?() do
       conn
     else
       trace_context = %{

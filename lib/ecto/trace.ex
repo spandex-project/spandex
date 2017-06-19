@@ -16,7 +16,7 @@ defmodule Spandex.Ecto.Trace do
   end
 
   def trace(log_entry) do
-    if Confex.get(:spandex, :disabled?) do
+    if Spandex.disabled?() do
       :ok
     else
       now = Spandex.now()

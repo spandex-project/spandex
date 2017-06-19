@@ -19,7 +19,7 @@ defmodule Spandex.TraceDecorator do
 
   def trace(body, context) do
     quote do
-      if Confex.get(:spandex, :disabled?) do
+      if Spandex.disabled?() do
         unquote(body)
       else
         name = "#{unquote(context.name)}/#{unquote(context.arity)}"
@@ -33,7 +33,7 @@ defmodule Spandex.TraceDecorator do
 
   def span(body, context) do
     quote do
-      if Confex.get(:spandex, :disabled?) do
+      if Spandex.disabled?() do
         unquote(body)
       else
         name = "#{unquote(context.name)}/#{unquote(context.arity)}"
@@ -65,7 +65,7 @@ defmodule Spandex.TraceDecorator do
   def span(attributes, body, context) do
     quote do
       require Logger
-      if Confex.get(:spandex, :disabled?) do
+      if Spandex.disabled?() do
         unquote(body)
       else
         attributes = unquote(attributes)

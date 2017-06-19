@@ -12,7 +12,7 @@ defmodule Spandex.Datadog.Api do
   """
   @spec create_service(String.t, String.t, String.t) :: {:ok, HTTPoison.Response.t | HTTPoison.AsyncResponse.t} | {:error, HTTPoison.Error.t} | :disabled
   def create_service(service_name, application_name, type) do
-    if Confex.get(:spandex, :disabled?) do
+    if Spandex.disabled?() do
       :disabled
     else
       data = %{
@@ -31,7 +31,7 @@ defmodule Spandex.Datadog.Api do
   """
   @spec create_trace([map]) :: {:ok, HTTPoison.Response.t | HTTPoison.AsyncResponse.t} | {:error, HTTPoison.Error.t} | :disabled
   def create_trace(spans) do
-    if Confex.get(:spandex, :disabled?) do
+    if Spandex.disabled?() do
       :disabled
     else
       adapter = Confex.get_map(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter

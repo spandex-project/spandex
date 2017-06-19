@@ -25,7 +25,7 @@ defmodule Spandex do
 
   defmacro span(name, do: body) do
     quote do
-      if Confex.get(:spandex, :disabled?) do
+      if Spandex.disabled?() do
         _ = unquote(name)
         unquote(body)
       else
@@ -46,6 +46,10 @@ defmodule Spandex do
         end
       end
     end
+  end
+
+  def disabled?() do
+    !!(Confex.get(:spandex, :disabled?) || !Confex.get(:spandex, :adapter))
   end
 
   delegate_to_adapter(:update_span, [context])
