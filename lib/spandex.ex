@@ -7,6 +7,8 @@ defmodule Spandex do
   use Application
   require Logger
 
+  import Spandex.Adapters.Helpers
+
   def start(_type, _args) do
     adapter = Confex.get(:spandex, :adapter)
 
@@ -46,71 +48,15 @@ defmodule Spandex do
     end
   end
 
-  def update_span(context) do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.update_span(context)
-  end
-
-  def update_top_span(context) do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.update_top_span(context)
-  end
-
-  def finish_trace() do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.finish_trace()
-  end
-
-  def finish_span() do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.finish_span()
-  end
-
-  def span_error(error) do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.span_error(error)
-  end
-
-  def continue_trace(name, trace_id, span_id) do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.continue_trace(name, trace_id, span_id)
-  rescue
-    exception -> {:error, exception}
-  end
-
-  def current_trace_id() do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.current_trace_id()
-  end
-
-  def current_span_id() do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.current_span_id()
-  end
-
-  def start_trace(name) do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.start_trace(name)
-  end
-
-  def start_span(name) do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.start_span(name)
-  end
-
-  def now() do
-    adapter = Confex.get(:spandex, :adapter)
-
-    adapter.now()
-  end
+  delegate_to_adapter(:update_span, [context])
+  delegate_to_adapter(:update_top_span, [context])
+  delegate_to_adapter(:finish_trace, [])
+  delegate_to_adapter(:finish_span, [])
+  delegate_to_adapter(:span_error, [error])
+  delegate_to_adapter(:continue_trace, [name, trace_id, span_id])
+  delegate_to_adapter(:current_trace_id, [])
+  delegate_to_adapter(:current_span_id, [])
+  delegate_to_adapter(:start_trace, [name])
+  delegate_to_adapter(:start_span, [name])
+  delegate_to_adapter(:now, [])
 end
