@@ -42,8 +42,7 @@ defmodule Spandex.TraceDecorator do
             {:ok, span_id} ->
               Logger.metadata([span_id: span_id])
             {:error, error} ->
-              require Logger
-              Logger.warn("Failed to create span with error: #{error}")
+              {:error, error}
           end
 
         try do
@@ -64,7 +63,6 @@ defmodule Spandex.TraceDecorator do
 
   def span(attributes, body, context) do
     quote do
-      require Logger
       if Spandex.disabled?() do
         unquote(body)
       else
@@ -75,7 +73,7 @@ defmodule Spandex.TraceDecorator do
             {:ok, span_id} ->
               Logger.metadata([span_id: span_id])
             {:error, error} ->
-              Logger.warn("Failed to create span with error: #{error}")
+              {:error, error}
           end
 
         try do
