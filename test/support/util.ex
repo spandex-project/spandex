@@ -6,7 +6,7 @@ defmodule Spandex.Test.Util do
   end
 
   def find_span(name) when is_bitstring(name) do
-    Enum.find(sent_spans(), fn span -> span.name == name end)
+    find_span(fn span -> span.name == name end)
   end
 
   def find_span(fun) when is_function(fun) do
@@ -14,9 +14,7 @@ defmodule Spandex.Test.Util do
   end
 
   def find_span(name, index) when is_bitstring(name) do
-    sent_spans()
-    |> Enum.filter(fn span -> span.name == name end)
-    |> Enum.at(index)
+    find_span(fn span -> span.name == name end, index)
   end
 
   def find_span(fun, index) when is_function(fun) do
