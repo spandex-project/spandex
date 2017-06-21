@@ -26,4 +26,25 @@ defmodule Spandex.Test.Datadog.AdapterTest do
 
     assert(Util.find_span("trace_one_thing/0").span_id == Util.find_span("do_one_thing/0").parent_id)
   end
+
+  test "a span is correctly notated as an error if an excepton occurs" do
+    Util.can_fail(fn -> TracedModule.trace_one_error() end)
+
+    assert(Util.find_span("trace_one_error/0").error == 1)
+  end
+
+  test "spans all the way up are correctly notated as an error" do
+    Util.can_fail(fn -> TracedModule.error_two_deep() end)
+
+    assert(Util.find_span("error_two_deep/0").error == 1)
+    assert(Util.find_span("error_one_deep/0").error == 1)
+  end
+
+  test "successul sibling spans are not marked as failures when sibling fails" do
+    Util.can_fail(fn -> TracedModule.two_fail_one_succeeds() end)
+
+    assert(Util.find_span("error_one_deep/0", 0).error == 1)
+    assert(Util.find_span("do_one_thing/0").error == 0)
+    assert(Util.find_span("error_one_deep/0", 1).error == 1)
+  end
 end

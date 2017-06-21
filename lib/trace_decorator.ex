@@ -23,10 +23,22 @@ defmodule Spandex.TraceDecorator do
         unquote(body)
       else
         name = "#{unquote(context.name)}/#{unquote(context.arity)}"
-        _ = Spandex.start_trace(name)
-        return_value = unquote(body)
-        _ = Spandex.finish_trace()
-        return_value
+        _ =
+          case Spandex.start_trace(name) do
+            {:ok, trace_id} ->
+              Logger.metadata([trace_id: trace_id])
+            {:error, error} ->
+              {:error, error}
+          end
+        try do
+          unquote(body)
+        rescue
+          exception ->
+            stacktrace = System.stacktrace
+            _ = Spandex.span_error(exception)
+        after
+          _ = Spandex.finish_trace
+        end
       end
     end
   end
@@ -46,16 +58,15 @@ defmodule Spandex.TraceDecorator do
           end
 
         try do
-          return_value = unquote(body)
-          _ = Spandex.finish_span()
-          return_value
+          unquote(body)
         rescue
           exception ->
             stacktrace = System.stacktrace()
             _ = Spandex.span_error(exception)
-            _ = Spandex.finish_span()
 
             reraise(exception, stacktrace)
+        after
+          _ = Spandex.finish_span()
         end
       end
     end
@@ -77,16 +88,15 @@ defmodule Spandex.TraceDecorator do
           end
 
         try do
-          return_value = unquote(body)
-          _ = Spandex.finish_span()
-          return_value
+          unquote(body)
         rescue
           exception ->
             stacktrace = System.stacktrace()
             _ = Spandex.span_error(exception)
-            _ = Spandex.finish_span()
 
             reraise(exception, stacktrace)
+        after
+          _ = Spandex.finish_span()
         end
       end
     end
