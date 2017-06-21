@@ -49,8 +49,11 @@ defmodule Spandex do
   end
 
   def disabled?() do
-    !!(Confex.get(:spandex, :disabled?) || !Confex.get(:spandex, :adapter))
+    truthy?(Confex.get(:spandex, :disabled?)) or not(truthy?(Confex.get(:spandex, :adapter)))
   end
+
+  defp truthy?(value) when value in [false, nil], do: false
+  defp truthy?(_other), do: true
 
   delegate_to_adapter(:update_span, [context])
   delegate_to_adapter(:update_top_span, [context])
