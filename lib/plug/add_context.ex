@@ -34,14 +34,12 @@ defmodule Spandex.Plug.AddContext do
   defp route_name(%{path_info: path_values, params: params}) do
     inverted_params = Enum.into(params, %{}, fn {key, value} -> {value, key} end)
 
-    path_values
-    |> Enum.map(fn path_part ->
+    Enum.map_join(path_values, "/", fn path_part ->
       if Map.has_key?(inverted_params, path_part)  do
         ":#{inverted_params[path_part]}"
       else
         path_part
       end
     end)
-    |> Enum.join("/")
   end
 end
