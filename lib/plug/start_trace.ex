@@ -17,19 +17,23 @@ defmodule Spandex.Plug.StartTrace do
     conn
   end
 
+  @spec ignoring_request?(Plug.Conn.t) :: boolean
   defp ignoring_request?(conn) do
     disabled?() || ignored_method?(conn) || ignored_route?(conn)
   end
 
+  @spec disabled?() :: boolean
   defp disabled?() do
     Spandex.disabled?()
   end
 
+  @spec ignored_method?(Plug.Conn.t) :: boolean
   defp ignored_method?(conn) do
     ignored_methods = Confex.get(:spandex, :ignored_methods, [])
     conn.method in ignored_methods
   end
 
+  @spec ignored_route?(Plug.Conn.t) :: boolean
   defp ignored_route?(conn) do
     ignored_routes = Confex.get(:spandex, :ignored_routes, [])
     Enum.any?(ignored_routes, fn ignored_route ->
