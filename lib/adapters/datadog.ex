@@ -27,7 +27,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec start_trace(String.t) :: {:ok, term} | {:error, term}
   def start_trace(name) do
-    if trace() do
+    if trace_or_default() do
       Logger.error("Tried to start a trace over top of another trace.")
     else
       trace_id = datadog_id()
@@ -50,7 +50,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec start_span(String.t) :: {:ok, term} | {:error, term}
   def start_span(name) do
-    trace = trace(:undefined)
+    trace = trace_or_default(:undefined)
     case trace do
       :undefined ->
         {:error, :no_trace_context}
@@ -84,7 +84,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec update_span(map) :: :ok | {:error, term}
   def update_span(context) do
-    trace = trace()
+    trace = trace_or_default()
 
     if trace do
       new_stack = List.update_at(trace.stack, 0, fn span ->
@@ -104,7 +104,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec update_top_span(map) :: :ok | {:error, term}
   def update_top_span(context) do
-    trace = trace()
+    trace = trace_or_default()
 
     if trace do
       new_stack =
@@ -128,7 +128,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec update_all_spans(map) :: :ok | {}
   def update_all_spans(context) do
-    trace = trace()
+    trace = trace_or_default()
     if trace do
       new_stack = Enum.map(trace.stack, &Spandex.Datadog.Span.update(&1, context))
       new_spans = Enum.map(trace.spans, &Spandex.Datadog.Span.update(&1, context))
@@ -147,7 +147,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec finish_span() :: :ok | {:error, term}
   def finish_span() do
-    trace = trace()
+    trace = trace_or_default()
 
     cond do
       is_nil(trace) ->
@@ -172,7 +172,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec finish_trace() :: :ok | {:error, :no_trace_context}
   def finish_trace() do
-    trace = trace()
+    trace = trace_or_default()
 
     if trace do
       unfinished_spans = Enum.map(trace.stack, &Spandex.Datadog.Span.update(&1, %{completion_time: now()}, false))
@@ -196,7 +196,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec current_trace_id() :: term | nil | {:error, term}
   def current_trace_id() do
-    %{id: id} = trace(%{id: nil})
+    %{id: id} = trace_or_default(%{id: nil})
     id
   end
 
@@ -205,7 +205,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec current_span_id() :: term | nil | {:error, term}
   def current_span_id() do
-    case trace() do
+    case trace_or_default() do
       %{stack: [%{id: current_span_id} | _]} ->
         current_span_id
       _ ->
@@ -218,7 +218,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec continue_trace(String.t, term, term) :: {:ok, term} | {:error, term}
   def continue_trace(name, trace_id, span_id) do
-    trace = trace(:undefined)
+    trace = trace_or_default(:undefined)
 
     cond do
       trace == :undefined ->
@@ -264,8 +264,8 @@ defmodule Spandex.Adapters.Datadog do
     :rand.uniform(9_223_372_036_854_775_807)
   end
 
-  @spec trace(term) :: term
-  defp trace(default \\ nil) do
+  @spec trace_or_default(term) :: term
+  defp trace_or_default(default \\ nil) do
     Process.get(:spandex_trace, default)
   end
 
