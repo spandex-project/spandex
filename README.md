@@ -36,6 +36,8 @@ config :spandex,
 config :spandex, :datadog,
   host: {:system, "DATADOG_HOST", "localhost"},
   port: {:system, "DATADOG_PORT", 8126},
+  endpoint: MyApp.Endpoint,
+  channel: "spandex_traces", # If endpoint and channel are set, all traces will be broadcast across that channel
   services: [ # We create these services in datadog on application startup
     ecto: :sql,
     my_app: :web,
