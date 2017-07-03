@@ -39,6 +39,11 @@ defmodule Spandex.Datadog.ApiAdapter do
     host = config[:host]
     port = config[:port]
 
+    _ =
+      if config[:endpoint] && config[:channel] do
+        config[:endpoint].broadcast(config[:channel], "trace", %{spans: spans})
+      end
+
     if Confex.get(:spandex, :log_traces?) do
       body = encode([spans])
 
