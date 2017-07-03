@@ -5,11 +5,11 @@ defmodule Spandex.Datadog.ApiAdapter do
   require Logger
 
   def send_services(data) do
-    config = Confex.get_map(:spandex, :datadog)
+    config = Confex.get_env(:spandex, :datadog)
     host = config[:host]
     port = config[:port]
 
-    if Confex.get(:spandex, :log_traces?) do
+    if Confex.get_env(:spandex, :log_traces?) do
       body = encode(data)
 
       _ = Logger.info(fn -> "Service: #{inspect(data)}" end)
@@ -35,11 +35,11 @@ defmodule Spandex.Datadog.ApiAdapter do
   end
 
   def send_spans(spans) do
-    config = Confex.get_map(:spandex, :datadog)
+    config = Confex.get_env(:spandex, :datadog)
     host = config[:host]
     port = config[:port]
 
-    if Confex.get(:spandex, :log_traces?) do
+    if Confex.get_env(:spandex, :log_traces?) do
       body = encode([spans])
 
       _ = Logger.info(fn -> "Trace: #{inspect([spans])}" end)

@@ -6,7 +6,7 @@ defmodule Spandex.Adapters.Helpers do
   defmacro delegate_to_adapter(name, args) do
     quote do
       def unquote(name)(unquote_splicing(args)) do
-        adapter = Confex.get(:spandex, :adapter)
+        adapter = Confex.get_env(:spandex, :adapter)
 
         if adapter do
           apply(adapter, unquote(name), unquote(args))

@@ -17,9 +17,9 @@ defmodule Spandex.Plug.AddContext do
         resource: "#{String.upcase(conn.method)} #{route_name(conn)}",
         method: conn.method,
         url: conn.request_path,
-        service: Confex.get(:spandex, :service, :web),
+        service: Confex.get_env(:spandex, :service, :web),
         type: :web,
-        env: Confex.get(:spandex, :env, "unknown")
+        env: Confex.get_env(:spandex, :env, "unknown")
       }
 
       _ = Spandex.update_top_span(trace_context)
