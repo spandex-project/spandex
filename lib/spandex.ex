@@ -10,7 +10,7 @@ defmodule Spandex do
   import Spandex.Adapters.Helpers
 
   def start(_type, _args) do
-    adapter = Confex.get(:spandex, :adapter)
+    adapter = Confex.get_env(:spandex, :adapter)
 
     _ =
       if adapter do
@@ -49,7 +49,7 @@ defmodule Spandex do
   end
 
   def disabled?() do
-    truthy?(Confex.get(:spandex, :disabled?)) or not(truthy?(Confex.get(:spandex, :adapter)))
+    truthy?(Confex.get_env(:spandex, :disabled?)) or not(truthy?(Confex.get_env(:spandex, :adapter)))
   end
 
   defp truthy?(value) when value in [false, nil], do: false

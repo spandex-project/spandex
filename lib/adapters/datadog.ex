@@ -12,8 +12,8 @@ defmodule Spandex.Adapters.Datadog do
   """
   @spec startup() :: :ok | {:error, term}
   def startup() do
-    services = Confex.get_map(:spandex, :datadog)[:services]
-    application_name = Confex.get(:spandex, :application)
+    services = Confex.get_env(:spandex, :datadog)[:services]
+    application_name = Confex.get_env(:spandex, :application)
 
     for {service_name, type} <- services do
       Spandex.Datadog.Api.create_service(service_name, application_name, type)

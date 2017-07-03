@@ -16,9 +16,7 @@ defmodule Spandex.Ecto.Trace do
   end
 
   def trace(log_entry) do
-    if Spandex.disabled?() do
-      :ok
-    else
+    unless Spandex.disabled?() do
       now = Spandex.now()
       _ = setup(log_entry)
       query = string_query(log_entry)
@@ -63,6 +61,8 @@ defmodule Spandex.Ecto.Trace do
 
       finish_ecto_trace(log_entry)
     end
+
+    log_entry
   end
 
   defp finish_ecto_trace(%{caller_pid: caller_pid}) do

@@ -21,7 +21,7 @@ defmodule Spandex.Datadog.Api do
           app_type: type
         }
       }
-      adapter = Confex.get_map(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
+      adapter = Confex.get_env(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
       adapter.send_services(data)
     end
   end
@@ -34,7 +34,7 @@ defmodule Spandex.Datadog.Api do
     if Spandex.disabled?() do
       :disabled
     else
-      adapter = Confex.get_map(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
+      adapter = Confex.get_env(:spandex, :datadog)[:api_adapter] || Spandex.Datadog.ApiAdapter
       adapter.send_spans(spans)
     end
   end
