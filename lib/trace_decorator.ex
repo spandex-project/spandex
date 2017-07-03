@@ -36,6 +36,8 @@ defmodule Spandex.TraceDecorator do
           exception ->
             stacktrace = System.stacktrace
             _ = Spandex.span_error(exception)
+
+            reraise(exception, stacktrace)
         after
           _ = Spandex.finish_trace
         end
