@@ -161,7 +161,7 @@ defmodule Spandex.Adapters.Datadog do
         completed_span =
           trace.stack
           |> hd()
-          |> Span.update(%{completion_time: now()}, false)
+          |> Span.stop()
 
         put_trace(%{trace | stack: new_stack, spans: [completed_span | trace.spans]})
 
@@ -177,11 +177,11 @@ defmodule Spandex.Adapters.Datadog do
     trace = get_trace()
 
     if trace do
-      unfinished_spans = Enum.map(trace.stack, &Span.update(&1, %{completion_time: now()}, false))
+      unfinished_spans = Enum.map(trace.stack, &Span.stop/1)
 
       trace.spans
       |> Kernel.++(unfinished_spans)
-      |> Enum.map(&Span.update(&1, %{completion_time: now()}, false))
+      |> Enum.map(&Span.stop/1)
       |> Enum.map(&Span.to_map/1)
       |> Api.create_trace()
 

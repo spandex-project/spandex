@@ -28,7 +28,7 @@ defmodule Spandex.Datadog.Span do
   @doc """
   Creates new struct with defaults from :spandex configuration.
   """
-  @spec new(map) :: dd_span()
+  @spec new(map()) :: dd_span()
   def new(map \\ %__MODULE__{}) do
     core = %__MODULE__{
       id:       default_if_blank(map, :id, &next_id/0),
@@ -46,9 +46,17 @@ defmodule Spandex.Datadog.Span do
   Sets start time for given span as unix epoch in nanoseconds.
   """
   @spec begin(dd_span()) :: dd_span()
-  def begin(%__MODULE__{} = span) do
-    %{span | start: now()}
-  end
+  def begin(%__MODULE__{} = span),
+    do: %{span | start: now()}
+
+  @doc """
+  Sets completion time for given span if it's missing as unix epoch in nanoseconds.
+  """
+  @spec stop(dd_span()) :: dd_span()
+  def stop(%__MODULE__{completion_time: nil} = span),
+    do: %{span | completion_time: now()}
+  def stop(%__MODULE__{} = span),
+    do: span
 
   def update(span, updates, override? \\ true) do
     @updateable_keys
@@ -92,7 +100,7 @@ defmodule Spandex.Datadog.Span do
     end
   end
 
-  def to_map(span) do
+  def to_map(%__MODULE__{} = span) do
     service = span.service || default_service()
 
     %{

@@ -56,4 +56,21 @@ defmodule Spandex.Datadog.SpanTest do
       assert_in_delta compare, started_at, 2_000_000
     end
   end
+
+  describe "Span.stop/1" do
+    test "sets new completion_time with now()" do
+      %Span{completion_time: finished_at} = Span.stop(%Span{})
+      compare = Spandex.Datadog.Utils.now()
+
+      # it's time since epoch in nanoseconds, brief check for 2 milliseconds
+      assert_in_delta compare, finished_at, 2_000_000
+    end
+
+    test "doesn't change completion time if it's present" do
+      finished_at = 1
+      %Span{completion_time: compare} = Span.stop(%Span{completion_time: finished_at})
+
+      assert compare == finished_at
+    end
+  end
 end
