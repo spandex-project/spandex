@@ -46,4 +46,14 @@ defmodule Spandex.Datadog.SpanTest do
       assert resource == "/dashboard/users"
     end
   end
+
+  describe "Span.begin/1" do
+    test "updates span with start time" do
+      %Span{start: started_at} = Span.begin(%Span{})
+      compare = Spandex.Datadog.Utils.now()
+
+      # it's time since epoch in nanoseconds, brief check for 2 milliseconds
+      assert_in_delta compare, started_at, 2_000_000
+    end
+  end
 end

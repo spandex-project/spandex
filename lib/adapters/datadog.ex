@@ -39,7 +39,7 @@ defmodule Spandex.Adapters.Datadog do
           name: name,
         }
         |> Span.new()
-        |> Span.begin(now())
+        |> Span.begin()
 
       put_trace(%{id: trace_id, stack: [top_span], spans: [], start: now()})
 
@@ -60,7 +60,7 @@ defmodule Spandex.Adapters.Datadog do
         new_span =
           current_span
           |> Span.child_of(name, next_id())
-          |> Span.begin(now())
+          |> Span.begin()
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
@@ -72,7 +72,7 @@ defmodule Spandex.Adapters.Datadog do
             name: name,
           }
           |> Span.new()
-          |> Span.begin(now())
+          |> Span.begin()
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
@@ -231,7 +231,7 @@ defmodule Spandex.Adapters.Datadog do
             name: name,
           }
           |> Span.new()
-          |> Span.begin(now())
+          |> Span.begin()
 
         put_trace(%{id: trace_id, stack: [top_span], spans: [], start: now()})
         {:ok, trace_id}
