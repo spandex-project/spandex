@@ -2,7 +2,7 @@ use Mix.Config
 
 
 config :spandex,
-  service: "spandex_test",
+  service: :spandex_test,
   adapter: Spandex.Adapters.Datadog,
   disabled?: false,
   env: "test",
@@ -12,12 +12,11 @@ config :spandex,
   log_traces?: false
 
 
-
 config :spandex, :datadog,
   host: "datadog",
   port: 8126,
   services: [
     ecto: :sql,
-    spandex: :web
+    spandex_test: :web
   ],
   api_adapter: Spandex.Datadog.TestApiAdapter

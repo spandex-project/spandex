@@ -5,6 +5,8 @@ defmodule Spandex.Adapters.Datadog do
 
   @behaviour Spandex.Adapters.Adapter
 
+  import Spandex.Datadog.Utils, only: [now: 0, next_id: 0]
+  alias Spandex.Datadog.{Span, Api}
   require Logger
 
   @doc """
@@ -16,7 +18,7 @@ defmodule Spandex.Adapters.Datadog do
     application_name = Confex.get_env(:spandex, :application)
 
     for {service_name, type} <- services do
-      Spandex.Datadog.Api.create_service(service_name, application_name, type)
+      Api.create_service(service_name, application_name, type)
     end
 
     :ok
@@ -30,14 +32,14 @@ defmodule Spandex.Adapters.Datadog do
     if get_trace() do
       Logger.error("Tried to start a trace over top of another trace.")
     else
-      trace_id = datadog_id()
+      trace_id = next_id()
       top_span =
-        %Spandex.Datadog.Span{
-          id: datadog_id(),
+        %Span{
           trace_id: trace_id,
-          name: name
+          name: name,
         }
-        |> Spandex.Datadog.Span.begin(now())
+        |> Span.new()
+        |> Span.begin(now())
 
       put_trace(%{id: trace_id, stack: [top_span], spans: [], start: now()})
 
@@ -57,20 +59,20 @@ defmodule Spandex.Adapters.Datadog do
       %{stack: [current_span | _]} ->
         new_span =
           current_span
-          |> Spandex.Datadog.Span.child_of(name, datadog_id())
-          |> Spandex.Datadog.Span.begin(now())
+          |> Span.child_of(name, next_id())
+          |> Span.begin(now())
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
         {:ok, new_span.id}
       _ ->
         new_span =
-          %Spandex.Datadog.Span{
-            id: datadog_id(),
+          %Span{
             trace_id: trace.id,
-            name: name
+            name: name,
           }
-          |> Spandex.Datadog.Span.begin(now())
+          |> Span.new()
+          |> Span.begin(now())
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
@@ -88,7 +90,7 @@ defmodule Spandex.Adapters.Datadog do
 
     if trace do
       new_stack = List.update_at(trace.stack, 0, fn span ->
-        Spandex.Datadog.Span.update(span, context)
+        Span.update(span, context)
       end)
 
       put_trace(%{trace | stack: new_stack})
@@ -111,7 +113,7 @@ defmodule Spandex.Adapters.Datadog do
         trace.stack
         |> Enum.reverse()
         |> List.update_at(0, fn span ->
-          Spandex.Datadog.Span.update(span, context)
+          Span.update(span, context)
         end)
         |> Enum.reverse()
 
@@ -130,8 +132,8 @@ defmodule Spandex.Adapters.Datadog do
   def update_all_spans(context) do
     trace = get_trace()
     if trace do
-      new_stack = Enum.map(trace.stack, &Spandex.Datadog.Span.update(&1, context))
-      new_spans = Enum.map(trace.spans, &Spandex.Datadog.Span.update(&1, context))
+      new_stack = Enum.map(trace.stack, &Span.update(&1, context))
+      new_spans = Enum.map(trace.spans, &Span.update(&1, context))
 
       put_trace(%{trace | stack: new_stack, spans: new_spans})
 
@@ -159,7 +161,7 @@ defmodule Spandex.Adapters.Datadog do
         completed_span =
           trace.stack
           |> hd()
-          |> Spandex.Datadog.Span.update(%{completion_time: now()}, false)
+          |> Span.update(%{completion_time: now()}, false)
 
         put_trace(%{trace | stack: new_stack, spans: [completed_span | trace.spans]})
 
@@ -175,13 +177,13 @@ defmodule Spandex.Adapters.Datadog do
     trace = get_trace()
 
     if trace do
-      unfinished_spans = Enum.map(trace.stack, &Spandex.Datadog.Span.update(&1, %{completion_time: now()}, false))
+      unfinished_spans = Enum.map(trace.stack, &Span.update(&1, %{completion_time: now()}, false))
 
       trace.spans
       |> Kernel.++(unfinished_spans)
-      |> Enum.map(&Spandex.Datadog.Span.update(&1, %{completion_time: now()}, false))
-      |> Enum.map(&Spandex.Datadog.Span.to_map/1)
-      |> Spandex.Datadog.Api.create_trace()
+      |> Enum.map(&Span.update(&1, %{completion_time: now()}, false))
+      |> Enum.map(&Span.to_map/1)
+      |> Api.create_trace()
 
       delete_trace()
 
@@ -223,13 +225,13 @@ defmodule Spandex.Adapters.Datadog do
     cond do
       trace == :undefined ->
         top_span =
-          %Spandex.Datadog.Span{
-            id: datadog_id(),
+          %Span{
             trace_id: trace_id,
             parent_id: span_id,
-            name: name
+            name: name,
           }
-          |> Spandex.Datadog.Span.begin(now())
+          |> Span.new()
+          |> Span.begin(now())
 
         put_trace(%{id: trace_id, stack: [top_span], spans: [], start: now()})
         {:ok, trace_id}
@@ -249,19 +251,6 @@ defmodule Spandex.Adapters.Datadog do
     stacktrace = Exception.format_stacktrace(System.stacktrace)
 
     update_span(%{error: 1, error_message: message, stacktrace: stacktrace, error_type: type})
-  end
-
-  @doc """
-  Returns the current timestamp in nanoseconds
-  """
-  @spec now() :: non_neg_integer
-  def now() do
-    DateTime.utc_now |> DateTime.to_unix(:nanoseconds)
-  end
-
-  @spec datadog_id() :: non_neg_integer
-  defp datadog_id() do
-    :rand.uniform(9_223_372_036_854_775_807)
   end
 
   @spec get_trace(term) :: term

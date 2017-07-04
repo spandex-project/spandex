@@ -6,13 +6,18 @@ defmodule Spandex.Test.Datadog.AdapterTest do
   test "a complete trace sends spans" do
     TracedModule.trace_one_thing()
 
-    assert(Util.sent_spans())
+    Enum.each Util.sent_spans(), fn(span) ->
+      assert span.service == :spandex_test
+      assert span.meta.env == "test"
+    end
   end
 
   test "a complete trace sends a top level span" do
     TracedModule.trace_one_thing()
-
-    assert(Util.find_span("trace_one_thing/0") != nil)
+    span = Util.find_span("trace_one_thing/0")
+    assert not is_nil(span)
+    assert span.service == :spandex_test
+    assert span.meta.env == "test"
   end
 
   test "a complete trace sends the internal spans as well" do
