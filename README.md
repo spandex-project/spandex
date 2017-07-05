@@ -24,7 +24,7 @@ Spandex uses `Confex` under the hood. See the formats usable for declaring value
 
 ```
 config :spandex,
-  service: "my_api", # required
+  service: :my_api, # required, default service name
   adapter: Spandex.Adapters.Datadog, # required
   disabled?: {:system, "DISABLE_SPANDEX", false},
   env: {:system, "APM_ENVIRONMENT", "unknown"},
@@ -38,10 +38,10 @@ config :spandex, :datadog,
   port: {:system, "DATADOG_PORT", 8126},
   endpoint: MyApp.Endpoint,
   channel: "spandex_traces", # If endpoint and channel are set, all traces will be broadcast across that channel
-  services: [ # We create these services in datadog on application startup
-    ecto: :sql,
-    my_app: :web,
-    my_cache: :cache
+  services: [ # for defaults mapping in spans service => type
+    ecto: :db,
+    my_api: :web,
+    my_cache: :cache,
   ]
 ```
 
