@@ -5,8 +5,10 @@ defmodule Spandex.Adapters.Datadog do
 
   @behaviour Spandex.Adapters.Adapter
 
-  import Spandex.Datadog.Utils, only: [now: 0, next_id: 0]
-  alias Spandex.Datadog.{Span, Api}
+  alias Spandex.Datadog.Api
+  alias Spandex.Datadog.Span
+  alias Spandex.Datadog.Utils
+
   require Logger
 
   @doc """
@@ -32,12 +34,12 @@ defmodule Spandex.Adapters.Datadog do
     if get_trace() do
       Logger.error("Tried to start a trace over top of another trace.")
     else
-      trace_id = next_id()
+      trace_id = Utils.next_id()
       top_span =
         %Span{trace_id: trace_id, name: name}
         |> Span.new()
 
-      put_trace(%{id: trace_id, stack: [top_span], spans: [], start: now()})
+      put_trace(%{id: trace_id, stack: [top_span], spans: [], start: Utils.now()})
 
       {:ok, trace_id}
     end
@@ -219,7 +221,7 @@ defmodule Spandex.Adapters.Datadog do
           %Span{trace_id: trace_id, parent_id: span_id, name: name}
           |> Span.new()
 
-        put_trace(%{id: trace_id, stack: [top_span], spans: [], start: now()})
+        put_trace(%{id: trace_id, stack: [top_span], spans: [], start: Utils.now()})
         {:ok, trace_id}
       trace_id == trace.id ->
         start_span(name)

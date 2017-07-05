@@ -29,7 +29,7 @@ defmodule Spandex.Datadog.Span do
   Creates new struct with defaults from :spandex configuration.
   """
   @spec new(map :: map) :: t
-  def new(map \\ %Span{}) do
+  def new(map \\ %{}) do
     core = %Span{
       id:       default_if_blank(map, :id, &Utils.next_id/0),
       start:    default_if_blank(map, :start, &Utils.now/0),

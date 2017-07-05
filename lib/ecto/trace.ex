@@ -17,7 +17,7 @@ defmodule Spandex.Ecto.Trace do
 
   def trace(log_entry) do
     unless Spandex.disabled?() do
-      now = Spandex.now()
+      now = Spandex.Datadog.Utils.now()
       _ = setup(log_entry)
       query = string_query(log_entry)
       num_rows = num_rows(log_entry)
