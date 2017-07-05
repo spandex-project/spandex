@@ -17,6 +17,6 @@ config :spandex, :datadog,
   port: 8126,
   services: [
     ecto: :sql,
-    spandex_test: :web
+    spandex_test: :job
   ],
   api_adapter: Spandex.Datadog.TestApiAdapter

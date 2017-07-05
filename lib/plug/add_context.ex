@@ -5,33 +5,35 @@ defmodule Spandex.Plug.AddContext do
   """
   @behaviour Plug
 
-  @spec init(Keyword.t) :: Keyword.t
+  alias Spandex.Plug.Utils
+
+  @spec init(opts :: Keyword.t) :: Keyword.t
   def init(opts), do: opts
 
-  @spec call(Plug.Conn.t, Keyword.t) :: Plug.Conn.t
+  @spec call(conn :: Plug.Conn.t, _opts :: Keyword.t) :: Plug.Conn.t
   def call(conn, _opts) do
-    if Spandex.disabled?() do
-      conn
-    else
-      trace_context = %{
-        resource: "#{String.upcase(conn.method)} #{route_name(conn)}",
+    if Utils.trace?(conn) do
+      route =
+        conn
+        |> Plug.Conn.fetch_query_params()
+        |> route_name()
+
+      %{
+        resource: "#{String.upcase(conn.method)} #{route}",
         method: conn.method,
         url: conn.request_path,
-        service: Confex.get_env(:spandex, :service, :web),
         type: :web,
-        env: Confex.get_env(:spandex, :env, "unknown")
       }
+      |> Spandex.update_top_span()
 
-      _ = Spandex.update_top_span(trace_context)
-
-      _ = Logger.metadata(trace_id: Spandex.current_trace_id(), span_id: Spandex.current_span_id())
-
-      conn
+      Logger.metadata(trace_id: Spandex.current_trace_id(), span_id: Spandex.current_span_id())
     end
+
+    conn
   end
 
   @spec route_name(Plug.Conn.t) :: String.t
-  defp route_name(%{path_info: path_values, params: params}) do
+  defp route_name(%Plug.Conn{path_info: path_values, params: params}) do
     inverted_params = Enum.into(params, %{}, fn {key, value} -> {value, key} end)
 
     Enum.map_join(path_values, "/", fn path_part ->

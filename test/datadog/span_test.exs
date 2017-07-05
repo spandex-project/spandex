@@ -12,7 +12,7 @@ defmodule Spandex.Datadog.SpanTest do
       assert span.env == "test"
       assert span.service == :spandex_test
       assert span.resource == "unknown"
-      assert span.type == :web
+      assert span.type == :job
     end
 
     test "fallbacks for resource from name" do
