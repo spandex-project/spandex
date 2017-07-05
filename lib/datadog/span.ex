@@ -5,6 +5,9 @@ defmodule Spandex.Datadog.Span do
   via `child_of/3`
   """
 
+  alias __MODULE__, as: Span
+  alias Spandex.Datadog.Utils
+
   defstruct [
     :id, :trace_id, :parent_id, :name, :resource,
     :service, :env, :start, :completion_time, :error,
@@ -13,24 +16,21 @@ defmodule Spandex.Datadog.Span do
     meta: %{}
   ]
 
-  @type dd_span :: %__MODULE__{}
+  @type t :: %__MODULE__{}
 
+  @default "unknown"
   @updateable_keys [
     :name, :resource, :service, :env, :start, :completion_time, :error,
     :error_message, :stacktrace, :error_type, :start, :status, :url, :method,
     :user, :type
   ]
 
-  @default "unknown"
-
-  alias Spandex.Datadog.Utils
-
   @doc """
   Creates new struct with defaults from :spandex configuration.
   """
-  @spec new(map()) :: dd_span()
-  def new(map \\ %__MODULE__{}) do
-    core = %__MODULE__{
+  @spec new(map :: map) :: t
+  def new(map \\ %Span{}) do
+    core = %Span{
       id:       default_if_blank(map, :id, &Utils.next_id/0),
       start:    default_if_blank(map, :start, &Utils.now/0),
       env:      default_if_blank(map, :env, &default_env/0),
@@ -46,17 +46,17 @@ defmodule Spandex.Datadog.Span do
   @doc """
   Sets completion time for given span if it's missing as unix epoch in nanoseconds.
   """
-  @spec stop(dd_span()) :: dd_span()
-  def stop(%__MODULE__{completion_time: nil} = span),
+  @spec stop(span :: t) :: t
+  def stop(%Span{completion_time: nil} = span),
     do: %{span | completion_time: Utils.now()}
-  def stop(%__MODULE__{} = span),
+  def stop(%Span{} = span),
     do: span
 
   @doc """
   Updates span with given map. Only `@updateable_keys` are allowed for updates.
   """
-  @spec update(span :: dd_span(), updates :: map()) :: dd_span()
-  def update(%__MODULE__{} = span, updates) do
+  @spec update(span :: t, updates :: map) :: t
+  def update(%Span{} = span, updates) do
     @updateable_keys
     |> Enum.reduce(span, fn key, span ->
       if Map.has_key?(updates, key) do
@@ -68,19 +68,19 @@ defmodule Spandex.Datadog.Span do
     |> merge_meta(updates[:meta] || %{})
   end
 
-  defp merge_meta(span = %{meta: meta}, new_meta) do
+  defp merge_meta(%Span{meta: meta} = span, new_meta) do
     %{span | meta: Map.merge(meta, new_meta)}
   end
 
   @doc """
   Creates new span based on parent span.
   """
-  @spec child_of(parent :: dd_span(), name :: term()) :: dd_span()
-  def child_of(parent = %{id: parent_id}, name) do
+  @spec child_of(parent :: t, name :: term) :: t
+  def child_of(%Span{id: parent_id} = parent, name) do
     %{parent | id: Utils.next_id(), start: Utils.now(), name: name, parent_id: parent_id}
   end
 
-  def duration(left, right) do
+  defp duration(left, right) do
     left - right
   end
 
@@ -91,7 +91,11 @@ defmodule Spandex.Datadog.Span do
     end
   end
 
-  def to_map(%__MODULE__{} = span) do
+  @doc """
+  Creates a final map structure suitable for datadog trace agent.
+  """
+  @spec to_map(span :: t) :: map
+  def to_map(%Span{} = span) do
     service = span.service || default_service()
     now = Utils.now()
 

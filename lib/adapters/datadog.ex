@@ -232,7 +232,7 @@ defmodule Spandex.Adapters.Datadog do
   Attaches error data to the current span, and marks it as an error.
   """
   @spec span_error(Exception.t) :: :ok | {:error, term}
-  def span_error(exception = %{__struct__: type}) do
+  def span_error(%{__struct__: type} = exception) do
     message = Exception.message(exception)
     stacktrace = Exception.format_stacktrace(System.stacktrace)
 
