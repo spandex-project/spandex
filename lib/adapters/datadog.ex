@@ -34,12 +34,8 @@ defmodule Spandex.Adapters.Datadog do
     else
       trace_id = next_id()
       top_span =
-        %Span{
-          trace_id: trace_id,
-          name: name,
-        }
+        %Span{trace_id: trace_id, name: name}
         |> Span.new()
-        |> Span.begin()
 
       put_trace(%{id: trace_id, stack: [top_span], spans: [], start: now()})
 
@@ -59,20 +55,15 @@ defmodule Spandex.Adapters.Datadog do
       %{stack: [current_span | _]} ->
         new_span =
           current_span
-          |> Span.child_of(name, next_id())
-          |> Span.begin()
+          |> Span.child_of(name)
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
         {:ok, new_span.id}
       _ ->
         new_span =
-          %Span{
-            trace_id: trace.id,
-            name: name,
-          }
+          %Span{trace_id: trace.id, name: name}
           |> Span.new()
-          |> Span.begin()
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
@@ -225,13 +216,8 @@ defmodule Spandex.Adapters.Datadog do
     cond do
       trace == :undefined ->
         top_span =
-          %Span{
-            trace_id: trace_id,
-            parent_id: span_id,
-            name: name,
-          }
+          %Span{trace_id: trace_id, parent_id: span_id, name: name}
           |> Span.new()
-          |> Span.begin()
 
         put_trace(%{id: trace_id, stack: [top_span], spans: [], start: now()})
         {:ok, trace_id}

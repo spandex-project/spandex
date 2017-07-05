@@ -44,13 +44,6 @@ defmodule Spandex.Datadog.Span do
   end
 
   @doc """
-  Sets start time for given span as unix epoch in nanoseconds.
-  """
-  @spec begin(dd_span()) :: dd_span()
-  def begin(%__MODULE__{} = span),
-    do: %{span | start: now()}
-
-  @doc """
   Sets completion time for given span if it's missing as unix epoch in nanoseconds.
   """
   @spec stop(dd_span()) :: dd_span()
@@ -82,9 +75,9 @@ defmodule Spandex.Datadog.Span do
   @doc """
   Creates new span based on parent span.
   """
-  @spec child_of(parent :: dd_span(), name :: term(), id :: term()) :: dd_span()
-  def child_of(parent = %{id: parent_id, trace_id: trace_id}, name, id) do
-    %{parent | id: id, name: name, parent_id: parent_id, trace_id: trace_id, start: Utils.now()}
+  @spec child_of(parent :: dd_span(), name :: term()) :: dd_span()
+  def child_of(parent = %{id: parent_id}, name) do
+    %{parent | id: Utils.next_id(), start: Utils.now(), name: name, parent_id: parent_id}
   end
 
   def duration(left, right) do

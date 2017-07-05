@@ -8,6 +8,7 @@ defmodule Spandex.Datadog.SpanTest do
       span = Span.new(%{})
 
       assert not is_nil(span.id)
+      assert not is_nil(span.start)
       assert span.env == "test"
       assert span.service == :spandex_test
       assert span.resource == "unknown"
@@ -27,8 +28,11 @@ defmodule Spandex.Datadog.SpanTest do
     end
 
     test "merges with given data" do
-      %Span{id: id, parent_id: pid, trace_id: tid, env: env, service: service, type: type, resource: resource} = Span.new(%{
+      started_at = Spandex.Datadog.Utils.now()
+
+      span = Span.new(%{
         id: 666,
+        start: started_at,
         env: "pre-prod",
         service: :phoenix,
         resource: "/dashboard/users",
@@ -37,23 +41,14 @@ defmodule Spandex.Datadog.SpanTest do
         parent_id: 777,
       })
 
-      assert id == 666
-      assert pid == 777
-      assert tid == 999
-      assert env == "pre-prod"
-      assert service == :phoenix
-      assert type == :http
-      assert resource == "/dashboard/users"
-    end
-  end
-
-  describe "Span.begin/1" do
-    test "updates span with start time" do
-      %Span{start: started_at} = Span.begin(%Span{})
-      compare = Spandex.Datadog.Utils.now()
-
-      # it's time since epoch in nanoseconds, brief check for 2 milliseconds
-      assert_in_delta compare, started_at, 2_000_000
+      assert span.id == 666
+      assert span.start == started_at
+      assert span.parent_id == 777
+      assert span.trace_id == 999
+      assert span.env == "pre-prod"
+      assert span.service == :phoenix
+      assert span.type == :http
+      assert span.resource == "/dashboard/users"
     end
   end
 
@@ -62,8 +57,9 @@ defmodule Spandex.Datadog.SpanTest do
       %Span{completion_time: finished_at} = Span.stop(%Span{})
       compare = Spandex.Datadog.Utils.now()
 
-      # it's time since epoch in nanoseconds, brief check for 2 milliseconds
-      assert_in_delta compare, finished_at, 2_000_000
+      # it's time since epoch in nanoseconds, brief check for 10 milliseconds
+      # in test env, as everything is evaluated on the fly, usually it's 10 microseconds
+      assert_in_delta compare, finished_at, 10_000_000
     end
 
     test "doesn't change completion time if it's present" do
@@ -82,7 +78,6 @@ defmodule Spandex.Datadog.SpanTest do
         service: :phoenix,
         resource: "sql query",
         env: "prod",
-        id: :foo,
         trace_id: 1,
         parent_id: 2,
         id: 3,
@@ -111,6 +106,25 @@ defmodule Spandex.Datadog.SpanTest do
         assert Map.fetch!(compare, key) == params[key]
         assert Map.fetch!(compare, key) != Map.fetch!(span, key)
       end
+    end
+  end
+
+  describe "Span.child_of/3" do
+    test "creates new span based on parent span" do
+      parent = %Span{id: 1, name: "parent", resource: "sql.query", service: :bar, parent_id: 2, trace_id: 3, start: 5, env: "prod"}
+      span = Span.child_of(parent, "child")
+
+      assert span.id != parent.id
+      assert not is_nil(span.id)
+      assert span.start != parent.start
+      assert span.parent_id != parent.parent_id
+
+      assert span.name == "child"
+      assert span.trace_id == parent.trace_id
+      assert span.parent_id == parent.id
+      assert span.env == parent.env
+      assert span.resource == parent.resource
+      assert span.service == parent.service
     end
   end
 end
