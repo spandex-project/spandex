@@ -73,4 +73,44 @@ defmodule Spandex.Datadog.SpanTest do
       assert compare == finished_at
     end
   end
+
+  describe "Span.update/2" do
+    test "updates span with given attributes" do
+      span = Span.new()
+      params = %{
+        name: "test_update",
+        service: :phoenix,
+        resource: "sql query",
+        env: "prod",
+        id: :foo,
+        trace_id: 1,
+        parent_id: 2,
+        id: 3,
+        meta: %{
+          foo: :bar,
+          baz: :kaz,
+        }
+      }
+
+      ids_keys = [:id, :trace_id, :parent_id]
+      field_keys = params |> Map.drop(ids_keys) |> Map.keys()
+
+      # sanity check
+      Enum.each ids_keys ++ field_keys, fn(key) ->
+        assert Map.get(span, key) != params[key]
+      end
+
+      compare = Span.update(span, params)
+
+      Enum.each ids_keys, fn(key) ->
+        assert Map.fetch!(compare, key) == Map.fetch!(span, key)
+        assert Map.fetch!(compare, key) != params[key]
+      end
+
+      Enum.each field_keys, fn(key) ->
+        assert Map.fetch!(compare, key) == params[key]
+        assert Map.fetch!(compare, key) != Map.fetch!(span, key)
+      end
+    end
+  end
 end

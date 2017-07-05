@@ -82,7 +82,7 @@ defmodule Spandex.Adapters.Datadog do
 
   @doc """
   Updates a span according to the provided context.
-  See `Spandex.Datadog.Span.update/3` for more information.
+  See `Spandex.Datadog.Span.update/2` for more information.
   """
   @spec update_span(map) :: :ok | {:error, term}
   def update_span(context) do

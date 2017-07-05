@@ -58,11 +58,15 @@ defmodule Spandex.Datadog.Span do
   def stop(%__MODULE__{} = span),
     do: span
 
-  def update(span, updates, override? \\ true) do
+  @doc """
+  Updates span with given map. Only `@updateable_keys` are allowed for updates.
+  """
+  @spec update(span :: dd_span(), updates :: map()) :: dd_span()
+  def update(%__MODULE__{} = span, updates) do
     @updateable_keys
     |> Enum.reduce(span, fn key, span ->
       if Map.has_key?(updates, key) do
-        put_update(span, key, updates[key], override?)
+        Map.put(span, key, updates[key])
       else
         span
       end
@@ -74,23 +78,16 @@ defmodule Spandex.Datadog.Span do
     %{span | meta: Map.merge(meta, new_meta)}
   end
 
+  @doc """
+  Creates new span based on parent span.
+  """
+  @spec child_of(parent :: dd_span(), name :: term(), id :: term()) :: dd_span()
   def child_of(parent = %{id: parent_id, trace_id: trace_id}, name, id) do
-    %{parent | id: id, name: name, parent_id: parent_id, trace_id: trace_id}
+    %{parent | id: id, name: name, parent_id: parent_id, trace_id: trace_id, start: Utils.now()}
   end
 
   def duration(left, right) do
     left - right
-  end
-
-  defp put_update(span, key, value, _override? = true) do
-    Map.put(span, key, value)
-  end
-  defp put_update(span, key, value, _override?) do
-    if is_nil(Map.get(span, key)) do
-      Map.put(span, key, value)
-    else
-      span
-    end
   end
 
   defp default_if_blank(map, key, fun) do
