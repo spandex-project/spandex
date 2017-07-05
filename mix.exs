@@ -70,7 +70,7 @@ defmodule Spandex.Mixfile do
       {:decorator, "~> 1.2.0"},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:excoveralls, "~> 0.6", only: :test},
-      {:httpoison, "~> 0.11.1"},
+      {:httpoison, "~> 0.11"},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
       {:msgpax, "~> 1.1"},
       {:plug, "~> 1.0"}
