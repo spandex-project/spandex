@@ -5,16 +5,18 @@ defmodule Spandex.Plug.StartTrace do
   """
   @behaviour Plug
 
+  alias Spandex.Plug.Utils
+
   @spec init(opts :: Keyword.t) :: Keyword.t
   def init(opts), do: opts
 
   @spec call(conn :: Plug.Conn.t, _opts :: Keyword.t) :: Plug.Conn.t
   def call(conn, _opts) do
     if ignoring_request?(conn) do
-      trace(conn, false)
+      Utils.trace(conn, false)
     else
       Spandex.start_trace("request")
-      trace(conn, true)
+      Utils.trace(conn, true)
     end
   end
 
@@ -40,8 +42,4 @@ defmodule Spandex.Plug.StartTrace do
       String.match?(conn.request_path, ignored_route)
     end)
   end
-
-  @spec trace(conn :: Plug.Conn.t, trace? :: boolean) :: Plug.Conn.t
-  def trace(conn, trace?),
-    do: Plug.Conn.assign(conn, :spandex_trace_request?, trace?)
 end
