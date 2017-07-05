@@ -23,7 +23,7 @@ defmodule Spandex.Datadog.Span do
 
   @default "unknown"
 
-  import Spandex.Datadog.Utils, only: [next_id: 0, now: 0]
+  alias Spandex.Datadog.Utils
 
   @doc """
   Creates new struct with defaults from :spandex configuration.
@@ -31,7 +31,8 @@ defmodule Spandex.Datadog.Span do
   @spec new(map()) :: dd_span()
   def new(map \\ %__MODULE__{}) do
     core = %__MODULE__{
-      id:       default_if_blank(map, :id, &next_id/0),
+      id:       default_if_blank(map, :id, &Utils.next_id/0),
+      start:    default_if_blank(map, :start, &Utils.now/0),
       env:      default_if_blank(map, :env, &default_env/0),
       service:  default_if_blank(map, :service, &default_service/0),
       resource: default_if_blank(map, :resource, fn -> Map.get(map, :name, @default) end),
@@ -54,7 +55,7 @@ defmodule Spandex.Datadog.Span do
   """
   @spec stop(dd_span()) :: dd_span()
   def stop(%__MODULE__{completion_time: nil} = span),
-    do: %{span | completion_time: now()}
+    do: %{span | completion_time: Utils.now()}
   def stop(%__MODULE__{} = span),
     do: span
 
@@ -99,13 +100,14 @@ defmodule Spandex.Datadog.Span do
 
   def to_map(%__MODULE__{} = span) do
     service = span.service || default_service()
+    now = Utils.now()
 
     %{
       trace_id: span.trace_id,
       span_id: span.id,
       name: span.name,
-      start: span.start || now(),
-      duration: duration(span.completion_time || now(), span.start || now()),
+      start: span.start || now,
+      duration: duration(span.completion_time || now, span.start || now),
       parent_id: span.parent_id,
       error: span.error || 0,
       resource: span.resource || span.name || @default,
