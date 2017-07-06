@@ -4,9 +4,9 @@ elixir:
 otp_release:
   - 19.0
 script:
+  - mix compile --warnings-as-errors
   - mix credo --strict
   - mix coveralls.travis
-  - mix compile --warnings-as-errors
 after_script:
   - mix deps.get --only docs
   - MIX_ENV=docs mix inch.report
