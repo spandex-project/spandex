@@ -15,7 +15,7 @@ defmodule Spandex.TraceDecorator do
     end
   end
   """
-  use Decorator.Define, [span: 0, span: 1, trace: 0]
+  use Decorator.Define, [span: 0, span: 1, trace: 0, trace: 1]
 
   def trace(body, context) do
     quote do
@@ -50,9 +50,9 @@ defmodule Spandex.TraceDecorator do
       if Spandex.disabled?() do
         unquote(body)
       else
-        attributes = unquote(attributes)
+        attributes = Enum.into(unquote(attributes), %{})
+
         name = attributes[:name] || "#{unquote(context.name)}/#{unquote(context.arity)}"
-        name = "#{unquote(context.name)}/#{unquote(context.arity)}"
         _ =
           case Spandex.start_trace(name) do
             {:ok, trace_id} ->
@@ -111,7 +111,8 @@ defmodule Spandex.TraceDecorator do
       if Spandex.disabled?() do
         unquote(body)
       else
-        attributes = unquote(attributes)
+        attributes = Enum.into(unquote(attributes), %{})
+
         name = attributes[:name] || "#{unquote(context.name)}/#{unquote(context.arity)}"
         _ =
           case Spandex.start_span(name) do
