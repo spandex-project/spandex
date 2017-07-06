@@ -62,7 +62,6 @@ In general, you'll probably want the current span_id and trace_id in your logs, 
 ```
 config :logger, :console,
   metadata: [:request_id, :trace_id, :span_id]
-
 ```
 
 ## General Usage
