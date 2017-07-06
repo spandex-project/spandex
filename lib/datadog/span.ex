@@ -5,6 +5,9 @@ defmodule Spandex.Datadog.Span do
   via `child_of/3`
   """
 
+  alias __MODULE__, as: Span
+  alias Spandex.Datadog.Utils
+
   defstruct [
     :id, :trace_id, :parent_id, :name, :resource,
     :service, :env, :start, :completion_time, :error,
@@ -13,21 +16,51 @@ defmodule Spandex.Datadog.Span do
     meta: %{}
   ]
 
+  @type t :: %__MODULE__{}
+
+  @default "unknown"
   @updateable_keys [
     :name, :resource, :service, :env, :start, :completion_time, :error,
     :error_message, :stacktrace, :error_type, :start, :status, :url, :method,
     :user, :type
   ]
 
-  def begin(span, time) do
-    %{span | start: time || now()}
+  @doc """
+  Creates new struct with defaults from :spandex configuration.
+  """
+  @spec new(map :: map) :: t
+  def new(map \\ %{}) do
+    core = %Span{
+      id:       default_if_blank(map, :id, &Utils.next_id/0),
+      start:    default_if_blank(map, :start, &Utils.now/0),
+      env:      default_if_blank(map, :env, &default_env/0),
+      service:  default_if_blank(map, :service, &default_service/0),
+      resource: default_if_blank(map, :resource, fn -> Map.get(map, :name, @default) end),
+    }
+
+    core
+    |> Map.put(:type, default_if_blank(map, :type, fn -> default_type(core.service) end))
+    |> Map.merge(Map.drop(map, [:id, :env, :service, :resource, :type]))
   end
 
-  def update(span, updates, override? \\ true) do
+  @doc """
+  Sets completion time for given span if it's missing as unix epoch in nanoseconds.
+  """
+  @spec stop(span :: t) :: t
+  def stop(%Span{completion_time: nil} = span),
+    do: %{span | completion_time: Utils.now()}
+  def stop(%Span{} = span),
+    do: span
+
+  @doc """
+  Updates span with given map. Only `@updateable_keys` are allowed for updates.
+  """
+  @spec update(span :: t, updates :: map) :: t
+  def update(%Span{} = span, updates) do
     @updateable_keys
     |> Enum.reduce(span, fn key, span ->
       if Map.has_key?(updates, key) do
-        put_update(span, key, updates[key], override?)
+        Map.put(span, key, updates[key])
       else
         span
       end
@@ -35,43 +68,48 @@ defmodule Spandex.Datadog.Span do
     |> merge_meta(updates[:meta] || %{})
   end
 
-  defp merge_meta(span = %{meta: meta}, new_meta) do
+  defp merge_meta(%Span{meta: meta} = span, new_meta) do
     %{span | meta: Map.merge(meta, new_meta)}
   end
 
-  def child_of(parent = %{id: parent_id, trace_id: trace_id}, name, id) do
-    %{parent | id: id, name: name, parent_id: parent_id, trace_id: trace_id}
+  @doc """
+  Creates new span based on parent span.
+  """
+  @spec child_of(parent :: t, name :: term) :: t
+  def child_of(%Span{id: parent_id} = parent, name) do
+    %{parent | id: Utils.next_id(), start: Utils.now(), name: name, parent_id: parent_id}
   end
 
-  def now(), do: DateTime.utc_now |> DateTime.to_unix(:nanoseconds)
-
-  def duration(left, right) do
+  defp duration(left, right) do
     left - right
   end
 
-  defp put_update(span, key, value, _override? = true) do
-    Map.put(span, key, value)
-  end
-  defp put_update(span, key, value, _override?) do
-    if is_nil(Map.get(span, key)) do
-      Map.put(span, key, value)
-    else
-      span
+  defp default_if_blank(map, key, fun) do
+    case Map.get(map, key) do
+      nil -> fun.()
+      val -> val
     end
   end
 
-  def to_map(span) do
+  @doc """
+  Creates a final map structure suitable for datadog trace agent.
+  """
+  @spec to_map(span :: t) :: map
+  def to_map(%Span{} = span) do
+    service = span.service || default_service()
+    now = Utils.now()
+
     %{
       trace_id: span.trace_id,
       span_id: span.id,
       name: span.name,
-      start: span.start || now(),
-      duration: duration(span.completion_time || now(), span.start || now()),
+      start: span.start || now,
+      duration: duration(span.completion_time || now, span.start || now),
       parent_id: span.parent_id,
       error: span.error || 0,
-      resource: span.resource || "unknown",
-      service: span.service || "unknown",
-      type: span.type || "unknown"
+      resource: span.resource || span.name || @default,
+      service: service,
+      type: span.type || default_type(service)
     }
     |> add_meta(span)
     |> add_error_data(span)
@@ -82,7 +120,7 @@ defmodule Spandex.Datadog.Span do
   defp add_meta(json, %{env: env, user: user, meta: meta}) do
     json
     |> Map.put(:meta, %{})
-    |> put_in([:meta, :env], env || "unknown")
+    |> put_in([:meta, :env], env || default_env())
     |> add_if_not_nil([:meta, :user], user)
     |> Map.update!(:meta, fn current_meta -> Map.merge(current_meta, meta) end)
     |> filter_nils
@@ -123,4 +161,13 @@ defmodule Spandex.Datadog.Span do
     |> Enum.into(%{}, fn {key, value} -> {key, filter_nils(value)} end)
   end
   defp filter_nils(other), do: other
+
+  defp default_service, do: Confex.get_env(:spandex, :service)
+  defp default_env, do: Confex.get_env(:spandex, :env)
+  defp default_type(service) do
+    :spandex
+    |> Confex.get_env(:datadog)
+    |> Keyword.get(:services, [])
+    |> Keyword.get(service, @default)
+  end
 end

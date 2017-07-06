@@ -4,25 +4,27 @@ defmodule Spandex.Plug.EndTrace do
   """
   @behaviour Plug
 
+  alias Spandex.Plug.Utils
+
+  @spec init(opts :: Keyword.t) :: Keyword.t
   def init(opts), do: opts
 
+  @spec call(conn :: Plug.Conn.t, _opts :: Keyword.t) :: Plug.Conn.t
   def call(conn, _opts) do
-    end_trace(conn)
-  end
+    if Utils.trace?(conn) do
+      Spandex.update_top_span(%{
+        status: conn.status,
+        error: error_count(conn)
+      })
 
-  def end_trace(conn) do
-    _ = update_trace_with_conn_status(conn)
-
-    _ = Spandex.finish_trace()
+      Spandex.finish_trace()
+    end
 
     conn
   end
 
-  defp update_trace_with_conn_status(%{status: status}) when status in 200..399 do
-    Spandex.update_top_span(%{status: status, error: 0})
-  end
-
-  defp update_trace_with_conn_status(%{status: status}) do
-    Spandex.update_top_span(%{status: status, error: 1})
-  end
+  defp error_count(%{status: status}) when status in 200..399,
+    do: 0
+  defp error_count(%{status: status}),
+    do: 1
 end

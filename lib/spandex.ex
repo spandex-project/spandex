@@ -65,5 +65,4 @@ defmodule Spandex do
   delegate_to_adapter(:current_span_id, [])
   delegate_to_adapter(:start_trace, [name])
   delegate_to_adapter(:start_span, [name])
-  delegate_to_adapter(:now, [])
 end
