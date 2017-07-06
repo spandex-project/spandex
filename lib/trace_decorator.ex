@@ -28,7 +28,7 @@ defmodule Spandex.TraceDecorator do
       else
         attributes = Enum.into(unquote(attributes), %{})
 
-        name = attributes[:name] || "#{unquote(context.name)}/#{unquote(context.arity)}"
+        name = Spandex.TraceDecorator.span_name(attributes, unquote(context.name), unquote(context.arity))
 
         _ = Spandex.start_trace(name, attributes)
         try do
@@ -56,8 +56,7 @@ defmodule Spandex.TraceDecorator do
         unquote(body)
       else
         attributes = Enum.into(unquote(attributes), %{})
-
-        name = attributes[:name] || "#{unquote(context.name)}/#{unquote(context.arity)}"
+        name = Spandex.TraceDecorator.span_name(attributes, unquote(context.name), unquote(context.arity))
 
         _ = Spandex.start_span(name, attributes)
 
@@ -74,5 +73,9 @@ defmodule Spandex.TraceDecorator do
         end
       end
     end
+  end
+
+  def span_name(attributes, context_name, context_arity) do
+    attributes[:name] || "#{context_name}/#{context_arity}"
   end
 end

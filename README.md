@@ -55,6 +55,16 @@ There are 3 plugs provided for usage w/ Phoenix:
 
 Ensure that `Spandex.Plug.EndTrace` goes *after* your router. This is important because we want rendering the response to be included in the tracing/timing. Put `Spandex.Plug.StartTrace` as early as is reasonable in your pipeline. Put `Spandex.Plug.AddContext` either after router or inside a pipeline in router.
 
+
+## Logger metadata
+In general, you'll probably want the current span_id and trace_id in your logs, so that you can find them in your tracing service. Make sure to add `span_id` and `trace_id` to logger_metadata
+
+```
+config :logger, :console,
+  metadata: [:request_id, :trace_id, :span_id]
+
+```
+
 ## General Usage
 
 In general, the nicest interface is to use function decorators.
