@@ -12,6 +12,18 @@ defmodule Spandex.Test.Datadog.AdapterTest do
     end
   end
 
+  test "a trace can specify additional attributes" do
+    TracedModule.trace_with_special_name()
+
+    assert(Util.find_span("special_name").service == :special_service)
+  end
+
+  test "a span can specify additional attributes" do
+    TracedModule.trace_with_special_name()
+
+    assert(Util.find_span("special_name_span").service == :special_span_service)
+  end
+
   test "a complete trace sends a top level span" do
     TracedModule.trace_one_thing()
     span = Util.find_span("trace_one_thing/0")
