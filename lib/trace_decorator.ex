@@ -15,29 +15,30 @@ defmodule Spandex.TraceDecorator do
     end
   end
   """
-  use Decorator.Define, [span: 0, span: 1, trace: 0]
+  use Decorator.Define, [span: 0, span: 1, trace: 0, trace: 1]
 
   def trace(body, context) do
+    trace([], body, context)
+  end
+
+  def trace(attributes, body, context) do
     quote do
       if Spandex.disabled?() do
         unquote(body)
       else
-        name = "#{unquote(context.name)}/#{unquote(context.arity)}"
-        _ =
-          case Spandex.start_trace(name) do
-            {:ok, trace_id} ->
-              Logger.metadata([trace_id: trace_id])
-            {:error, error} ->
-              {:error, error}
-          end
+        attributes = Enum.into(unquote(attributes), %{})
+
+        name = Spandex.TraceDecorator.span_name(attributes, unquote(context.name), unquote(context.arity))
+
+        _ = Spandex.start_trace(name, attributes)
         try do
           unquote(body)
         rescue
           exception ->
             stacktrace = System.stacktrace
-            _ = Spandex.span_error(exception)
+          _ = Spandex.span_error(exception)
 
-            reraise(exception, stacktrace)
+          reraise(exception, stacktrace)
         after
           _ = Spandex.finish_trace
         end
@@ -46,18 +47,18 @@ defmodule Spandex.TraceDecorator do
   end
 
   def span(body, context) do
+    span([], body, context)
+  end
+
+  def span(attributes, body, context) do
     quote do
       if Spandex.disabled?() do
         unquote(body)
       else
-        name = "#{unquote(context.name)}/#{unquote(context.arity)}"
-        _ =
-          case Spandex.start_span(name) do
-            {:ok, span_id} ->
-              Logger.metadata([span_id: span_id])
-            {:error, error} ->
-              {:error, error}
-          end
+        attributes = Enum.into(unquote(attributes), %{})
+        name = Spandex.TraceDecorator.span_name(attributes, unquote(context.name), unquote(context.arity))
+
+        _ = Spandex.start_span(name, attributes)
 
         try do
           unquote(body)
@@ -74,33 +75,7 @@ defmodule Spandex.TraceDecorator do
     end
   end
 
-  def span(attributes, body, context) do
-    quote do
-      if Spandex.disabled?() do
-        unquote(body)
-      else
-        attributes = unquote(attributes)
-        name = attributes[:name] || "#{unquote(context.name)}/#{unquote(context.arity)}"
-        _ =
-          case Spandex.start_span(name) do
-            {:ok, span_id} ->
-              Logger.metadata([span_id: span_id])
-            {:error, error} ->
-              {:error, error}
-          end
-
-        try do
-          unquote(body)
-        rescue
-          exception ->
-            stacktrace = System.stacktrace()
-            _ = Spandex.span_error(exception)
-
-            reraise(exception, stacktrace)
-        after
-          _ = Spandex.finish_span()
-        end
-      end
-    end
+  def span_name(attributes, context_name, context_arity) do
+    attributes[:name] || "#{context_name}/#{context_arity}"
   end
 end

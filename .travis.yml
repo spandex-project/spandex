@@ -4,6 +4,7 @@ elixir:
 otp_release:
   - 19.0
 script:
+  - mix compile --warnings-as-errors
   - mix credo --strict
   - mix coveralls.travis
 after_script:

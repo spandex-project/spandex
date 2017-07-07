@@ -25,6 +25,6 @@ defmodule Spandex.Plug.EndTrace do
 
   defp error_count(%{status: status}) when status in 200..399,
     do: 0
-  defp error_count(%{status: status}),
+  defp error_count(%{status: _status}),
     do: 1
 end

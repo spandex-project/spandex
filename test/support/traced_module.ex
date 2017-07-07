@@ -13,6 +13,11 @@ defmodule Spandex.Test.TracedModule do
     do_one_thing()
   end
 
+  @decorate trace(%{name: "special_name", service: :special_service})
+  def trace_with_special_name() do
+    do_one_special_name_thing()
+  end
+
   @decorate trace()
   def trace_one_error() do
     raise TestError, message: "trace_one_error"
@@ -56,6 +61,11 @@ defmodule Spandex.Test.TracedModule do
 
   @decorate span()
   def do_one_thing() do
+    :timer.sleep(100)
+  end
+
+  @decorate span(name: "special_name_span", service: :special_span_service)
+  def do_one_special_name_thing() do
     :timer.sleep(100)
   end
 end
