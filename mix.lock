@@ -1,6 +1,6 @@
 %{"bunt": {:hex, :bunt, "0.2.0", "951c6e801e8b1d2cbe58ebbd3e616a869061ddadcc4863d0a2182541acae9a38", [:mix], [], "hexpm"},
   "certifi": {:hex, :certifi, "1.2.1", "c3904f192bd5284e5b13f20db3ceac9626e14eeacfbb492e19583cf0e37b22be", [:rebar3], [], "hexpm"},
-  "confex": {:hex, :confex, "3.2.0", "4fdc818b14b1439b3e88b4f7bee50dea1eda4117871da236473e42bd4f36730d", [:mix], [], "hexpm"},
+  "confex": {:hex, :confex, "3.2.2", "4fc6161d1bbbe3f24581758059dce285fa9d2719fe41a15b396c4f32250ef7c1", [:mix], [], "hexpm"},
   "credo": {:hex, :credo, "0.8.1", "137efcc99b4bc507c958ba9b5dff70149e971250813cbe7d4537ec7e36997402", [:mix], [{:bunt, "~> 0.2.0", [hex: :bunt, repo: "hexpm", optional: false]}], "hexpm"},
   "decorator": {:hex, :decorator, "1.2.2", "28f88fe99b1ec462cb1a394e568f50fbd0e6e949602372a2d0365181c997ed7d", [:mix], [], "hexpm"},
   "dialyxir": {:hex, :dialyxir, "0.5.0", "5bc543f9c28ecd51b99cc1a685a3c2a1a93216990347f259406a910cf048d1d7", [:mix], [], "hexpm"},
