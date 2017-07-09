@@ -3,7 +3,7 @@ defmodule Spandex.Mixfile do
 
   def project do
     [app: :spandex,
-     version: "1.0.2",
+     version: "1.0.3",
      elixir: "~> 1.4",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
@@ -65,7 +65,7 @@ defmodule Spandex.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:confex, "3.2.0"},
+      {:confex, "3.2.2"},
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
       {:decorator, "~> 1.2.2"},
       {:ex_doc, ">= 0.0.0", only: :dev},
