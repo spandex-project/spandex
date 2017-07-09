@@ -22,7 +22,7 @@ end
 
 Spandex uses `Confex` under the hood. See the formats usable for declaring values at their [documentation](https://github.com/Nebo15/confex)
 
-```
+```elixir
 config :spandex,
   service: :my_api, # required, default service name
   adapter: Spandex.Adapters.Datadog, # required
@@ -59,7 +59,7 @@ Ensure that `Spandex.Plug.EndTrace` goes *after* your router. This is important 
 ## Logger metadata
 In general, you'll probably want the current span_id and trace_id in your logs, so that you can find them in your tracing service. Make sure to add `span_id` and `trace_id` to logger_metadata
 
-```
+```elixir
 config :logger, :console,
   metadata: [:request_id, :trace_id, :span_id]
 ```
@@ -70,7 +70,7 @@ In general, the nicest interface is to use function decorators.
 
 Span function decorators take an optional argument which is the attributes to update the span with.
 
-```
+```elixir
 defmodule TracedModule do
   use Spandex.TraceDecorator
 
@@ -108,7 +108,7 @@ end
 
 There is also a few ways to manually start spans.
 
-```
+```elixir
 defmodule ManuallyTraced do
   require Spandex
 
@@ -148,7 +148,7 @@ end
 
 Tasks are supported by using `Spandex.Task`
 
-```
+```elixir
 Spandex.Task.async("foo", fn -> do_work() end)
 ```
 
