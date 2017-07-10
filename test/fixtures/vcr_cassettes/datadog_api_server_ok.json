@@ -1,0 +1,24 @@
+[
+  {
+    "request": {
+      "body": "����foo�bar��baz�maz",
+      "headers": {
+        "Content-Type": "application/msgpack"
+      },
+      "method": "put",
+      "options": [],
+      "request_body": "",
+      "url": "http://localhost:8126/v0.3/traces"
+    },
+    "response": {
+      "body": "OK\n",
+      "headers": {
+        "Date": "Mon, 10 Jul 2017 16:10:16 GMT",
+        "Content-Length": "3",
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]

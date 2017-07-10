@@ -73,7 +73,9 @@ defmodule Spandex.Mixfile do
       {:httpoison, "~> 0.11"},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
       {:msgpax, "~> 1.1"},
-      {:plug, "~> 1.0"}
+      {:plug, "~> 1.0"},
+      {:exvcr, "~> 0.8.10", only: :test},
+      {:exjsx, "~> 3.2", only: :test},
     ]
   end
 end

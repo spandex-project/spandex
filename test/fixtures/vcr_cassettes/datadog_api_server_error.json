@@ -1,0 +1,20 @@
+[
+  {
+    "request": {
+      "body": "����foo�bar��baz�maz",
+      "headers": {
+        "Content-Type": "application/msgpack"
+      },
+      "method": "put",
+      "options": [],
+      "request_body": "",
+      "url": "http://localhost:8126/v0.3/traces"
+    },
+    "response": {
+      "body": "econnrefused",
+      "headers": [],
+      "status_code": null,
+      "type": "error"
+    }
+  }
+]
