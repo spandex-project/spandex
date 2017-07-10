@@ -21,7 +21,7 @@ defmodule Spandex.Mixfile do
   def application() do
     [
       extra_applications: [:logger],
-      mod: {Spandex, []}
+      mod: {Spandex.Application, []}
     ]
   end
 

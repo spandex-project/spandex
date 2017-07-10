@@ -12,21 +12,6 @@ defmodule Spandex.Adapters.Datadog do
   require Logger
 
   @doc """
-  Does any required setup on application start.
-  """
-  @spec startup() :: :ok | {:error, term}
-  def startup() do
-    services = Confex.get_env(:spandex, :datadog)[:services]
-    application_name = Confex.get_env(:spandex, :application)
-
-    for {service_name, type} <- services do
-      Api.create_service(service_name, application_name, type)
-    end
-
-    :ok
-  end
-
-  @doc """
   Starts a trace context in process local storage.
   """
   @spec start_trace(String.t) :: {:ok, term} | {:error, term}
