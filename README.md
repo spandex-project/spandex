@@ -34,6 +34,7 @@ config :spandex,
   log_traces?: false # You probably don't want this to be on. This is helpful for debugging though.
 
 config :spandex, :datadog,
+  api_adapter: Spandex.Datadog.ApiServer, # Traces will get sent in background
   host: {:system, "DATADOG_HOST", "localhost"},
   port: {:system, "DATADOG_PORT", 8126},
   endpoint: MyApp.Endpoint,

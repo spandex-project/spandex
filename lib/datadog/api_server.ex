@@ -1,19 +1,30 @@
 defmodule Spandex.Datadog.ApiServer do
-  defstruct [:url, :host, :port, :endpoint, :channel, :verbose]
-
-  alias __MODULE__, as: State
+  @moduledoc """
+  Implements Datadog.ApiAdapter as GenServer in order to send traces async.
+  """
 
   use GenServer
 
+  alias __MODULE__, as: State
+
   require Logger
 
+  defstruct [:url, :host, :port, :endpoint, :channel, :verbose]
+
   @type t :: %__MODULE__{}
+
   @headers [{"Content-Type", "application/msgpack"}]
 
+  @doc """
+  Starts genserver with given arguments.
+  """
   @spec start_link(args :: Keyword.t) :: GenServer.on_start
   def start_link(args),
     do: GenServer.start_link(__MODULE__, args, name: Keyword.get(args, :name, __MODULE__))
 
+  @doc """
+  Builds proper state for server with some defaults.
+  """
   @spec init(args :: Keyword.t) :: {:ok, t}
   def init(args) do
     state = %State{
@@ -30,11 +41,15 @@ defmodule Spandex.Datadog.ApiServer do
     }
   end
 
+  @doc """
+  Send spans asynchronously to DataDog.
+  """
   @spec send_spans(spans :: list(map), any) :: :ok
   def send_spans(spans, name \\ __MODULE__) do
     GenServer.cast name, {:send_spans, spans}
   end
 
+  @doc false
   @spec handle_cast({:send_spans, spans :: list(map)}, state :: t) :: {:noreply, t}
   def handle_cast({:send_spans, spans}, %State{url: url, verbose: verbose} = state) do
     if verbose do

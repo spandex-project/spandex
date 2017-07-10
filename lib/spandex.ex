@@ -4,7 +4,6 @@ defmodule Spandex do
   interface. The functions here call the corresponding functions on the
   configured adapter.
   """
-  use Application
   require Logger
 
   import Spandex.Adapters.Helpers

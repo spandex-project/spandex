@@ -1,15 +1,22 @@
 defmodule Spandex.Application do
+  @moduledoc """
+  Spandex supervisor.
+  """
+
   use Application
 
   require Logger
 
+  @doc """
+  If DD Api Adapter is set to ApiServer we add it to supervisor children as worker.
+  """
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
     adapter = Confex.get_env(:spandex, :adapter)
 
     unless adapter do
-      Logger.warn("No adapter configured for Spandex. Please configure one or disable spandex")
+      Logger.error("No adapter configured for Spandex. Please configure one or disable spandex")
     end
 
     dd_conf = Confex.get_env(:spandex, :datadog)
