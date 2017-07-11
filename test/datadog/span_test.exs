@@ -5,7 +5,7 @@ defmodule Spandex.Datadog.SpanTest do
 
   describe "Span.new/1" do
     test "initialize struct with defaults" do
-      span = Span.new(%{})
+      span = Span.new(%Span{})
 
       assert not is_nil(span.id)
       assert not is_nil(span.start)
@@ -16,21 +16,21 @@ defmodule Spandex.Datadog.SpanTest do
     end
 
     test "fallbacks for resource from name" do
-      assert Span.new(%{name: "ecto.query"}).resource == "ecto.query"
+      assert Span.new(%Span{name: "ecto.query"}).resource == "ecto.query"
     end
 
     test "fallbacks for type from service in config" do
-      assert Span.new(%{service: :ecto}).type == :sql
+      assert Span.new(%Span{service: :ecto}).type == :sql
     end
 
     test "sets unknown type when service is not configured" do
-      assert Span.new(%{service: :phoenix}).type == "unknown"
+      assert Span.new(%Span{service: :phoenix}).type == "unknown"
     end
 
     test "merges with given data" do
       started_at = Spandex.Datadog.Utils.now()
 
-      span = Span.new(%{
+      span = Span.new(%Span{
         id: 666,
         start: started_at,
         env: "pre-prod",

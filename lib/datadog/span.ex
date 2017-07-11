@@ -35,12 +35,12 @@ defmodule Spandex.Datadog.Span do
       start:    default_if_blank(map, :start, &Utils.now/0),
       env:      default_if_blank(map, :env, &default_env/0),
       service:  default_if_blank(map, :service, &default_service/0),
-      resource: default_if_blank(map, :resource, fn -> Map.get(map, :name, @default) end),
+      resource: default_if_blank(map, :resource, fn -> default_if_blank(map, :name, fn -> @default end) end),
     }
 
     core
     |> Map.put(:type, default_if_blank(map, :type, fn -> default_type(core.service) end))
-    |> Map.merge(Map.drop(map, [:id, :env, :service, :resource, :type]))
+    |> Map.merge(Map.drop(map, [:id, :start, :env, :service, :resource, :type]))
   end
 
   @doc """
