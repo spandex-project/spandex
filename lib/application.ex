@@ -14,8 +14,9 @@ defmodule Spandex.Application do
     import Supervisor.Spec, warn: false
 
     adapter = Confex.get_env(:spandex, :adapter)
+    enabled = not Spandex.disabled?()
 
-    unless adapter do
+    if is_nil(adapter) and enabled do
       Logger.error("No adapter configured for Spandex. Please configure one or disable spandex")
     end
 

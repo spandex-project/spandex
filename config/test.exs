@@ -21,11 +21,4 @@ config :spandex, :datadog,
     ecto: :sql,
     spandex_test: :job
   ],
-  api_adapter: Spandex.Datadog.TestApiAdapter
-
-config :exvcr,
-  vcr_cassette_library_dir: "test/fixtures/vcr_cassettes",
-  filter_request_headers: ~w[Authorization],
-  filter_sensitive_data: [],
-  filter_url_params: false,
-  response_headers_blacklist: []
+  api_adapter: Spandex.Datadog.TestApiServer
