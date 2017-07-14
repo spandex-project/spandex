@@ -4,24 +4,9 @@ defmodule Spandex do
   interface. The functions here call the corresponding functions on the
   configured adapter.
   """
-  use Application
   require Logger
 
   import Spandex.Adapters.Helpers
-
-  def start(_type, _args) do
-    adapter = Confex.get_env(:spandex, :adapter)
-
-    _ =
-      if adapter do
-        adapter.startup()
-      else
-        Logger.warn("No adapter configured for Spandex. Please configure one or disable spandex")
-      end
-
-    opts = [strategy: :one_for_one, name: Spandex.Supervisor]
-    Supervisor.start_link([], opts)
-  end
 
   defmacro span(name, do: body) do
     quote do

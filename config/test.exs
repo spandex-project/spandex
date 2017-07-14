@@ -1,5 +1,8 @@
 use Mix.Config
 
+config :logger, :console,
+  level: :debug,
+  colors: [enabled: false]
 
 config :spandex,
   service: :spandex_test,
@@ -11,7 +14,6 @@ config :spandex,
   ignored_routes: [~r/healthz/],
   log_traces?: false
 
-
 config :spandex, :datadog,
   host: "datadog",
   port: 8126,
@@ -19,4 +21,4 @@ config :spandex, :datadog,
     ecto: :sql,
     spandex_test: :job
   ],
-  api_adapter: Spandex.Datadog.TestApiAdapter
+  api_adapter: Spandex.Datadog.TestApiServer

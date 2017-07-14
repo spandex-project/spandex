@@ -4,7 +4,6 @@ defmodule Spandex.Adapters.Adapter do
   implementations of reporting/aggregating spans while still using the spandex
   internal implementation.
   """
-  @callback startup() :: :ok | {:error, term}
   @callback start_trace(String.t) :: {:ok, term} | {:error, term}
   @callback start_span(String.t) :: {:ok, term} | {:error, term}
   @callback update_span(map) :: :ok | {:error, term}
