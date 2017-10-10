@@ -76,6 +76,8 @@ defmodule Spandex.Ecto.Trace do
 
   defp setup(%{caller_pid: caller_pid}) when is_pid(caller_pid) do
     if caller_pid == self() do
+      Logger.metadata(trace_id: Spandex.current_trace_id(), span_id: Spandex.current_span_id())
+
       Spandex.start_span("query")
     else
       trace = Process.info(caller_pid)[:dictionary][:spandex_trace]
@@ -87,6 +89,8 @@ defmodule Spandex.Ecto.Trace do
           |> Map.get(:stack)
           |> Enum.at(0, %{})
           |> Map.get(:id)
+
+        Logger.metadata(trace_id: trace_id, span_id: span_id)
 
         Spandex.continue_trace("query", trace_id, span_id)
       else
