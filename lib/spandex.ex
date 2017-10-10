@@ -37,7 +37,7 @@ defmodule Spandex do
     truthy?(Confex.get_env(:spandex, :disabled?)) or not(truthy?(Confex.get_env(:spandex, :adapter)))
   end
 
-  defp truthy?(value) when value in [false, nil], do: false
+  defp truthy?(value) when value in [false, nil, "false"], do: false
   defp truthy?(_other), do: true
 
   delegate_to_adapter(:start_trace, [name])
