@@ -17,6 +17,9 @@ def deps do
   [{:spandex, "~> 1.1.0"}]
 end
 ```
+## Warning
+
+Don't use the endpoint/channel configuration in your production environment. We saw a significant increase in scheduler/cpu load during high traffic times due to this feature. It was intended to provide a way to write custom visualizations by subscribing to a channel. We haven't removed it yet, but we probably will soon.
 
 ## Configuration
 
