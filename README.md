@@ -29,7 +29,7 @@ Spandex uses `Confex` under the hood. See the formats usable for declaring value
 config :spandex,
   service: :my_api, # required, default service name
   adapter: Spandex.Adapters.Datadog, # required
-  disabled?: {:system, "DISABLE_SPANDEX", false},
+  disabled?: {:system, :boolean, "DISABLE_SPANDEX", false},
   env: {:system, "APM_ENVIRONMENT", "unknown"},
   application: :my_app,
   ignored_methods: ["OPTIONS"],
