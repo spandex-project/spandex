@@ -23,7 +23,7 @@ defmodule Spandex.Application do
     dd_conf = Confex.get_env(:spandex, :datadog)
 
     children =
-      case dd_conf[:api_adapter] do
+      case Keyword.get(dd_conf, :api_adapter, Spandex.Datadog.ApiServer) do
         Spandex.Datadog.ApiServer ->
           verbose = Confex.get_env(:spandex, :log_traces?)
           args = Keyword.put(dd_conf, :log_traces?, verbose)
