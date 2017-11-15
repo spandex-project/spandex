@@ -44,6 +44,7 @@ defmodule Spandex.Datadog.ApiServerTest do
           channel: nil,
           verbose: false,
           http: HTTPoison,
+          asynchronous_send?: true
         }
       }
     end
@@ -57,6 +58,7 @@ defmodule Spandex.Datadog.ApiServerTest do
         |> Keyword.put(:endpoint, TestBroadcast)
         |> Keyword.put(:channel, "test_channel")
         |> Keyword.put(:http, TestOkApiServer)
+        |> Keyword.put(:asynchronous_send?, false)
 
       assert ApiServer.init(dd_conf) == {
         :ok,
@@ -67,6 +69,7 @@ defmodule Spandex.Datadog.ApiServerTest do
           channel: "test_channel",
           verbose: true,
           http: TestOkApiServer,
+          asynchronous_send?: false
         }
       }
     end
@@ -83,7 +86,7 @@ defmodule Spandex.Datadog.ApiServerTest do
 
       assert processing =~ ~r/Processing trace with 2 spans/
       assert received_spans =~ ~r/Trace: \[\[\%\{\"foo\" => \"bar\"\}, %\{\"baz\" => \"maz\"\}\]\]/
-      assert response =~ ~r/Trace response: {:ok, %HTTPoison.Response{body: nil, headers: \[\], status_code: 200}}/
+      assert response =~ ~r/Trace response: {:ok, %HTTPoison.Response{body: nil, headers: \[\], request_url: nil, status_code: 200}}/
       assert_received {:put_datadog_spans, ^spans, ^url, _}
     end
 

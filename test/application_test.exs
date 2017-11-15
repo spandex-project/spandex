@@ -46,6 +46,7 @@ defmodule Spandex.ApplicationTest do
         endpoint: TestBroadcast,
         channel: "test_channel",
         http: TestBroadcast,
+        asynchronous_send?: false
       ])
 
     with_conf :spandex, :log_traces?, true, fn ->
@@ -64,7 +65,7 @@ defmodule Spandex.ApplicationTest do
         assert spans =~ ~r/name: "special_name"/
         assert spans =~ ~r/name: "special_name_span"/
         assert spans =~ ~r/type: :job/
-        assert response =~ ~r/Trace response: {:ok, %HTTPoison.Response{body: \"OK\", headers: \[\], status_code: 200}}/
+        assert response =~ ~r/Trace response: {:ok, %HTTPoison.Response{body: \"OK\", headers: \[\], request_url: nil, status_code: 200}}/
       end
     end
 
