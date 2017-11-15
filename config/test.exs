@@ -2,7 +2,9 @@ use Mix.Config
 
 config :logger, :console,
   level: :debug,
-  colors: [enabled: false]
+  colors: [enabled: false],
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:trace_id, :span_id]
 
 config :spandex,
   service: :spandex_test,
