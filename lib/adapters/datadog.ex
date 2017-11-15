@@ -24,6 +24,8 @@ defmodule Spandex.Adapters.Datadog do
         %{trace_id: trace_id, name: name}
         |> Span.new()
 
+      Logger.metadata([trace_id: trace_id])
+
       put_trace(%{id: trace_id, stack: [top_span], spans: [], start: Utils.now()})
 
       {:ok, trace_id}
@@ -46,6 +48,8 @@ defmodule Spandex.Adapters.Datadog do
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
+        Logger.metadata([span_id: new_span.id])
+
         {:ok, new_span.id}
       _ ->
         new_span =
@@ -53,6 +57,8 @@ defmodule Spandex.Adapters.Datadog do
           |> Span.new()
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
+
+        Logger.metadata([span_id: new_span.id])
 
         {:ok, new_span.id}
     end
