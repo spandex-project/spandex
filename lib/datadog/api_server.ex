@@ -7,7 +7,7 @@ defmodule Spandex.Datadog.ApiServer do
 
   require Logger
 
-  defstruct [:http, :url, :host, :port, :endpoint, :channel, :verbose]
+  defstruct [:asynchronous_send?, :http, :url, :host, :port, :endpoint, :channel, :verbose]
 
   @type t :: %__MODULE__{}
 
@@ -32,6 +32,7 @@ defmodule Spandex.Datadog.ApiServer do
       channel:  Keyword.get(args, :channel),
       verbose:  Keyword.get(args, :log_traces?, false),
       http:     Keyword.get(args, :http, HTTPoison),
+      asynchronous_send?: Keyword.get(args, :asynchronous_send?, true)
     }
 
     {:ok, state}
@@ -47,12 +48,27 @@ defmodule Spandex.Datadog.ApiServer do
 
   @doc false
   @spec handle_cast({:send_spans, spans :: list(map)}, state :: t) :: {:noreply, t}
-  def handle_cast({:send_spans, spans}, %__MODULE__{verbose: verbose} = state) do
+  def handle_cast({:send_spans, spans}, %__MODULE__{verbose: verbose, asynchronous_send?: asynchronous?} = state) do
     if verbose do
       Logger.info  fn -> "Processing trace with #{Enum.count(spans)} spans" end
       Logger.debug fn -> "Trace: #{inspect([spans])}" end
     end
 
+    if asynchronous? do
+      Task.start(fn ->
+        send_and_log(spans, state)
+      end)
+    else
+      send_and_log(spans, state)
+    end
+
+    broadcast(spans, state)
+
+    {:noreply, state}
+  end
+
+  @spec send_and_log(spans :: list(map), any) :: :ok
+  def send_and_log(spans, %{verbose: verbose} = state) do
     response =
       [spans]
       |> encode()
@@ -62,9 +78,7 @@ defmodule Spandex.Datadog.ApiServer do
       Logger.debug fn -> "Trace response: #{inspect(response)}" end
     end
 
-    broadcast(spans, state)
-
-    {:noreply, state}
+    :ok
   end
 
   @spec broadcast(spans :: list(map), t) :: any
@@ -75,7 +89,7 @@ defmodule Spandex.Datadog.ApiServer do
 
   @spec encode(data :: term) :: iodata | no_return
   defp encode(data),
-    do: Msgpax.pack!(data, iodata: false)
+    do: Msgpax.pack!(data)
 
   @spec push(body :: iodata, t) :: any
   defp push(body, %__MODULE__{http: http, host: host, port: port}),

@@ -34,19 +34,26 @@ config :spandex,
   application: :my_app,
   ignored_methods: ["OPTIONS"],
   ignored_routes: [~r/health_check/],
-  log_traces?: false # You probably don't want this to be on. This is helpful for debugging though.
+  # do not set the following configurations unless you are sure.
+  log_traces?: false # You probably don't want this to be on, *especially* if you have high load. For debugging.
+```
 
+Even though datadog is the only adapter currently, configurations are still namespaced by the adapter to allow adding more in the future.
+
+```elixir
 config :spandex, :datadog,
-  api_adapter: Spandex.Datadog.ApiServer, # Traces will get sent in background
   host: {:system, "DATADOG_HOST", "localhost"},
   port: {:system, "DATADOG_PORT", 8126},
-  endpoint: MyApp.Endpoint,
-  channel: "spandex_traces", # If endpoint and channel are set, all traces will be broadcast across that channel
   services: [ # for defaults mapping in spans service => type
     ecto: :db,
     my_api: :web,
     my_cache: :cache,
-  ]
+  ],
+  # Do not set the following configurations unless you are sure.
+  api_adapter: Spandex.Datadog.ApiServer, # Traces will get sent in background
+  asynchronous_send?: true, # Defaults to `true`. no reason to change it except perhaps for testing purposes. If changed, expect performance impacts.
+  endpoint: MyApp.Endpoint, # See notice about potential performance impacts from publishing traces to channels.
+  channel: "spandex_traces", # If endpoint and channel are set, all traces will be broadcast across that channel
 ```
 
 ## Phoenix Plugs

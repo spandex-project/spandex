@@ -46,6 +46,7 @@ defmodule Spandex.ApplicationTest do
         endpoint: TestBroadcast,
         channel: "test_channel",
         http: TestBroadcast,
+        asynchronous_send?: false
       ])
 
     with_conf :spandex, :log_traces?, true, fn ->
@@ -58,13 +59,13 @@ defmodule Spandex.ApplicationTest do
           assert_receive {:sent_spans_to_dd, 2}, 1_000
         end
 
-        [_, processing, spans, response] = log |> String.split("\n") |> Enum.reject(fn(s) -> s == "" end)
+        [processing, spans, response] = log |> String.split("\n") |> Enum.reject(fn(s) -> s == "" end) |> Enum.take(-3)
 
         assert processing =~ ~r/Processing trace with 2 spans/
         assert spans =~ ~r/name: "special_name"/
         assert spans =~ ~r/name: "special_name_span"/
         assert spans =~ ~r/type: :job/
-        assert response =~ ~r/Trace response: {:ok, %HTTPoison.Response{body: \"OK\", headers: \[\], status_code: 200}}/
+        assert response =~ ~r/Trace response: {:ok, %HTTPoison.Response{body: \"OK\", headers: \[\], request_url: nil, status_code: 200}}/
       end
     end
 

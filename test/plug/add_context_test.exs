@@ -7,9 +7,6 @@ defmodule Spandex.Plug.AddContextTest do
   setup do
     {:ok, trace_id} = Spandex.start_trace("request")
 
-    refute Keyword.has_key?(Logger.metadata(), :trace_id)
-    refute Keyword.has_key?(Logger.metadata(), :span_id)
-
     {
       :ok, [
         trace_id: trace_id,
@@ -41,13 +38,16 @@ defmodule Spandex.Plug.AddContextTest do
         |> Utils.trace(true)
         |> AddContext.call([])
 
+      {:ok, expected_span_id} = Spandex.start_span("foobar")
+
+      assert Keyword.fetch!(Logger.metadata(), :trace_id) == tid
+      assert Keyword.fetch!(Logger.metadata(), :span_id) == expected_span_id
+
       :ok = Spandex.finish_trace()
 
-      %{span_id: span_id, trace_id: trace_id, type: type, meta: meta, resource: resource} = Spandex.Test.Util.find_span("request")
+      %{trace_id: trace_id, type: type, meta: meta, resource: resource} = Spandex.Test.Util.find_span("request")
 
       assert trace_id == tid
-      assert Logger.metadata() |> Keyword.fetch!(:trace_id) == trace_id
-      assert Logger.metadata() |> Keyword.fetch!(:span_id) == span_id
       assert type == :web
       assert Map.get(meta, "http.url") == "/dashboard"
       assert Map.get(meta, "http.method") == "GET"
