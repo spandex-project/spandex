@@ -244,6 +244,7 @@ defmodule Spandex.Adapters.Datadog do
 
   @spec delete_trace() :: term | nil
   defp delete_trace() do
+    Logger.metadata([trace_id: nil, span_id: nil])
     Process.delete(:spandex_trace)
   end
 end
