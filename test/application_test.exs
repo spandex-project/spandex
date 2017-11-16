@@ -59,7 +59,7 @@ defmodule Spandex.ApplicationTest do
           assert_receive {:sent_spans_to_dd, 2}, 1_000
         end
 
-        [_, processing, spans, response] = log |> String.split("\n") |> Enum.reject(fn(s) -> s == "" end)
+        [processing, spans, response] = log |> String.split("\n") |> Enum.reject(fn(s) -> s == "" end) |> Enum.take(-3)
 
         assert processing =~ ~r/Processing trace with 2 spans/
         assert spans =~ ~r/name: "special_name"/
