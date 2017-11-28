@@ -5,12 +5,19 @@ defmodule Spandex.Ecto.Trace do
   the trace_id and span_id from the caller pid in the case that the particular
   query is being run asynchronously (as in the case of parallel preloads).
 
+  Traces will default to the service name `:ecto` but can be configured:
+
+  config :spandex, :ecto,
+    service: :my_ecto
+
   To configure, set it up as an ecto logger like so:
 
   config :my_app, MyApp.Repo,
     loggers: [{Ecto.LogEntry, :log, [:info]}, {Spandex.Ecto.Trace, :trace, []}]
 
   """
+  @default_service_name :ecto
+
   defmodule Error do
     defexception [:message]
   end
@@ -32,7 +39,7 @@ defmodule Spandex.Ecto.Trace do
         %{
           start: start,
           completion_time: now,
-          service: :ecto,
+          service: service_name(),
           resource: query,
           type: :db,
           meta: %{"sql.query" => query, "sql.rows" => inspect(num_rows)}
@@ -125,4 +132,10 @@ defmodule Spandex.Ecto.Trace do
   end
 
   defp to_nanoseconds(time), do: System.convert_time_unit(time, :native, :nanoseconds)
+
+  defp service_name do
+    :spandex
+    |> Confex.get_env(:ecto)
+    |> Keyword.get(:service, @default_service_name)
+  end
 end
