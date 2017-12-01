@@ -39,7 +39,14 @@ defmodule Spandex.Plug.StartTrace do
   defp ignored_route?(conn) do
     ignored_routes = Confex.get_env(:spandex, :ignored_routes, [])
     Enum.any?(ignored_routes, fn ignored_route ->
-      String.match?(conn.request_path, ignored_route)
+      match_route?(conn.request_path, ignored_route)
     end)
+  end
+
+  @spec match_route?(route :: String.t, ignore :: %Regex{} | String.t) :: boolean
+  defp match_route?(ignore, ignore) when is_bitstring(ignore), do: true
+  defp match_route?(_, ignore) when is_bitstring(ignore), do: false
+  defp match_route?(route, ignore) do
+    String.match?(route, ignore)
   end
 end

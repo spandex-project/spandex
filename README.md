@@ -14,7 +14,7 @@ Spandex is a platform agnostic tracing library. Currently there is only a datado
 ## Installation
 ```elixir
 def deps do
-  [{:spandex, "~> 1.1.3"}]
+  [{:spandex, "~> 1.1.4"}]
 end
 ```
 ## Warning
@@ -33,7 +33,8 @@ config :spandex,
   env: {:system, "APM_ENVIRONMENT", "unknown"},
   application: :my_app,
   ignored_methods: ["OPTIONS"],
-  ignored_routes: [~r/health_check/],
+  # ignored routes accepts regexes, and strings. If it is a string it must match exactly.
+  ignored_routes: [~r/health_check/, "/status"],
   # do not set the following configurations unless you are sure.
   log_traces?: false # You probably don't want this to be on, *especially* if you have high load. For debugging.
 ```

@@ -7,8 +7,8 @@ defmodule Spandex.Datadog.SpanTest do
     test "initialize struct with defaults" do
       span = Span.new(%Span{})
 
-      assert not is_nil(span.id)
-      assert not is_nil(span.start)
+      refute is_nil(span.id)
+      refute is_nil(span.start)
       assert span.env == "test"
       assert span.service == :spandex_test
       assert span.resource == "unknown"
@@ -115,7 +115,7 @@ defmodule Spandex.Datadog.SpanTest do
       span = Span.child_of(parent, "child")
 
       assert span.id != parent.id
-      assert not is_nil(span.id)
+      refute is_nil(span.id)
       assert span.start != parent.start
       assert span.parent_id != parent.parent_id
 
