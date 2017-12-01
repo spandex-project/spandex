@@ -20,7 +20,7 @@ defmodule Spandex.Application do
       Logger.error("No adapter configured for Spandex. Please configure one or disable spandex")
     end
 
-    dd_conf = Confex.get_env(:spandex, :datadog)
+    dd_conf = Confex.get_env(:spandex, :datadog, [])
 
     children =
       case Keyword.get(dd_conf, :api_adapter, Spandex.Datadog.ApiServer) do

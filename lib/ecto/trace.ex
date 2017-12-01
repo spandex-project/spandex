@@ -135,7 +135,7 @@ defmodule Spandex.Ecto.Trace do
 
   defp service_name do
     :spandex
-    |> Confex.get_env(:ecto)
+    |> Confex.get_env(:ecto, [])
     |> Keyword.get(:service, @default_service_name)
   end
 end
