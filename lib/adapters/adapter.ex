@@ -12,7 +12,9 @@ defmodule Spandex.Adapters.Adapter do
   @callback span_error(Exception.t) :: :ok | {:error, term}
   @callback current_trace_id() :: term | nil | {:error, term}
   @callback current_span_id() :: term | nil | {:error, term}
+  @callback current_span() :: term | nil
   @callback continue_trace(String.t, term, term) :: {:ok, term} | {:error, term}
+  @callback continue_trace_from_span(String.t, map) :: {:ok, term} | {:error, term}
   @callback update_top_span(map) :: :ok | {:error, term}
   @callback update_all_spans(map) :: :ok | {}
 end
