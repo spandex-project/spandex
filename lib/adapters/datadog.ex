@@ -42,9 +42,7 @@ defmodule Spandex.Adapters.Datadog do
       :undefined ->
         {:error, :no_trace_context}
       %{stack: [current_span | _]} ->
-        new_span =
-          current_span
-          |> Span.child_of(name)
+        new_span = Span.child_of(current_span, name)
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
@@ -197,6 +195,29 @@ defmodule Spandex.Adapters.Datadog do
       _ ->
         nil
     end
+  end
+
+  @doc """
+  Gets the current span
+  """
+  @spec current_span() :: term | nil | {:error, term}
+  def current_span() do
+    case get_trace() do
+      %{stack: [span | _]} ->
+        span
+      _ ->
+        nil
+    end
+  end
+
+  @doc """
+  Continues a trace given a name and a span
+  """
+  @spec continue_trace_from_span(String.t, term) :: {:ok, term}
+  def continue_trace_from_span(name, %{trace_id: trace_id} = span) do
+    put_trace(%{id: trace_id, stack: [span], spans: [], start: Utils.now()})
+
+    start_span(name)
   end
 
   @doc """

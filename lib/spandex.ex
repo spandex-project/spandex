@@ -68,6 +68,8 @@ defmodule Spandex do
   delegate_to_adapter(:finish_span, [])
   delegate_to_adapter(:span_error, [error])
   delegate_to_adapter(:continue_trace, [name, trace_id, span_id])
+  delegate_to_adapter(:continue_trace_from_span, [name, span])
   delegate_to_adapter(:current_trace_id, [])
   delegate_to_adapter(:current_span_id, [])
+  delegate_to_adapter(:current_span, [])
 end
