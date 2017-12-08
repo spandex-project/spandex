@@ -214,7 +214,7 @@ defmodule Spandex.Adapters.Datadog do
   Continues a trace given a name and a span
   """
   @spec continue_trace_from_span(String.t, term) :: {:ok, term}
-  def continue_trace_from_span(name, span = %{trace_id: trace_id}) do
+  def continue_trace_from_span(name, %{trace_id: trace_id} = span) do
     put_trace(%{id: trace_id, stack: [span], spans: [], start: Utils.now()})
 
     start_span(name)
