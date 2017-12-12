@@ -29,7 +29,7 @@ defmodule Spandex.Logger do
                 [resource, ": ", chardata_or_fun.()]
               end
             else
-              Spandex.continue_trace_from_span("Logger.error:anonymous_fn")
+              Spandex.continue_trace_from_span("Logger.error:anonymous_fn", current_span)
               result = chardata_or_fun.()
               Spandex.finish_trace()
               [resource, ": ", result]
