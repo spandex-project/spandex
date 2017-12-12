@@ -71,7 +71,7 @@ defmodule Spandex.Logger do
                 [resource, ": ", chardata_or_fun.()]
               end
             else
-              Spandex.continue_trace_from_span("Logger.warn:anonymous_fn")
+              Spandex.continue_trace_from_span("Logger.warn:anonymous_fn", current_span)
               result = chardata_or_fun.()
               Spandex.finish_trace()
               [resource, ": ", result]
@@ -113,7 +113,7 @@ defmodule Spandex.Logger do
                 [resource, ": ", chardata_or_fun.()]
               end
             else
-              Spandex.continue_trace_from_span("Logger.info:anonymous_fn")
+              Spandex.continue_trace_from_span("Logger.info:anonymous_fn", current_span)
               result = chardata_or_fun.()
               Spandex.finish_trace()
               [resource, ": ", result]
@@ -155,7 +155,7 @@ defmodule Spandex.Logger do
                 [resource, ": ", chardata_or_fun.()]
               end
             else
-              Spandex.continue_trace_from_span("Logger.debug:anonymous_fn")
+              Spandex.continue_trace_from_span("Logger.debug:anonymous_fn", current_span)
               result = chardata_or_fun.()
               Spandex.finish_trace()
               [resource, ": ", result]
