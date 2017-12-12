@@ -155,6 +155,26 @@ defmodule ManuallyTraced do
 end
 ```
 
+## Spandex.Logger
+
+Logging can often incur unseen costs, especially for those unfamiliar with elixir's logging paradigm. For instance: Logger will eventually switch to a sync_mode once it reaches some limit of queued logs, which blocks the current process in order to apply backpressure. I highly recommend becoming very familiar with the Logger documentation to avoid missing gotchas like that. Its important to know how long its taking to do IO, to know how long the functions you pass the authorizer are taking, and to determine how much of your application response time may be being eaten up by logging.
+
+Tip: Use lists of strings, never concat or manually construct strings in the logger (or ideally anywhere else that is equipped to use iolists)
+
+With that in mind, I've added `Spandex.Logger` which has a very similar interface to `Logger` but takes a `resource` (think of it as a title) as its first argument.
+It also wraps any functions passed to logger in spans in order to report them, and prepends the `resource` to the beginning of the log message.
+
+```elixir
+require Spandex.Logger
+
+db_records = fetch_db_records!(id)
+
+Spandex.Logger.info("Fetch Database Record", fn ->
+  ["Fetched ", #{Enum.count(db_records)}, " records from the database."]
+end)
+
+# 11:23:15.334 [info]  Fetch Database Record: Fetched 10 records from the database
+```
 
 ## Asynchronous Processes
 
