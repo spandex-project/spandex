@@ -26,23 +26,17 @@ defmodule Spandex.Logger do
         if Logger.compare_levels(:error, Logger.level()) == :lt do
           :ok
         else
-          Spandex.span("Logger.error") do
-            Spandex.update_span(%{service: :logger, resource: resource})
+          Spandex.span("Logger") do
+            Spandex.span("Logger.warn") do
+              Spandex.update_span(%{service: :logger, resource: resource})
 
-            current_span = Spandex.current_span()
-            sender_pid = self()
-            Logger.error(fn ->
-              if self() == sender_pid do
+              current_span = Spandex.current_span()
+              Logger.error(fn ->
                 Spandex.span("Logger.error:anonymous_fn") do
                   [resource, ": ", fun.()]
                 end
-              else
-                Spandex.continue_trace_from_span("Logger.error:anonymous_fn", current_span)
-                result = fun.()
-                Spandex.finish_trace()
-                [resource, ": ", result]
-              end
-            end, metadata)
+              end, metadata)
+            end
           end
         end
       end
@@ -75,23 +69,17 @@ defmodule Spandex.Logger do
         if Logger.compare_levels(:warn, Logger.level()) == :lt do
           :ok
         else
-          Spandex.span("Logger.warn") do
-            Spandex.update_span(%{service: :logger, resource: resource})
+          Spandex.span("Logger") do
+            Spandex.span("Logger.warn") do
+              Spandex.update_span(%{service: :logger, resource: resource})
 
-            current_span = Spandex.current_span()
-            sender_pid = self()
-            Logger.warn(fn ->
-              if self() == sender_pid do
+              current_span = Spandex.current_span()
+              Logger.warn(fn ->
                 Spandex.span("Logger.warn:anonymous_fn") do
                   [resource, ": ", fun.()]
                 end
-              else
-                Spandex.continue_trace_from_span("Logger.warn:anonymous_fn", current_span)
-                result = fun.()
-                Spandex.finish_trace()
-                [resource, ": ", result]
-              end
-            end, metadata)
+              end, metadata)
+            end
           end
         end
       end
@@ -124,23 +112,17 @@ defmodule Spandex.Logger do
         if Logger.compare_levels(:info, Logger.level()) == :lt do
           :ok
         else
-          Spandex.span("Logger.info") do
-            Spandex.update_span(%{service: :logger, resource: resource})
+          Spandex.span("Logger") do
+            Spandex.span("Logger.info") do
+              Spandex.update_span(%{service: :logger, resource: resource})
 
-            current_span = Spandex.current_span()
-            sender_pid = self()
-            Logger.info(fn ->
-              if self() == sender_pid do
+              current_span = Spandex.current_span()
+              Logger.info(fn ->
                 Spandex.span("Logger.info:anonymous_fn") do
                   [resource, ": ", fun.()]
                 end
-              else
-                Spandex.continue_trace_from_span("Logger.info:anonymous_fn", current_span)
-                result = fun.()
-                Spandex.finish_trace()
-                [resource, ": ", result]
-              end
-            end, metadata)
+              end, metadata)
+            end
           end
         end
       end
@@ -173,23 +155,17 @@ defmodule Spandex.Logger do
         if Logger.compare_levels(:debug, Logger.level()) == :lt do
           :ok
         else
-          Spandex.span("Logger.debug") do
-            Spandex.update_span(%{service: :logger, resource: resource})
+          Spandex.span("Logger") do
+            Spandex.span("Logger.debug") do
+              Spandex.update_span(%{service: :logger, resource: resource})
 
-            current_span = Spandex.current_span()
-            sender_pid = self()
-            Logger.debug(fn ->
-              # if self() == sender_pid do
-              #   Spandex.span("Logger.debug:anonymous_fn") do
-              #     [resource, ": ", fun.()]
-              #   end
-              # else
-                Spandex.continue_trace_from_span("Logger.debug:anonymous_fn", current_span)
-                result = fun.()
-                Spandex.finish_trace()
-                [resource, ": ", result]
-              # end
-            end, metadata)
+              current_span = Spandex.current_span()
+              Logger.debug(fn ->
+                Spandex.span("Logger.debug:anonymous_fn") do
+                  [resource, ": ", fun.()]
+                end
+              end, metadata)
+            end
           end
         end
       end
