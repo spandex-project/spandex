@@ -11,10 +11,12 @@ defmodule Spandex.Logger do
   and sets the `resource` of the span. This also prepends the resource passed in
   to the message of your logs. This is made inexpensive by use of iolists, as
   opposed to actual string appending operations.
+
+  *NOTICE* Only accepts functions as its second parameter.
   """
-  defmacro error(resource, chardata_or_fun, metadata \\ [])
-  defmacro error(resource, chardata_or_fun, metadata) do
-    quote location: :keep, bind_quoted: [resource: resource, chardata_or_fun: chardata_or_fun, metadata: metadata] do
+  defmacro error(resource, fun, metadata \\ [])
+  defmacro error(resource, fun, metadata) do
+    quote location: :keep, bind_quoted: [resource: resource, fun: fun, metadata: metadata] do
       require Logger
       require Spandex
       Spandex.span("Logger.error") do
@@ -22,26 +24,18 @@ defmodule Spandex.Logger do
 
         current_span = Spandex.current_span()
         sender_pid = self()
-        if is_function(chardata_or_fun) do
-          Logger.error(fn ->
-            if self() == sender_pid do
-              Spandex.span("Logger.error:anonymous_fn") do
-                [resource, ": ", chardata_or_fun.()]
-              end
-            else
-              Spandex.continue_trace_from_span("Logger.error:anonymous_fn", current_span)
-              result = chardata_or_fun.()
-              Spandex.finish_trace()
-              [resource, ": ", result]
+        Logger.error(fn ->
+          if self() == sender_pid do
+            Spandex.span("Logger.error:anonymous_fn") do
+              [resource, ": ", fun.()]
             end
-          end, metadata)
-        else
-          Spandex.span("Logger.error") do
-            Spandex.update_span(%{service: :logger, resource: resource})
-
-            Logger.error([resource, ": ", chardata_or_fun], metadata)
+          else
+            Spandex.continue_trace_from_span("Logger.error:anonymous_fn", current_span)
+            result = fun.()
+            Spandex.finish_trace()
+            [resource, ": ", result]
           end
-        end
+        end, metadata)
       end
     end
   end
@@ -53,10 +47,12 @@ defmodule Spandex.Logger do
   and sets the `resource` of the span. This also prepends the resource passed in
   to the message of your logs. This is made inexpensive by use of iolists, as
   opposed to actual string appending operations.
+
+  *NOTICE* Only accepts functions as its second parameter.
   """
-  defmacro warn(resource, chardata_or_fun, metadata \\ [])
-  defmacro warn(resource, chardata_or_fun, metadata) do
-    quote location: :keep, bind_quoted: [resource: resource, chardata_or_fun: chardata_or_fun, metadata: metadata] do
+  defmacro warn(resource, fun, metadata \\ [])
+  defmacro warn(resource, fun, metadata) do
+    quote location: :keep, bind_quoted: [resource: resource, fun: fun, metadata: metadata] do
       require Logger
       require Spandex
       Spandex.span("Logger.warn") do
@@ -64,26 +60,18 @@ defmodule Spandex.Logger do
 
         current_span = Spandex.current_span()
         sender_pid = self()
-        if is_function(chardata_or_fun) do
-          Logger.warn(fn ->
-            if self() == sender_pid do
-              Spandex.span("Logger.warn:anonymous_fn") do
-                [resource, ": ", chardata_or_fun.()]
-              end
-            else
-              Spandex.continue_trace_from_span("Logger.warn:anonymous_fn", current_span)
-              result = chardata_or_fun.()
-              Spandex.finish_trace()
-              [resource, ": ", result]
+        Logger.warn(fn ->
+          if self() == sender_pid do
+            Spandex.span("Logger.warn:anonymous_fn") do
+              [resource, ": ", fun.()]
             end
-          end, metadata)
-        else
-          Spandex.span("Logger.warn") do
-            Spandex.update_span(%{service: :logger, resource: resource})
-
-            Logger.warn([resource, ": ", chardata_or_fun], metadata)
+          else
+            Spandex.continue_trace_from_span("Logger.warn:anonymous_fn", current_span)
+            result = fun.()
+            Spandex.finish_trace()
+            [resource, ": ", result]
           end
-        end
+        end, metadata)
       end
     end
   end
@@ -95,10 +83,12 @@ defmodule Spandex.Logger do
   and sets the `resource` of the span. This also prepends the resource passed in
   to the message of your logs. This is made inexpensive by use of iolists, as
   opposed to actual string appending operations.
+
+  *NOTICE* Only accepts functions as its second parameter.
   """
-  defmacro info(resource, chardata_or_fun, metadata \\ [])
-  defmacro info(resource, chardata_or_fun, metadata) do
-    quote location: :keep, bind_quoted: [resource: resource, chardata_or_fun: chardata_or_fun, metadata: metadata] do
+  defmacro info(resource, fun, metadata \\ [])
+  defmacro info(resource, fun, metadata) do
+    quote location: :keep, bind_quoted: [resource: resource, fun: fun, metadata: metadata] do
       require Logger
       require Spandex
       Spandex.span("Logger.info") do
@@ -106,26 +96,18 @@ defmodule Spandex.Logger do
 
         current_span = Spandex.current_span()
         sender_pid = self()
-        if is_function(chardata_or_fun) do
-          Logger.info(fn ->
-            if self() == sender_pid do
-              Spandex.span("Logger.info:anonymous_fn") do
-                [resource, ": ", chardata_or_fun.()]
-              end
-            else
-              Spandex.continue_trace_from_span("Logger.info:anonymous_fn", current_span)
-              result = chardata_or_fun.()
-              Spandex.finish_trace()
-              [resource, ": ", result]
+        Logger.info(fn ->
+          if self() == sender_pid do
+            Spandex.span("Logger.info:anonymous_fn") do
+              [resource, ": ", fun.()]
             end
-          end, metadata)
-        else
-          Spandex.span("Logger.info") do
-            Spandex.update_span(%{service: :logger, resource: resource})
-
-            Logger.info([resource, ": ", chardata_or_fun], metadata)
+          else
+            Spandex.continue_trace_from_span("Logger.info:anonymous_fn", current_span)
+            result = fun.()
+            Spandex.finish_trace()
+            [resource, ": ", result]
           end
-        end
+        end, metadata)
       end
     end
   end
@@ -137,10 +119,12 @@ defmodule Spandex.Logger do
   and sets the `resource` of the span. This also prepends the resource passed in
   to the message of your logs. This is made inexpensive by use of iolists, as
   opposed to actual string appending operations.
+
+  *NOTICE* Only accepts functions as its second parameter.
   """
-  defmacro debug(resource, chardata_or_fun, metadata \\ [])
-  defmacro debug(resource, chardata_or_fun, metadata) do
-    quote location: :keep, bind_quoted: [resource: resource, chardata_or_fun: chardata_or_fun, metadata: metadata] do
+  defmacro debug(resource, fun, metadata \\ [])
+  defmacro debug(resource, fun, metadata) do
+    quote location: :keep, bind_quoted: [resource: resource, fun: fun, metadata: metadata] do
       require Logger
       require Spandex
       Spandex.span("Logger.debug") do
@@ -148,26 +132,18 @@ defmodule Spandex.Logger do
 
         current_span = Spandex.current_span()
         sender_pid = self()
-        if is_function(chardata_or_fun) do
-          Logger.debug(fn ->
-            if self() == sender_pid do
-              Spandex.span("Logger.debug:anonymous_fn") do
-                [resource, ": ", chardata_or_fun.()]
-              end
-            else
-              Spandex.continue_trace_from_span("Logger.debug:anonymous_fn", current_span)
-              result = chardata_or_fun.()
-              Spandex.finish_trace()
-              [resource, ": ", result]
+        Logger.debug(fn ->
+          if self() == sender_pid do
+            Spandex.span("Logger.debug:anonymous_fn") do
+              [resource, ": ", fun.()]
             end
-          end, metadata)
-        else
-          Spandex.span("Logger.debug") do
-            Spandex.update_span(%{service: :logger, resource: resource})
-
-            Logger.debug([resource, ": ", chardata_or_fun], metadata)
+          else
+            Spandex.continue_trace_from_span("Logger.debug:anonymous_fn", current_span)
+            result = fun.()
+            Spandex.finish_trace()
+            [resource, ": ", result]
           end
-        end
+        end, metadata)
       end
     end
   end

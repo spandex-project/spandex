@@ -14,7 +14,7 @@ Spandex is a platform agnostic tracing library. Currently there is only a datado
 ## Installation
 ```elixir
 def deps do
-  [{:spandex, "~> 1.2.5"}]
+  [{:spandex, "~> 1.2.6"}]
 end
 ```
 ## Warning
@@ -163,6 +163,11 @@ Tip: Use lists of strings, never concat or manually construct strings in the log
 
 With that in mind, I've added `Spandex.Logger` which has a very similar interface to `Logger` but takes a `resource` (think of it as a title) as its first argument.
 It also wraps any functions passed to logger in spans in order to report them, and prepends the `resource` to the beginning of the log message.
+
+*IMPORTANT*
+Only accepts functions as the second parameter, not strings or lists, due to limitations in building the macro.
+
+Contributions to remove that badness are more then welcome.
 
 ```elixir
 require Spandex.Logger
