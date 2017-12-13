@@ -40,7 +40,6 @@ defmodule Spandex do
   defp truthy?(value) when value in [false, nil], do: false
   defp truthy?(_other), do: true
 
-  delegate_to_adapter(:start_trace, [name])
   def start_trace(name, attributes) do
     case start_trace(name) do
       {:ok, trace_id} ->
@@ -51,7 +50,6 @@ defmodule Spandex do
     end
   end
 
-  delegate_to_adapter(:start_span, [name])
   def start_span(name, attributes) do
     case start_span(name) do
       {:ok, span_id} ->
@@ -61,6 +59,9 @@ defmodule Spandex do
       {:error, error} -> {:error, error}
     end
   end
+
+  delegate_to_adapter(:start_trace, [name])
+  delegate_to_adapter(:start_span, [name])
 
   delegate_to_adapter(:update_span, [context])
   delegate_to_adapter(:update_top_span, [context])
