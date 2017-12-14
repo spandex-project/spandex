@@ -23,7 +23,9 @@ defmodule Spandex.Ecto.Trace do
   end
 
   def trace(log_entry) do
-    unless Spandex.disabled?() do
+    config = config()
+    span_level = config[:level]
+    if !Spandex.disabled?() && Spandex.should_span?(span_level) do
       now = Spandex.Datadog.Utils.now()
       _ = setup(log_entry)
       query = string_query(log_entry)
@@ -39,7 +41,7 @@ defmodule Spandex.Ecto.Trace do
         %{
           start: start,
           completion_time: now,
-          service: service_name(),
+          service: config[:service],
           resource: query,
           type: :db,
           meta: %{"sql.query" => query, "sql.rows" => inspect(num_rows)}
@@ -133,9 +135,10 @@ defmodule Spandex.Ecto.Trace do
 
   defp to_nanoseconds(time), do: System.convert_time_unit(time, :native, :nanoseconds)
 
-  defp service_name do
+  defp config do
     :spandex
     |> Confex.get_env(:ecto, [])
-    |> Keyword.get(:service, @default_service_name)
+    |> Keyword.put_new(:service, @default_service_name)
+    |> Keyword.put_new(:level, Spandex.default_level())
   end
 end

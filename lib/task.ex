@@ -10,9 +10,10 @@ defmodule Spandex.Task do
   """
   require Spandex
 
-  def async(name, fun) do
+  def async(name, level \\ Spandex.default_level(), fun) do
     with false <- Spandex.disabled?(),
-         span when not(is_tuple(span)) <- Spandex.current_span()
+         span when not(is_tuple(span)) <- Spandex.current_span(),
+         true <- Spandex.should_span?(level)
     do
       Task.async(fn ->
         _ = Spandex.continue_trace_from_span("Spandex.Task.async/2", span)
@@ -29,7 +30,15 @@ defmodule Spandex.Task do
     end
   end
 
-  def await(task, timeout \\ 5000) do
+  def await(task, level \\ Spandex.default_level(), timeout \\ 5000) do
+    if Spandex.should_span?(level) do
+      case Task.await(task, timeout) do
+        {:spandex_span, _name, result} ->
+          result
+        other ->
+          other
+      end
+    end
     Spandex.span("Spandex.Task.await/2") do
       case Task.await(task, timeout) do
         {:spandex_span, name, result} ->

@@ -36,6 +36,7 @@ defmodule Spandex.ApplicationTest do
   test "correctly starts supervisor" do
     GenServer.stop Spandex.Supervisor
     Process.register self(), __MODULE__
+    {:ok, pid} = Agent.start_link(fn -> 0 end, name: :spandex_currently_send_count)
 
     conf =
       :spandex
@@ -46,7 +47,9 @@ defmodule Spandex.ApplicationTest do
         endpoint: TestBroadcast,
         channel: "test_channel",
         http: TestBroadcast,
-        asynchronous_send?: false
+        asynchronous_send?: false,
+        agent_pid: pid,
+        batch_size: 1
       ])
 
     with_conf :spandex, :log_traces?, true, fn ->
@@ -61,7 +64,7 @@ defmodule Spandex.ApplicationTest do
 
         [processing, spans, response] = log |> String.split("\n") |> Enum.reject(fn(s) -> s == "" end) |> Enum.take(-3)
 
-        assert processing =~ ~r/Processing trace with 2 spans/
+        assert processing =~ ~r/Sending 1 traces, 2 spans/
         assert spans =~ ~r/name: "special_name"/
         assert spans =~ ~r/name: "special_name_span"/
         assert spans =~ ~r/type: :job/

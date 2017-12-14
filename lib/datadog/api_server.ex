@@ -7,7 +7,7 @@ defmodule Spandex.Datadog.ApiServer do
 
   require Logger
 
-  defstruct [:asynchronous_send?, :http, :url, :host, :port, :endpoint, :channel, :verbose]
+  defstruct [:asynchronous_send?, :http, :url, :host, :port, :endpoint, :channel, :verbose, :waiting_traces, :batch_size, :sync_threshold, :agent_pid]
 
   @type t :: %__MODULE__{}
 
@@ -32,7 +32,14 @@ defmodule Spandex.Datadog.ApiServer do
       channel:  Keyword.get(args, :channel),
       verbose:  Keyword.get(args, :log_traces?, false),
       http:     Keyword.get(args, :http, HTTPoison),
-      asynchronous_send?: Keyword.get(args, :asynchronous_send?, true)
+      asynchronous_send?: Keyword.get(args, :asynchronous_send?, true),
+      waiting_traces: [],
+      batch_size: Keyword.get(args, :batch_size, 10),
+      sync_threshold: Keyword.get(args, :sync_threshold, 20),
+      agent_pid: Keyword.get_lazy(args, :agent_pid, fn ->
+        {:ok, pid} = Agent.start_link(fn -> 0 end, name: :spandex_currently_send_count)
+        pid
+      end)
     }
 
     {:ok, state}
@@ -41,36 +48,69 @@ defmodule Spandex.Datadog.ApiServer do
   @doc """
   Send spans asynchronously to DataDog.
   """
-  @spec send_spans(spans :: list(map), any) :: :ok
-  def send_spans(spans, name \\ __MODULE__) do
-    GenServer.cast name, {:send_spans, spans}
+  @spec send_spans(spans :: list(map), Keyword.t) :: :ok
+  def send_spans(spans, opts \\ []) do
+    GenServer.call __MODULE__, {:send_spans, spans}, Keyword.get(opts, :timeout, 30_000)
   end
 
   @doc false
-  @spec handle_cast({:send_spans, spans :: list(map)}, state :: t) :: {:noreply, t}
-  def handle_cast({:send_spans, spans}, %__MODULE__{verbose: verbose, asynchronous_send?: asynchronous?} = state) do
+  @spec handle_call({:send_spans, spans :: list(map)}, pid, state :: t) :: {:noreply, t}
+  def handle_call({:send_spans, spans}, _from, %__MODULE__{waiting_traces: waiting_traces, batch_size: batch_size, verbose: verbose} = state)
+  when (length(waiting_traces) + 1) < batch_size do
     if verbose do
-      Logger.info  fn -> "Processing trace with #{Enum.count(spans)} spans" end
-      Logger.debug fn -> "Trace: #{inspect([spans])}" end
+      Logger.info  fn -> "Adding trace to stack with #{Enum.count(spans)} spans" end
+    end
+
+    {:reply, :ok, %{state | waiting_traces: [spans | waiting_traces]}}
+  end
+  def handle_call({:send_spans, spans}, _from, %__MODULE__{verbose: verbose, asynchronous_send?: asynchronous?, waiting_traces: waiting_traces, sync_threshold: sync_threshold, agent_pid: agent_pid} = state) do
+    all_traces = [spans | waiting_traces]
+    if verbose do
+      trace_count = Enum.count(all_traces)
+      span_count =
+        all_traces
+        |> Enum.map(&Enum.count/1)
+        |> Enum.sum()
+
+      Logger.info  fn -> "Sending #{trace_count} traces, #{span_count} spans." end
+
+      Logger.debug fn -> "Trace: #{inspect([Enum.concat(all_traces)])}" end
     end
 
     if asynchronous? do
-      Task.start(fn ->
-        send_and_log(spans, state)
+      below_sync_threshold? = Agent.get_and_update(agent_pid, fn count ->
+        if count < sync_threshold do
+          {true, count + 1}
+        else
+          {false, count}
+        end
       end)
+
+      if below_sync_threshold? do
+        Task.start(fn ->
+          try do
+            send_and_log(all_traces, state)
+          after
+            Agent.update(agent_pid, fn count -> count - 1 end)
+          end
+        end)
+      else
+        # We get benefits from running in a separate process (like better GC)
+        # So we async/await here to mimic the behavour above but still apply backpressure
+        task = Task.async(fn -> send_and_log(all_traces, state) end)
+        Task.await(task)
+      end
     else
-      send_and_log(spans, state)
+      send_and_log(all_traces, state)
     end
 
-    broadcast(spans, state)
-
-    {:noreply, state}
+    {:reply, :ok, %{state | waiting_traces: []}}
   end
 
-  @spec send_and_log(spans :: list(map), any) :: :ok
-  def send_and_log(spans, %{verbose: verbose} = state) do
+  @spec send_and_log(traces :: list(list(map)), any) :: :ok
+  def send_and_log(traces, %{verbose: verbose} = state) do
     response =
-      [spans]
+      traces
       |> encode()
       |> push(state)
 
@@ -78,14 +118,16 @@ defmodule Spandex.Datadog.ApiServer do
       Logger.debug fn -> "Trace response: #{inspect(response)}" end
     end
 
+    broadcast(traces, state)
+
     :ok
   end
 
-  @spec broadcast(spans :: list(map), t) :: any
+  @spec broadcast(traces :: list(list(map)), t) :: any
   defp broadcast(_spans, %__MODULE__{endpoint: e, channel: c}) when is_nil(e) or is_nil(c),
     do: :noop
-  defp broadcast(spans, %__MODULE__{endpoint: endpoint, channel: channel}),
-    do: endpoint.broadcast(channel, "trace", %{spans: spans})
+  defp broadcast(traces, %__MODULE__{endpoint: endpoint, channel: channel}),
+    do: endpoint.broadcast(channel, "trace", %{spans: Enum.concat(traces)})
 
   @spec encode(data :: term) :: iodata | no_return
   defp encode(data),
