@@ -10,7 +10,7 @@ defmodule Spandex.Datadog.Utils do
   """
   @spec now() :: non_neg_integer
   def now() do
-    :os.system_time(:nanosecond)
+    :os.system_time(:nano_seconds)
   end
 
   @doc """

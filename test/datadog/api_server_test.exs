@@ -28,15 +28,15 @@ defmodule Spandex.Datadog.ApiServerTest do
       [
         spans: [%{"foo" => "bar"}, %{"baz" => "maz"}],
         url: "localhost:8126/v0.3/traces",
-        state: %ApiServer{host: "localhost", port: "8126", http: TestOkApiServer, verbose: false},
+        state: %ApiServer{host: "localhost", port: "8126", http: TestOkApiServer, verbose: false, waiting_traces: [], batch_size: 1},
       ]
     }
   end
 
   describe "ApiServer.init/1" do
     test "correctly builds state with defaults" do
-      assert ApiServer.init([]) == {
-        :ok,
+      {:ok, config} = ApiServer.init([])
+      assert config ==
         %ApiServer{
           host: nil,
           port: nil,
@@ -44,9 +44,12 @@ defmodule Spandex.Datadog.ApiServerTest do
           channel: nil,
           verbose: false,
           http: HTTPoison,
-          asynchronous_send?: true
+          asynchronous_send?: true,
+          waiting_traces: [],
+          sync_threshold: 20,
+          batch_size: 10,
+          agent_pid: config.agent_pid
         }
-      }
     end
 
     test "correctly builds state from confex" do
@@ -59,9 +62,12 @@ defmodule Spandex.Datadog.ApiServerTest do
         |> Keyword.put(:channel, "test_channel")
         |> Keyword.put(:http, TestOkApiServer)
         |> Keyword.put(:asynchronous_send?, false)
+        |> Keyword.put(:batch_size, 50)
+        |> Keyword.put(:sync_threshold, 100)
 
-      assert ApiServer.init(dd_conf) == {
-        :ok,
+      {:ok, config} = ApiServer.init(dd_conf)
+
+      assert config ==
         %ApiServer{
           host: "datadog",
           port: 8126,
@@ -69,22 +75,25 @@ defmodule Spandex.Datadog.ApiServerTest do
           channel: "test_channel",
           verbose: true,
           http: TestOkApiServer,
-          asynchronous_send?: false
+          asynchronous_send?: false,
+          agent_pid: config.agent_pid,
+          batch_size: 50,
+          sync_threshold: 100,
+          waiting_traces: []
         }
-      }
     end
   end
 
-  describe "ApiServer.handle_cast/2 - :send_spans" do
+  describe "ApiServer.handle_call/3 - :send_spans" do
     test "correctly sends spans to specified endpoint", %{spans: spans, state: state, url: url} do
       state = Map.put state, :verbose, true
 
       [processing, received_spans, response] =
-        capture_log(fn -> {:noreply, ^state} = ApiServer.handle_cast({:send_spans, spans}, state) end)
+        capture_log(fn -> {:reply, :ok, _} = ApiServer.handle_call({:send_spans, spans}, self(), state) end)
         |> String.split("\n")
         |> Enum.reject(fn(s) -> s == "" end)
 
-      assert processing =~ ~r/Processing trace with 2 spans/
+      assert processing =~ ~r/Sending 1 traces, 2 spans/
       assert received_spans =~ ~r/Trace: \[\[\%\{\"foo\" => \"bar\"\}, %\{\"baz\" => \"maz\"\}\]\]/
       assert response =~ ~r/Trace response: {:ok, %HTTPoison.Response{body: nil, headers: \[\], request_url: nil, status_code: 200}}/
       assert_received {:put_datadog_spans, ^spans, ^url, _}
@@ -92,7 +101,7 @@ defmodule Spandex.Datadog.ApiServerTest do
 
     test "doesn't log anything when verbose: false", %{spans: spans, state: state, url: url} do
       log = capture_log fn ->
-        {:noreply, ^state} = ApiServer.handle_cast({:send_spans, spans}, state)
+        {:reply, :ok, _} = ApiServer.handle_call({:send_spans, spans}, self(), state)
       end
 
       assert log == ""
@@ -106,11 +115,11 @@ defmodule Spandex.Datadog.ApiServerTest do
         |> Map.put(:http, TestErrorApiServer)
 
       [processing, received_spans, response] =
-        capture_log(fn -> {:noreply, ^state} = ApiServer.handle_cast({:send_spans, spans}, state) end)
+        capture_log(fn -> {:reply, :ok, _} = ApiServer.handle_call({:send_spans, spans}, self(), state) end)
         |> String.split("\n")
         |> Enum.reject(fn(s) -> s == "" end)
 
-      assert processing =~ ~r/Processing trace with 2 spans/
+      assert processing =~ ~r/Sending 1 traces, 2 spans/
       assert received_spans =~ ~r/Trace: \[\[\%\{\"foo\" => \"bar\"\}, %\{\"baz\" => \"maz\"\}\]\]/
       assert response =~ ~r/Trace response: {:error, %HTTPoison.Error{id: :foo, reason: :bar}}/
       assert_received {:put_datadog_spans, ^spans, ^url, _}
@@ -122,7 +131,7 @@ defmodule Spandex.Datadog.ApiServerTest do
         |> Map.put(:endpoint, TestOkApiServer)
         |> Map.put(:channel, "test_channel")
 
-      {:noreply, ^state} = ApiServer.handle_cast({:send_spans, spans}, state)
+      {:reply, :ok, _} = ApiServer.handle_call({:send_spans, spans}, self(), state)
 
       assert_received {:received_spans, ^spans}
     end

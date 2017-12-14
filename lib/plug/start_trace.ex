@@ -15,7 +15,7 @@ defmodule Spandex.Plug.StartTrace do
     if ignoring_request?(conn) do
       Utils.trace(conn, false)
     else
-      Spandex.start_trace("request")
+      Spandex.start_trace("request", %{level: Spandex.highest_level()})
       Utils.trace(conn, true)
     end
   end

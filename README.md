@@ -21,6 +21,44 @@ end
 
 Don't use the endpoint/channel configuration in your production environment. We saw a significant increase in scheduler/cpu load during high traffic times due to this feature. It was intended to provide a way to write custom visualizations by subscribing to a channel. We haven't removed it yet, but we probably will soon.
 
+## Performance
+
+Originally, the library had an api server and spans were sent via `GenServer.cast`, but we've seen the need to introduce backpressure, and limit the overall amount of requests made. As such, there are two new configuration options (also shown in the configuration section below)
+
+```elixir
+config :spandex, :datadog,
+  batch_size: 10,
+  sync_threshold: 20
+```
+
+Batch size refers to *traces* not spans, so if you send a large amount of spans per trace, then you probably want to keep that number low. If you send only a few spans, then you could set it significantly higher.
+
+Sync threshold refers to the *number of processes concurrently sending spans*. *NOT* the number of traces queued up waiting to be sent. It is used to apply backpressure while still taking advantage of parallelism. Ideally, the sync threshold would be set to a point that you wouldn't reasonably reach often, but that is low enough to not cause systemic performance issues if you don't apply backpressure. A simple way to think about it is that if you are seeing 1000 request per second, and your batch size is 10, then you'll be making 100 requests per second to datadog(probably a bad config). But if your sync_threshold is set to 10, you'll almost certainly exceed that because 100 requests in 1 second will likely overlap in that way. So when that is exceeded, the work is done synchronously, (not waiting for the asynchronous ones to complete even). This concept of backpressure is very important, and strategies for switching to synchronous operation are often surprisingly far more performant than purely asynchronous strategies (and much more predictable).
+
+As we used this library in production, we discovered that it could incur significant performance penalties when large amounts of data, e.g 300-500 hundred spans per trace and 50-100 traces per second, were piped through this library. As such we've added a `level` configuration for spans, as well as a configuration for ordered levels. This allows the individual configuration of the importance of important spans, as well as having dev/staging environments report more spans since they usually see less traffic.
+
+There are three configuration options for levels, two of which *are set at compile time* and are not configurable at runtime.
+
+Compile time options and their defaults:
+```elixir
+config :spandex,
+  levels: [:low, :medium, :high],
+  default_span_level: :low # (defaults to the first item in the above list)
+```
+
+Runtime options and defaults:
+```elixir
+config :spandex,
+  level: :low # (defaults to the first item in the levels list)
+```
+
+These are also reflected in the section on configuration below.
+
+If a span has a level lower (appears sooner in the configured levels list) than the configured level, it will not be processed or sent.
+
+*IMPORTANT*
+When constructing spans manually, this has no effect. E.g using `Spandex.start_span` and `Spandex.finish_span`. Only the `@decorate span(level: :low)` and `Spandex.span("name", level: :high) do` formats respect this option.
+
 ## Configuration
 
 Spandex uses `Confex` under the hood. See the formats usable for declaring values at their [documentation](https://github.com/Nebo15/confex)
@@ -32,6 +70,9 @@ config :spandex,
   disabled?: {:system, :boolean, "DISABLE_SPANDEX", false},
   env: {:system, "APM_ENVIRONMENT", "unknown"},
   application: :my_app,
+  levels: [:low, :medium, :high],
+  default_span_level: :low,
+  level: :low,
   ignored_methods: ["OPTIONS"],
   # ignored routes accepts regexes, and strings. If it is a string it must match exactly.
   ignored_routes: [~r/health_check/, "/status"],
@@ -45,6 +86,8 @@ Even though datadog is the only adapter currently, configurations are still name
 config :spandex, :datadog,
   host: {:system, "DATADOG_HOST", "localhost"},
   port: {:system, "DATADOG_PORT", 8126},
+  batch_size: 10,
+  sync_threshold: 20,
   services: [ # for defaults mapping in spans service => type
     ecto: :db,
     my_api: :web,
@@ -82,6 +125,9 @@ In general, the nicest interface is to use function decorators.
 
 Span function decorators take an optional argument which is the attributes to update the span with.
 
+*IMPORTANT*
+If you define multiple clauses for a function, you'll have to decorate all of the ones you want to span.
+
 ```elixir
 defmodule TracedModule do
   use Spandex.TraceDecorator
@@ -106,6 +152,12 @@ defmodule TracedModule do
   def inner_span_2() do
     "this produces the span stack you would expect"
   end
+
+  # Multiple Clauses
+  @decorate span()
+  def divide(n, 0), do: {:error, :divide_by_zero}
+  @decorate span()
+  def divide(n, m), do: n / m
 end
 
 defmodule ThirdPartyApi do
@@ -154,6 +206,27 @@ defmodule ManuallyTraced do
   end
 end
 ```
+
+## Ecto Logger
+
+See module documentation for `Spandex.Ecto.Trace` for more information
+
+A trace builder that can be given to ecto as a logger. It will try to get
+the trace_id and span_id from the caller pid in the case that the particular
+query is being run asynchronously (as in the case of parallel preloads).
+
+Traces will default to the service name `:ecto` but can be configured.
+A level for ecto traces can be configured as well, in order to avoid
+tracing a large amount of ecto queries. See information on levels above.
+
+config :spandex, :ecto,
+  service: :my_ecto,
+  level: :medium
+
+To configure, set it up as an ecto logger like so:
+
+config :my_app, MyApp.Repo,
+  loggers: [{Ecto.LogEntry, :log, [:info]}, {Spandex.Ecto.Trace, :trace, []}]
 
 ## Spandex.Logger
 
