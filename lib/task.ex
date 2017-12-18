@@ -30,20 +30,21 @@ defmodule Spandex.Task do
     end
   end
 
-  def await(task, level \\ Spandex.default_level(), timeout \\ 5000) do
+  def await(task, timeout \\ 5000, level \\ Spandex.default_level()) do
     if Spandex.should_span?(level) do
+      Spandex.span("Spandex.Task.await/2") do
+        case Task.await(task, timeout) do
+          {:spandex_span, name, result} ->
+            Spandex.update_span(%{name: "Spandex.Task.await/2:#{name}"})
+
+            result
+          other ->
+            other
+        end
+      end
+    else
       case Task.await(task, timeout) do
         {:spandex_span, _name, result} ->
-          result
-        other ->
-          other
-      end
-    end
-    Spandex.span("Spandex.Task.await/2") do
-      case Task.await(task, timeout) do
-        {:spandex_span, name, result} ->
-          Spandex.update_span(%{name: "Spandex.Task.await/2:#{name}"})
-
           result
         other ->
           other
