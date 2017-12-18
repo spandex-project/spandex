@@ -14,7 +14,7 @@ Spandex is a platform agnostic tracing library. Currently there is only a datado
 ## Installation
 ```elixir
 def deps do
-  [{:spandex, "~> 1.3.0"}]
+  [{:spandex, "~> 1.3.1"}]
 end
 ```
 ## Warning
