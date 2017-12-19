@@ -229,7 +229,7 @@ config :my_app, MyApp.Repo,
 
 ## Spandex.Logger
 
-Logging can often incur unseen costs, especially for those unfamiliar with elixir's logging paradigm. For instance: Logger will eventually switch to a sync_mode once it reaches some limit of queued logs, which blocks the current process in order to apply backpressure. I highly recommend becoming very familiar with the Logger documentation to avoid missing gotchas like that. It's important to know how long it's taking to do IO, to know how long the functions you pass the authorizer are taking, and to determine how much of your application response time may be being eaten up by logging.
+Logging can often incur unseen costs, especially for those unfamiliar with elixir's logging paradigm. For instance: Logger will eventually switch to a sync_mode once it reaches some limit of queued logs, which blocks the current process in order to apply backpressure. I highly recommend becoming very familiar with the Logger documentation to avoid missing gotchas like that. It's important to know how long it's taking to do IO, to know how long the functions you pass the logger are taking, and to determine how much of your application response time may be being eaten up by logging.
 
 Tip: Use lists of strings, never concat or manually construct strings in the logger (or ideally anywhere else that is equipped to use iolists)
 
