@@ -238,7 +238,7 @@ It also wraps any functions passed to logger in spans in order to report them, a
 
 *IMPORTANT*
 * Only accepts functions as the second parameter, not strings or lists, due to limitations in building the macro.
-* Does *NOT* run the provided function if the log level does not line up or has been compile time purged, unlike the normal logger
+* Does *NOT* run the provided function if the log level does not line up or has been compile time purged, like the normal logger
 
 Contributions to remove that badness are more then welcome.
 
