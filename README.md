@@ -263,6 +263,9 @@ Tasks are supported by using `Spandex.Task`
 Spandex.Task.async("foo", fn -> do_work() end)
 ```
 
+*IMPORTANT*
+Always use `Spandex.Task.await` to await your tasks. Spandex tasks use a special return value to set the span name for the passed in anonymous function.
+
 Managing your own asynchronous work:
 
 The current trace_id and span_id can be retrieved with `Spandex.current_trace_id()` and `Spandex.current_span_id()`. This can then be used as `Spandex.continue_trace("new_trace", trace_id, span_id)`. New spans can then be logged from there and will be sent in a separate batch.
