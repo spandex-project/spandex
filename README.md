@@ -246,7 +246,7 @@ require Spandex.Logger
 db_records = fetch_db_records!(id)
 
 Spandex.Logger.info("Fetch Database Record", fn ->
-  ["Fetched ", #{Enum.count(db_records)}, " records from the database."]
+  ["Fetched ", to_string(Enum.count(db_records)), " records from the database."]
 end)
 
 # 11:23:15.334 [info]  Fetch Database Record: Fetched 10 records from the database
