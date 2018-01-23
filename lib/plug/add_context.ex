@@ -1,7 +1,11 @@
 defmodule Spandex.Plug.AddContext do
   @moduledoc """
   Adds request context to the top span of the trace, setting
-  the resource, method, url, service, type and env
+  the resource, method, url, service, type and env.
+
+  Route value may be overridden with
+  `Plug.Conn.assign(:spandex_route_name, "my_resource/:id")` if
+  derived value is insufficient.
   """
   @behaviour Plug
 
@@ -33,6 +37,7 @@ defmodule Spandex.Plug.AddContext do
   end
 
   @spec route_name(Plug.Conn.t) :: String.t
+  defp route_name(%Plug.Conn{assigns: %{spandex_route_name: route}}), do: route
   defp route_name(%Plug.Conn{path_info: path_values, params: params}) do
     inverted_params = Enum.into(params, %{}, fn {key, value} -> {value, key} end)
 
