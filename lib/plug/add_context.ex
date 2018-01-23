@@ -1,25 +1,34 @@
 defmodule Spandex.Plug.AddContext do
   @moduledoc """
   Adds request context to the top span of the trace, setting
-  the resource, method, url, service, type and env.
-
-  Route value may be overridden with
-  `Plug.Conn.assign(:spandex_route_name, "my_resource/:id")` if
-  derived value is insufficient.
+  the resource, method, url, service, type and env
   """
   @behaviour Plug
 
   alias Spandex.Plug.Utils
 
   @spec init(opts :: Keyword.t) :: Keyword.t
-  def init(opts), do: opts
+  def init(opts) do\
+    opts
+    |> Keyword.update(:allowed_route_replacements, nil, fn config -> Enum.map(config, &Atom.to_string/1) end)
+    |> Keyword.update(:disallowed_route_replacements, [], fn config -> Enum.map(config, &Atom.to_string/1) end)
+    |> Keyword.take([:allowed_route_replacements, :disallowed_route_replacements])
+  end
 
   @spec call(conn :: Plug.Conn.t, _opts :: Keyword.t) :: Plug.Conn.t
-  def call(conn, _opts) do
+  def call(conn, opts) do
     if Utils.trace?(conn) do
+      conn = Plug.Conn.fetch_query_params(conn)
+      params =
+        if opts[:allowed_route_replacements] do
+          Map.take(conn.params, opts[:allowed_route_replacements])
+        else
+          Map.drop(conn.params, opts[:disallowed_route_replacements])
+        end
+
       route =
         conn
-        |> Plug.Conn.fetch_query_params()
+        |> Map.put(:params, params)
         |> route_name()
 
       %{
@@ -37,7 +46,6 @@ defmodule Spandex.Plug.AddContext do
   end
 
   @spec route_name(Plug.Conn.t) :: String.t
-  defp route_name(%Plug.Conn{assigns: %{spandex_route_name: route}}), do: route
   defp route_name(%Plug.Conn{path_info: path_values, params: params}) do
     inverted_params = Enum.into(params, %{}, fn {key, value} -> {value, key} end)
 
