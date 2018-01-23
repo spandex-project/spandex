@@ -8,7 +8,7 @@ defmodule Spandex.Plug.AddContext do
   alias Spandex.Plug.Utils
 
   @spec init(opts :: Keyword.t) :: Keyword.t
-  def init(opts) do\
+  def init(opts) do
     opts
     |> Keyword.update(:allowed_route_replacements, nil, fn config -> Enum.map(config, &Atom.to_string/1) end)
     |> Keyword.update(:disallowed_route_replacements, [], fn config -> Enum.map(config, &Atom.to_string/1) end)
