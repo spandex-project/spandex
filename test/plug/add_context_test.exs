@@ -17,7 +17,7 @@ defmodule Spandex.Plug.AddContextTest do
 
   describe "AddContext.call/2" do
     test "doesn't change anything, when we don't trace request", %{conn: conn} do
-      %Plug.Conn{} = AddContext.call(conn, [])
+      %Plug.Conn{} = AddContext.call(conn, [allowed_route_replacements: nil, disallowed_route_replacements: []])
 
       :ok = Spandex.finish_trace()
 
@@ -36,7 +36,7 @@ defmodule Spandex.Plug.AddContextTest do
       %Plug.Conn{} =
         conn
         |> Utils.trace(true)
-        |> AddContext.call([])
+        |> AddContext.call([allowed_route_replacements: nil, disallowed_route_replacements: []])
 
       {:ok, expected_span_id} = Spandex.start_span("foobar")
 

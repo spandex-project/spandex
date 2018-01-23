@@ -21,7 +21,9 @@ defmodule Spandex.Plug.AddContext do
       conn = Plug.Conn.fetch_query_params(conn)
       params =
         if opts[:allowed_route_replacements] do
-          Map.take(conn.params, opts[:allowed_route_replacements])
+          conn.params
+          |> Map.take(opts[:allowed_route_replacements])
+          |> Map.drop(opts[:disallowed_route_replacements])
         else
           Map.drop(conn.params, opts[:disallowed_route_replacements])
         end
@@ -40,9 +42,11 @@ defmodule Spandex.Plug.AddContext do
       |> Spandex.update_top_span()
 
       Logger.metadata(trace_id: Spandex.current_trace_id(), span_id: Spandex.current_span_id())
-    end
 
-    conn
+      conn
+    else
+      conn
+    end
   end
 
   @spec route_name(Plug.Conn.t) :: String.t
