@@ -107,6 +107,8 @@ There are 3 plugs provided for usage w/ Phoenix:
 * `Spandex.Plug.AddContext`
 * `Spandex.Plug.EndTrace`
 
+`Spandex.Plug.AddContext` can be modified to include options for `:allowed_route_replacements` and `:disallowed_route_replacements`, so a route of `:base_route/:id/:relationship` would only have `:base_route` and `:relationship` swapped to their param values if included in `:allowed_route_replacements` and not included in `:disallowed_route_replacements`.
+
 Ensure that `Spandex.Plug.EndTrace` goes *after* your router. This is important because we want rendering the response to be included in the tracing/timing. Put `Spandex.Plug.StartTrace` as early as is reasonable in your pipeline. Put `Spandex.Plug.AddContext` either after router or inside a pipeline in router.
 
 
