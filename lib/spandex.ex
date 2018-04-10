@@ -67,34 +67,28 @@ defmodule Spandex do
   end
 
   def start_trace(name, attributes) do
+    attributes = Map.put_new(attributes, :service, Confex.get_env(:spandex, :service))
     case start_trace(name) do
       {:ok, trace_id} ->
         Logger.metadata([trace_id: trace_id])
 
         Spandex.update_span(attributes)
-      {:error, error} -> {:error, error}
-    end
-  end
 
-  def start_span(name, attributes) do
-    case start_span(name) do
-      {:ok, span_id} ->
-        Logger.metadata([span_id: span_id])
-
-        Spandex.update_span(attributes)
+        {:ok, trace_id}
       {:error, error} -> {:error, error}
     end
   end
 
   delegate_to_adapter(:start_span, [name])
+  delegate_to_adapter(:start_span, [name, context])
   delegate_to_adapter(:start_trace, [name])
   delegate_to_adapter(:update_span, [context])
   delegate_to_adapter(:update_top_span, [context])
   delegate_to_adapter(:finish_trace, [])
   delegate_to_adapter(:finish_span, [])
+  delegate_to_adapter(:span_error, [])
   delegate_to_adapter(:span_error, [error])
   delegate_to_adapter(:continue_trace, [name, trace_id, span_id])
-  delegate_to_adapter(:continue_trace_from_span, [name, span])
   delegate_to_adapter(:current_trace_id, [])
   delegate_to_adapter(:current_span_id, [])
   delegate_to_adapter(:current_span, [])

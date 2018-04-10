@@ -163,7 +163,7 @@ defmodule Spandex.Datadog.Span do
   defp filter_nils(other), do: other
 
   defp default_service, do: Confex.get_env(:spandex, :service)
-  defp default_env, do: Confex.get_env(:spandex, :env)
+  defp default_env, do: Confex.get_env(:datadog, :env)
   defp default_type(service) do
     :spandex
     |> Confex.get_env(:datadog)

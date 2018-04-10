@@ -12,10 +12,8 @@ defmodule Spandex.Plug.EndTrace do
   @spec call(conn :: Plug.Conn.t, _opts :: Keyword.t) :: Plug.Conn.t
   def call(conn, _opts) do
     if Utils.trace?(conn) do
-      Spandex.update_top_span(%{
-        status: conn.status,
-        error: error_count(conn)
-      })
+      set_error(conn)
+      Spandex.update_top_span(%{"http.status_code": conn.status})
 
       Spandex.finish_trace()
     end
@@ -23,8 +21,12 @@ defmodule Spandex.Plug.EndTrace do
     conn
   end
 
-  defp error_count(%{status: status}) when status in 200..399,
-    do: 0
-  defp error_count(%{status: _status}),
-    do: 1
+  @spec set_error(Plug.Conn.t()) :: :ok
+  defp set_error(%{status: status}) when status in 200..399 do
+    :ok
+  end
+  defp set_error(%{status: _status}) do
+    Spandex.span_error()
+    :ok
+  end
 end
