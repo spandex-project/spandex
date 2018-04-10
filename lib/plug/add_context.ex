@@ -81,8 +81,8 @@ defmodule Spandex.Plug.AddContext do
   defp add_query_params(uri, _, nil), do: uri
   defp add_query_params(uri, nil, _), do: uri
   defp add_query_params(uri, params, take) do
-    to_encode = Map.take(params, take |> IO.inspect()) |> IO.inspect()
+    to_encode = Map.take(params, take)
 
-    uri <> "?" <> Plug.Conn.Query.encode(to_encode) |> IO.inspect()
+    uri <> "?" <> Plug.Conn.Query.encode(to_encode)
   end
 end
