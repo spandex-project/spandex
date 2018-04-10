@@ -29,27 +29,10 @@ defmodule Spandex.Plug.AddContext do
           Map.drop(conn.params, opts[:disallowed_route_replacements])
         end
 
-      route =
-        conn
-        |> Map.put(:params, replacement_params)
-        |> route_name()
-        |> add_query_params(conn.params, opts[:query_params])
-
-      route_with_method =
-        if Spandex.include_method_in_span_name?() do
-          "#{String.upcase(conn.method)} #{route}"
-        else
-          route
-        end
-
-      name =
-        case Spandex.mandatory_top_span() do
-          nil -> route
-          name -> name
-        end
+      {route, name} = route_and_name(conn, replacement_params, opts)
 
       Spandex.update_top_span(%{
-        resource: route_with_method,
+        resource: route,
         name: name,
         method: conn.method,
         url: conn.request_path,
@@ -74,6 +57,30 @@ defmodule Spandex.Plug.AddContext do
     else
       conn
     end
+  end
+
+  @spec route_and_name(Plug.Conn.t(), map, Keyword.t()) :: String.t()
+  defp route_and_name(conn, replacement_params, opts) do
+    route =
+      conn
+      |> Map.put(:params, replacement_params)
+      |> route_name()
+      |> add_query_params(conn.params, opts[:query_params])
+
+    route_with_method =
+      if Spandex.include_method_in_span_name?() do
+        "#{String.upcase(conn.method)} #{route}"
+      else
+        route
+      end
+
+    name =
+      case Spandex.mandatory_top_span() do
+        nil -> route_with_method
+        name -> name
+      end
+
+    {route_with_method, name}
   end
 
   @spec route_name(Plug.Conn.t) :: String.t
