@@ -33,6 +33,14 @@ defmodule Spandex.Adapters.OpenTracing do
     end
   end
 
+  @spec mandatory_top_span() :: String.t() | nil
+  def mandatory_top_span(), do: nil
+
+  @spec include_method_in_span_name?() :: boolean
+  def include_method_in_span_name?() do
+    false
+  end
+
   @doc """
   Starts a span and adds it to the span stack.
   """

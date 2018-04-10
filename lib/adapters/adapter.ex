@@ -14,4 +14,6 @@ defmodule Spandex.Adapters.Adapter do
   @callback current_trace_id() :: term | nil | {:error, term}
   @callback current_span_id() :: term | nil | {:error, term}
   @callback continue_trace(String.t, term, term) :: {:ok, term} | {:error, term}
+  @callback mandatory_top_span() :: String.t() | nil
+  @callback include_method_in_span_name?() :: boolean
 end

@@ -13,7 +13,7 @@ defmodule Spandex.Plug.EndTrace do
   def call(conn, _opts) do
     if Utils.trace?(conn) do
       set_error(conn)
-      Spandex.update_top_span(%{"http.status_code": conn.status})
+      Spandex.update_top_span(%{"http.status_code": conn.status, meta: %{"http.status_code": conn.status}})
 
       Spandex.finish_trace()
     end

@@ -91,6 +91,16 @@ defmodule Spandex.Adapters.Datadog do
     end)
   end
 
+  @spec mandatory_top_span() :: String.t() | nil
+  def mandatory_top_span() do
+    "request"
+  end
+
+  @spec include_method_in_span_name?() :: boolean
+  def include_method_in_span_name?() do
+    true
+  end
+
   @doc """
   Gets the current trace id
   """

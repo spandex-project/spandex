@@ -4,7 +4,10 @@ defmodule Spandex.Trace do
   """
   @spec get_trace(map) :: map | nil
   def get_trace(default \\ nil) do
-    Process.get(:spandex_trace, default)
+    case Process.get(:spandex_trace) do
+      nil -> default
+      trace -> trace
+    end
   end
 
   @spec put_trace(map) :: :ok
@@ -108,6 +111,8 @@ defmodule Spandex.Trace do
           |> Enum.map(stop_func)
           |> Kernel.++(spans)
           |> span_handler.()
+
+        :ok
       end
 
     delete_trace()

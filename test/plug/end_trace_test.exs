@@ -38,7 +38,7 @@ defmodule Spandex.Plug.EndTraceTest do
       %{trace_id: trace_id, meta: meta, error: error} = Spandex.Test.Util.find_span("request")
 
       assert trace_id == tid
-      assert Map.get(meta, "http.status_code") == "200"
+      assert Map.get(meta, :"http.status_code") == 200
       assert error == 0
     end
 
@@ -49,14 +49,14 @@ defmodule Spandex.Plug.EndTraceTest do
         |> Utils.trace(true)
         |> EndTrace.call([])
 
-      assert is_nil(Spandex.current_trace_id() )
+      assert is_nil(Spandex.current_trace_id())
 
       {:error, :no_trace_context} = Spandex.finish_trace()
 
       %{trace_id: trace_id, meta: meta, error: error} = Spandex.Test.Util.find_span("request")
 
       assert trace_id == tid
-      assert Map.get(meta, "http.status_code") == "404"
+      assert Map.get(meta, :"http.status_code") == 404
       assert error == 1
     end
   end

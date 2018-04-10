@@ -35,9 +35,22 @@ defmodule Spandex.Plug.AddContext do
         |> route_name()
         |> add_query_params(conn.params, opts[:query_params])
 
+      route_with_method =
+        if Spandex.include_method_in_span_name?() do
+          "#{String.upcase(conn.method)} #{route}"
+        else
+          route
+        end
+
+      name =
+        case Spandex.mandatory_top_span() do
+          nil -> route
+          name -> name
+        end
+
       Spandex.update_top_span(%{
-        resource: route,
-        name: route,
+        resource: route_with_method,
+        name: name,
         method: conn.method,
         url: conn.request_path,
         type: :web,

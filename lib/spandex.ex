@@ -84,6 +84,8 @@ defmodule Spandex do
   delegate_to_adapter(:start_trace, [name])
   delegate_to_adapter(:update_span, [context])
   delegate_to_adapter(:update_top_span, [context])
+  delegate_to_adapter(:include_method_in_span_name?, [])
+  delegate_to_adapter(:mandatory_top_span, [])
   delegate_to_adapter(:finish_trace, [])
   delegate_to_adapter(:finish_span, [])
   delegate_to_adapter(:span_error, [])

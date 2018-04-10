@@ -67,7 +67,7 @@ defmodule Spandex.Mixfile do
     [
       {:confex, "3.2.2"},
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
-      {:decorator, "~> 1.2.2"},
+      {:decorator, "~> 1.2.3"},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:excoveralls, "~> 0.6", only: :test},
       {:httpoison, "~> 0.13"},
