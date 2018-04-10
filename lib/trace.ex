@@ -1,4 +1,7 @@
 defmodule Spandex.Trace do
+  @moduledoc """
+  Trace helpers for managing the process dictionary stored trace and span stack
+  """
   @spec get_trace(map) :: map | nil
   def get_trace(default \\ nil) do
     Process.get(:spandex_trace, default)
