@@ -1,9 +1,10 @@
-%{"benchee": {:hex, :benchee, "0.9.0", "433d946b0e4755e186fe564568ead4f593b0d15337fcffa95ed7d5b8a6612670", [:mix], [{:deep_merge, "~> 0.1", [hex: :deep_merge, optional: false]}]},
+%{
+  "benchee": {:hex, :benchee, "0.9.0", "433d946b0e4755e186fe564568ead4f593b0d15337fcffa95ed7d5b8a6612670", [:mix], [{:deep_merge, "~> 0.1", [hex: :deep_merge, optional: false]}]},
   "bunt": {:hex, :bunt, "0.2.0", "951c6e801e8b1d2cbe58ebbd3e616a869061ddadcc4863d0a2182541acae9a38", [:mix], []},
   "certifi": {:hex, :certifi, "2.0.0", "a0c0e475107135f76b8c1d5bc7efb33cd3815cb3cf3dea7aefdd174dabead064", [:rebar3], [], "hexpm"},
   "confex": {:hex, :confex, "3.2.2", "4fc6161d1bbbe3f24581758059dce285fa9d2719fe41a15b396c4f32250ef7c1", [:mix], []},
   "credo": {:hex, :credo, "0.8.1", "137efcc99b4bc507c958ba9b5dff70149e971250813cbe7d4537ec7e36997402", [:mix], [{:bunt, "~> 0.2.0", [hex: :bunt, optional: false]}]},
-  "decorator": {:hex, :decorator, "1.2.2", "28f88fe99b1ec462cb1a394e568f50fbd0e6e949602372a2d0365181c997ed7d", [:mix], []},
+  "decorator": {:hex, :decorator, "1.2.3", "258681ae943e57bd92d821ea995e3994b4e0b62ae8404b5d892cb8b23b55b050", [:mix], [], "hexpm"},
   "deep_merge": {:hex, :deep_merge, "0.1.1", "c27866a7524a337b6a039eeb8dd4f17d458fd40fbbcb8c54661b71a22fffe846", [:mix], []},
   "dialyxir": {:hex, :dialyxir, "0.5.0", "5bc543f9c28ecd51b99cc1a685a3c2a1a93216990347f259406a910cf048d1d7", [:mix], [], "hexpm"},
   "earmark": {:hex, :earmark, "1.2.2", "f718159d6b65068e8daeef709ccddae5f7fdc770707d82e7d126f584cd925b74", [:mix], []},
@@ -22,7 +23,10 @@
   "mime": {:hex, :mime, "1.1.0", "01c1d6f4083d8aa5c7b8c246ade95139620ef8effb009edde934e0ec3b28090a", [:mix], []},
   "mimerl": {:hex, :mimerl, "1.0.2", "993f9b0e084083405ed8252b99460c4f0563e41729ab42d9074fd5e52439be88", [:rebar3], []},
   "msgpax": {:hex, :msgpax, "1.1.0", "e31625e256db2decca1ae2b841f21b4d2483b1332649ce3ebc96c7ff7a4986e3", [:mix], [{:plug, "~> 1.0", [hex: :plug, optional: true]}]},
+  "otter": {:hex, :otter, "0.4.0", "f12d1d5493104507a649d30962d76de5db0858cdb3f0de26e9712c8ef247719f", [:rebar3], [{:otter_lib, "~>0.1.1", [hex: :otter_lib, repo: "hexpm", optional: false]}], "hexpm"},
+  "otter_lib": {:hex, :otter_lib, "0.1.1", "9ef4401013c52f581278d7beb15ae536dc629cdac72dfeebac2384069f9461fd", [:rebar3], [], "hexpm"},
   "plug": {:hex, :plug, "1.3.5", "7503bfcd7091df2a9761ef8cecea666d1f2cc454cbbaf0afa0b6e259203b7031", [:mix], [{:cowboy, "~> 1.0.1 or ~> 1.1", [hex: :cowboy, optional: true]}, {:mime, "~> 1.0", [hex: :mime, optional: false]}]},
   "poison": {:hex, :poison, "3.1.0", "d9eb636610e096f86f25d9a46f35a9facac35609a7591b3be3326e99a0484665", [:mix], []},
   "ssl_verify_fun": {:hex, :ssl_verify_fun, "1.1.1", "28a4d65b7f59893bc2c7de786dec1e1555bd742d336043fe644ae956c3497fbe", [:make, :rebar], []},
-  "unicode_util_compat": {:hex, :unicode_util_compat, "0.3.1", "a1f612a7b512638634a603c8f401892afbf99b8ce93a45041f8aaca99cadb85e", [:rebar3], [], "hexpm"}}
+  "unicode_util_compat": {:hex, :unicode_util_compat, "0.3.1", "a1f612a7b512638634a603c8f401892afbf99b8ce93a45041f8aaca99cadb85e", [:rebar3], [], "hexpm"},
+}

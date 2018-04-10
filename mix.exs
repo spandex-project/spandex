@@ -3,7 +3,7 @@ defmodule Spandex.Mixfile do
 
   def project do
     [app: :spandex,
-     version: "1.3.2",
+     version: "2.0.0-rc1",
      elixir: "~> 1.4",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
@@ -67,12 +67,13 @@ defmodule Spandex.Mixfile do
     [
       {:confex, "3.2.2"},
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
-      {:decorator, "~> 1.2.2"},
+      {:decorator, "~> 1.2.3"},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:excoveralls, "~> 0.6", only: :test},
       {:httpoison, "~> 0.13"},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
       {:msgpax, "~> 1.1"},
+      {:otter, "~> 0.4.0", optional: true},
       {:plug, "~> 1.0"},
       {:exjsx, "~> 3.2", only: :test},
     ]
