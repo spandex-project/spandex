@@ -9,7 +9,11 @@ defmodule Spandex do
   import Spandex.Adapters.Helpers
 
   @spandex_levels Confex.get_env(:spandex, :levels, [:low, :medium, :high])
-  @spandex_default_level Confex.get_env(:spandex, :default_span_level, List.first(@spandex_levels))
+  @spandex_default_level Confex.get_env(
+                           :spandex,
+                           :default_span_level,
+                           List.first(@spandex_levels)
+                         )
 
   @spandex_level_precedence Spandex.Adapters.Helpers.build_level_precedence_map(@spandex_levels)
 
@@ -22,11 +26,12 @@ defmodule Spandex do
       else
         attrs = Enum.into(unquote(attrs), %{})
         span_level = Map.get(attrs, :level, Spandex.default_level())
+
         if Spandex.should_span?(span_level) do
           name = unquote(name)
           _ = Spandex.start_span(name, attrs)
           span_id = Spandex.current_span_id()
-          _ = Logger.metadata([span_id: span_id])
+          _ = Logger.metadata(span_id: span_id)
 
           try do
             return_value = unquote(body)
@@ -35,8 +40,8 @@ defmodule Spandex do
           rescue
             exception ->
               stacktrace = System.stacktrace()
-            _ = Spandex.span_error(exception)
-            reraise exception, stacktrace
+              _ = Spandex.span_error(exception)
+              reraise exception, stacktrace
           end
         else
           unquote(body)
@@ -46,7 +51,8 @@ defmodule Spandex do
   end
 
   def disabled?() do
-    truthy?(Confex.get_env(:spandex, :disabled?)) or not(truthy?(Confex.get_env(:spandex, :adapter)))
+    truthy?(Confex.get_env(:spandex, :disabled?)) or
+      not truthy?(Confex.get_env(:spandex, :adapter))
   end
 
   defp truthy?(value) when value in [false, nil], do: false
@@ -68,14 +74,17 @@ defmodule Spandex do
 
   def start_trace(name, attributes) do
     attributes = Map.put_new(attributes, :service, Confex.get_env(:spandex, :service))
+
     case start_trace(name) do
       {:ok, trace_id} ->
-        Logger.metadata([trace_id: trace_id])
+        Logger.metadata(trace_id: trace_id)
 
         Spandex.update_span(attributes)
 
         {:ok, trace_id}
-      {:error, error} -> {:error, error}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 

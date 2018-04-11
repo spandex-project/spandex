@@ -22,9 +22,12 @@ defmodule Spandex.Adapters.Helpers do
 
   def build_level_precedence_map(levels) do
     Enum.reduce(levels, %{}, fn level, acc ->
-      Map.put(acc, level, Enum.into(levels, %{}, fn comparing_level ->
-            {comparing_level, should_send?(level, comparing_level, levels)}
-          end)
+      Map.put(
+        acc,
+        level,
+        Enum.into(levels, %{}, fn comparing_level ->
+          {comparing_level, should_send?(level, comparing_level, levels)}
+        end)
       )
     end)
   end

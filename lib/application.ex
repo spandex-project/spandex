@@ -16,9 +16,10 @@ defmodule Spandex.Application do
     adapter = Confex.get_env(:spandex, :adapter)
     enabled = not Spandex.disabled?()
 
-    if is_nil(adapter) and enabled do
-      Logger.error("No adapter configured for Spandex. Please configure one or disable spandex")
-    end
+    _ =
+      if is_nil(adapter) and enabled do
+        Logger.error("No adapter configured for Spandex. Please configure one or disable spandex")
+      end
 
     dd_conf = Confex.get_env(:spandex, :datadog, [])
 
@@ -29,6 +30,7 @@ defmodule Spandex.Application do
           args = Keyword.put(dd_conf, :log_traces?, verbose)
 
           [worker(Spandex.Datadog.ApiServer, [args])]
+
         _ ->
           []
       end

@@ -10,7 +10,10 @@ defmodule Spandex.Datadog.Api do
   @doc """
   Creates a trace in datadog API, which in reality is just a list of spans
   """
-  @spec create_trace([map]) :: {:ok, HTTPoison.Response.t | HTTPoison.AsyncResponse.t} | {:error, HTTPoison.Error.t} | :disabled
+  @spec create_trace([map]) ::
+          {:ok, HTTPoison.Response.t() | HTTPoison.AsyncResponse.t()}
+          | {:error, HTTPoison.Error.t()}
+          | :disabled
   def create_trace(spans) do
     if Spandex.disabled?() do
       :disabled

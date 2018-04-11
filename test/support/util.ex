@@ -28,7 +28,8 @@ defmodule Spandex.Test.Util do
       {:sent_datadog_spans, spans} ->
         send(self(), {:sent_datadog_spans, spans})
         spans
-      after 5000 ->
+    after
+      5000 ->
         raise "No datadog spans sent"
     end
   end

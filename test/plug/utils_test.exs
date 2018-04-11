@@ -14,20 +14,20 @@ defmodule Spandex.Plug.UtilsTest do
     test "checks whenever request is being traced, when `true`" do
       %Plug.Conn{}
       |> Plug.Conn.assign(:spandex_trace_request?, true)
-      |> Utils.trace?
+      |> Utils.trace?()
       |> assert
     end
 
     test "checks whenever request is being traced, when truthy" do
       %Plug.Conn{}
       |> Plug.Conn.assign(:spandex_trace_request?, "true")
-      |> Utils.trace?
+      |> Utils.trace?()
       |> refute
     end
 
     test "checks whenever request is being traced, when nil" do
       %Plug.Conn{}
-      |> Utils.trace?
+      |> Utils.trace?()
       |> refute
     end
   end

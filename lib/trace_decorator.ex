@@ -15,7 +15,7 @@ defmodule Spandex.TraceDecorator do
     end
   end
   """
-  use Decorator.Define, [span: 0, span: 1, trace: 0, trace: 1]
+  use Decorator.Define, span: 0, span: 1, trace: 0, trace: 1
 
   def trace(body, context) do
     trace([], body, context)
@@ -27,21 +27,28 @@ defmodule Spandex.TraceDecorator do
         unquote(body)
       else
         attributes = Enum.into(unquote(attributes), %{})
-        level = Map.get(attributes, :level, Spandex.default_level)
+        level = Map.get(attributes, :level, Spandex.default_level())
+
         if Spandex.should_span?(level) do
-          name = Spandex.TraceDecorator.span_name(attributes, unquote(context.name), unquote(context.arity))
+          name =
+            Spandex.TraceDecorator.span_name(
+              attributes,
+              unquote(context.name),
+              unquote(context.arity)
+            )
 
           _ = Spandex.start_trace(name, attributes)
+
           try do
             unquote(body)
           rescue
             exception ->
-              stacktrace = System.stacktrace
-            _ = Spandex.span_error(exception)
+              stacktrace = System.stacktrace()
+              _ = Spandex.span_error(exception)
 
-            reraise(exception, stacktrace)
+              reraise(exception, stacktrace)
           after
-            _ = Spandex.finish_trace
+            _ = Spandex.finish_trace()
           end
         else
           unquote(body)
@@ -60,9 +67,15 @@ defmodule Spandex.TraceDecorator do
         unquote(body)
       else
         attributes = Enum.into(unquote(attributes), %{})
-        level = Map.get(attributes, :level, Spandex.default_level)
+        level = Map.get(attributes, :level, Spandex.default_level())
+
         if Spandex.should_span?(level) do
-          name = Spandex.TraceDecorator.span_name(attributes, unquote(context.name), unquote(context.arity))
+          name =
+            Spandex.TraceDecorator.span_name(
+              attributes,
+              unquote(context.name),
+              unquote(context.arity)
+            )
 
           _ = Spandex.start_span(name, attributes)
 
@@ -71,9 +84,9 @@ defmodule Spandex.TraceDecorator do
           rescue
             exception ->
               stacktrace = System.stacktrace()
-            _ = Spandex.span_error(exception)
+              _ = Spandex.span_error(exception)
 
-            reraise(exception, stacktrace)
+              reraise(exception, stacktrace)
           after
             _ = Spandex.finish_span()
           end

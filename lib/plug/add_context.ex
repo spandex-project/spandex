@@ -7,19 +7,26 @@ defmodule Spandex.Plug.AddContext do
 
   alias Spandex.Plug.Utils
 
-  @spec init(opts :: Keyword.t) :: Keyword.t
+  @spec init(opts :: Keyword.t()) :: Keyword.t()
   def init(opts) do
     opts
-    |> Keyword.update(:allowed_route_replacements, nil, fn config -> Enum.map(config, &Atom.to_string/1) end)
-    |> Keyword.update(:disallowed_route_replacements, [], fn config -> Enum.map(config, &Atom.to_string/1) end)
-    |> Keyword.update(:query_params, [], fn config -> Enum.map(config || [], &Atom.to_string/1) end)
+    |> Keyword.update(:allowed_route_replacements, nil, fn config ->
+      Enum.map(config, &Atom.to_string/1)
+    end)
+    |> Keyword.update(:disallowed_route_replacements, [], fn config ->
+      Enum.map(config, &Atom.to_string/1)
+    end)
+    |> Keyword.update(:query_params, [], fn config ->
+      Enum.map(config || [], &Atom.to_string/1)
+    end)
     |> Keyword.take([:allowed_route_replacements, :disallowed_route_replacements, :query_params])
   end
 
-  @spec call(conn :: Plug.Conn.t, _opts :: Keyword.t) :: Plug.Conn.t
+  @spec call(conn :: Plug.Conn.t(), _opts :: Keyword.t()) :: Plug.Conn.t()
   def call(conn, opts) do
     if Utils.trace?(conn) do
       conn = Plug.Conn.fetch_query_params(conn)
+
       replacement_params =
         if opts[:allowed_route_replacements] do
           conn.params
@@ -36,7 +43,7 @@ defmodule Spandex.Plug.AddContext do
         name: name,
         method: conn.method,
         url: conn.request_path,
-        type: :web,
+        type: :web
       })
 
       trace_id =
@@ -59,7 +66,7 @@ defmodule Spandex.Plug.AddContext do
     end
   end
 
-  @spec route_and_name(Plug.Conn.t(), map, Keyword.t()) :: String.t()
+  @spec route_and_name(Plug.Conn.t(), map, Keyword.t()) :: {String.t(), String.t()}
   defp route_and_name(conn, replacement_params, opts) do
     route =
       conn
@@ -83,12 +90,12 @@ defmodule Spandex.Plug.AddContext do
     {route_with_method, name}
   end
 
-  @spec route_name(Plug.Conn.t) :: String.t
+  @spec route_name(Plug.Conn.t()) :: String.t()
   defp route_name(%Plug.Conn{path_info: path_values, params: params}) do
     inverted_params = Enum.into(params, %{}, fn {key, value} -> {value, key} end)
 
     Enum.map_join(path_values, "/", fn path_part ->
-      if Map.has_key?(inverted_params, path_part)  do
+      if Map.has_key?(inverted_params, path_part) do
         ":#{inverted_params[path_part]}"
       else
         path_part
@@ -96,13 +103,17 @@ defmodule Spandex.Plug.AddContext do
     end)
   end
 
-  @spec add_query_params(String.t(), map() | nil, [String.t()] | nil) :: String.t()
+  @spec add_query_params(String.t(), map(), [String.t()] | nil) :: String.t()
   defp add_query_params(uri, _, []), do: uri
   defp add_query_params(uri, _, nil), do: uri
-  defp add_query_params(uri, nil, _), do: uri
+
   defp add_query_params(uri, params, take) do
     to_encode = Map.take(params, take)
 
-    uri <> "?" <> Plug.Conn.Query.encode(to_encode)
+    if to_encode == %{} do
+      "/" <> uri
+    else
+      "/" <> uri <> "?" <> Plug.Conn.Query.encode(to_encode)
+    end
   end
 end

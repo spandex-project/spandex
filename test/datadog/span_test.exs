@@ -30,16 +30,17 @@ defmodule Spandex.Datadog.SpanTest do
     test "merges with given data" do
       started_at = Spandex.Datadog.Utils.now()
 
-      span = Span.new(%Span{
-        id: 666,
-        start: started_at,
-        env: "pre-prod",
-        service: :phoenix,
-        resource: "/dashboard/users",
-        type: :http,
-        trace_id: 999,
-        parent_id: 777,
-      })
+      span =
+        Span.new(%Span{
+          id: 666,
+          start: started_at,
+          env: "pre-prod",
+          service: :phoenix,
+          resource: "/dashboard/users",
+          type: :http,
+          trace_id: 999,
+          parent_id: 777
+        })
 
       assert span.id == 666
       assert span.start == started_at
@@ -73,6 +74,7 @@ defmodule Spandex.Datadog.SpanTest do
   describe "Span.update/2" do
     test "updates span with given attributes" do
       span = Span.new()
+
       params = %{
         name: "test_update",
         service: :phoenix,
@@ -83,7 +85,7 @@ defmodule Spandex.Datadog.SpanTest do
         id: 3,
         meta: %{
           foo: :bar,
-          baz: :kaz,
+          baz: :kaz
         }
       }
 
@@ -91,27 +93,37 @@ defmodule Spandex.Datadog.SpanTest do
       field_keys = params |> Map.drop(ids_keys) |> Map.keys()
 
       # sanity check
-      Enum.each ids_keys ++ field_keys, fn(key) ->
+      Enum.each(ids_keys ++ field_keys, fn key ->
         assert Map.get(span, key) != params[key]
-      end
+      end)
 
       compare = Span.update(span, params)
 
-      Enum.each ids_keys, fn(key) ->
+      Enum.each(ids_keys, fn key ->
         assert Map.fetch!(compare, key) == Map.fetch!(span, key)
         assert Map.fetch!(compare, key) != params[key]
-      end
+      end)
 
-      Enum.each field_keys, fn(key) ->
+      Enum.each(field_keys, fn key ->
         assert Map.fetch!(compare, key) == params[key]
         assert Map.fetch!(compare, key) != Map.fetch!(span, key)
-      end
+      end)
     end
   end
 
   describe "Span.child_of/3" do
     test "creates new span based on parent span" do
-      parent = %Span{id: 1, name: "parent", resource: "sql.query", service: :bar, parent_id: 2, trace_id: 3, start: 5, env: "prod"}
+      parent = %Span{
+        id: 1,
+        name: "parent",
+        resource: "sql.query",
+        service: :bar,
+        parent_id: 2,
+        trace_id: 3,
+        start: 5,
+        env: "prod"
+      }
+
       span = Span.child_of(parent, "child")
 
       assert span.id != parent.id

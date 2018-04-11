@@ -8,16 +8,18 @@ defmodule Spandex.Plug.AddContextTest do
     {:ok, trace_id} = Spandex.start_trace("request")
 
     {
-      :ok, [
+      :ok,
+      [
         trace_id: trace_id,
-        conn: Plug.Adapters.Test.Conn.conn(%Plug.Conn{}, :get, "/dashboard", nil),
+        conn: Plug.Adapters.Test.Conn.conn(%Plug.Conn{}, :get, "/dashboard", nil)
       ]
     }
   end
 
   describe "AddContext.call/2" do
     test "doesn't change anything, when we don't trace request", %{conn: conn} do
-      %Plug.Conn{} = AddContext.call(conn, [allowed_route_replacements: nil, disallowed_route_replacements: []])
+      %Plug.Conn{} =
+        AddContext.call(conn, allowed_route_replacements: nil, disallowed_route_replacements: [])
 
       :ok = Spandex.finish_trace()
 
@@ -36,7 +38,7 @@ defmodule Spandex.Plug.AddContextTest do
       %Plug.Conn{} =
         conn
         |> Utils.trace(true)
-        |> AddContext.call([allowed_route_replacements: nil, disallowed_route_replacements: []])
+        |> AddContext.call(allowed_route_replacements: nil, disallowed_route_replacements: [])
 
       {:ok, expected_span_id} = Spandex.start_span("foobar")
 
@@ -45,7 +47,8 @@ defmodule Spandex.Plug.AddContextTest do
 
       :ok = Spandex.finish_trace()
 
-      %{trace_id: trace_id, type: type, meta: meta, resource: resource} = Spandex.Test.Util.find_span("request")
+      %{trace_id: trace_id, type: type, meta: meta, resource: resource} =
+        Spandex.Test.Util.find_span("request")
 
       assert trace_id == tid
       assert type == :web

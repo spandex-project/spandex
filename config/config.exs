@@ -2,6 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-if Mix.env == :test do
+if Mix.env() == :test do
   import_config "./test.exs"
 end

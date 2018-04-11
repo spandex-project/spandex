@@ -6,10 +6,10 @@ defmodule Spandex.Test.Datadog.AdapterTest do
   test "a complete trace sends spans" do
     TracedModule.trace_one_thing()
 
-    Enum.each Util.sent_spans(), fn(span) ->
+    Enum.each(Util.sent_spans(), fn span ->
       assert span.service == :spandex_test
       assert span.meta.env == "test"
-    end
+    end)
   end
 
   test "a trace can specify additional attributes" do
@@ -41,7 +41,9 @@ defmodule Spandex.Test.Datadog.AdapterTest do
   test "the parent_id for a child span is correct" do
     TracedModule.trace_one_thing()
 
-    assert(Util.find_span("trace_one_thing/0").span_id == Util.find_span("do_one_thing/0").parent_id)
+    assert(
+      Util.find_span("trace_one_thing/0").span_id == Util.find_span("do_one_thing/0").parent_id
+    )
   end
 
   test "a span is correctly notated as an error if an excepton occurs" do
