@@ -34,9 +34,10 @@ defmodule Spandex.Plug.AddContext do
         |> Map.put(:params, params)
         |> route_name()
         |> add_query_params(conn.params, opts[:query_params])
+        |> URI.decode_www_form()
 
       %{
-        resource: String.upcase(conn.method) <> "/" <> route,
+        resource: String.upcase(conn.method) <> " /" <> route,
         method: conn.method,
         url: conn.request_path,
         type: :web,

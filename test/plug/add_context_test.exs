@@ -51,7 +51,7 @@ defmodule Spandex.Plug.AddContextTest do
       assert type == :web
       assert Map.get(meta, "http.url") == "/dashboard"
       assert Map.get(meta, "http.method") == "GET"
-      assert resource == "GET dashboard"
+      assert resource == "GET /dashboard"
     end
   end
 end
