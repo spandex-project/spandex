@@ -12,7 +12,8 @@ defmodule Spandex.Plug.AddContext do
     opts
     |> Keyword.update(:allowed_route_replacements, nil, fn config -> Enum.map(config, &Atom.to_string/1) end)
     |> Keyword.update(:disallowed_route_replacements, [], fn config -> Enum.map(config, &Atom.to_string/1) end)
-    |> Keyword.take([:allowed_route_replacements, :disallowed_route_replacements])
+    |> Keyword.update(:query_params, [], fn config -> Enum.map(config || [], &Atom.to_string/1) end)
+    |> Keyword.take([:allowed_route_replacements, :disallowed_route_replacements, :query_params])
   end
 
   @spec call(conn :: Plug.Conn.t, _opts :: Keyword.t) :: Plug.Conn.t
@@ -32,9 +33,10 @@ defmodule Spandex.Plug.AddContext do
         conn
         |> Map.put(:params, params)
         |> route_name()
+        |> add_query_params(conn.params, opts[:query_params])
 
       %{
-        resource: "#{String.upcase(conn.method)} #{route}",
+        resource: String.upcase(conn.method) <> "/" <> route,
         method: conn.method,
         url: conn.request_path,
         type: :web,
@@ -60,5 +62,19 @@ defmodule Spandex.Plug.AddContext do
         path_part
       end
     end)
+  end
+
+  @spec add_query_params(String.t(), map(), [String.t()] | nil) :: String.t()
+  defp add_query_params(uri, _, []), do: uri
+  defp add_query_params(uri, _, nil), do: uri
+
+  defp add_query_params(uri, params, take) do
+    to_encode = Map.take(params, take)
+
+    if to_encode == %{} do
+      uri
+    else
+      uri <> "?" <> Plug.Conn.Query.encode(to_encode)
+    end
   end
 end
