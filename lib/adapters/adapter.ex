@@ -17,4 +17,5 @@ defmodule Spandex.Adapters.Adapter do
   @callback continue_trace_from_span(String.t, map) :: {:ok, term} | {:error, term}
   @callback update_top_span(map) :: :ok | {:error, term}
   @callback update_all_spans(map) :: :ok | {}
+  @callback distributed_context(Plug.Conn.t) :: {:ok, term} | {:error, term}
 end
