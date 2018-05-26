@@ -35,4 +35,11 @@ defmodule Spandex.Adapters.Helpers do
 
     configured_level_position <= span_level_position
   end
+
+  @spec get_first_header(conn :: Plug.Conn.t, header_name :: binary) :: binary | nil
+  def get_first_header(conn, header_name) do
+    conn
+    |> Plug.Conn.get_req_header(header_name)
+    |> List.first()
+  end
 end

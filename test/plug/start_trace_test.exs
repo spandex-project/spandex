@@ -71,6 +71,22 @@ defmodule Spandex.Plug.StartTraceTest do
       end
     end
 
+    test "continues existing trace when distributed context exists", %{conn: conn} do
+      conn =
+        conn
+        |> Plug.Conn.put_req_header("x-datadog-trace-id", "12345")
+        |> Plug.Conn.put_req_header("x-datadog-parent-id", "67890")
+
+      new_conn = StartTrace.call(conn, [])
+
+      assert %{trace_id: "12345", parent_id: "67890"} = Spandex.current_span()
+
+      refute Spandex.current_span_id() == "67890"
+      refute is_nil(Spandex.current_span_id())
+
+      assert new_conn.assigns[:spandex_trace_request?]
+    end
+
     test "starts new trace", %{conn: conn} do
       new_conn = StartTrace.call(conn, [])
 

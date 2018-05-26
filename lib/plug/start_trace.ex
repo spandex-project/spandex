@@ -15,9 +15,21 @@ defmodule Spandex.Plug.StartTrace do
     if ignoring_request?(conn) do
       Utils.trace(conn, false)
     else
-      Spandex.start_trace("request", %{level: Spandex.highest_level()})
-      Utils.trace(conn, true)
+      begin_tracing(conn)
     end
+  end
+
+  @spec begin_tracing(conn :: Plug.Conn.t) :: Plug.Conn.t
+  defp begin_tracing(conn) do
+    case Spandex.distributed_context(conn) do
+      {:ok, %{trace_id: trace_id, parent_id: parent_id}} ->
+        Spandex.continue_trace("request", trace_id, parent_id)
+
+      {:error, :no_distributed_trace} ->
+        Spandex.start_trace("request", %{level: Spandex.highest_level()})
+    end
+
+    Utils.trace(conn, true)
   end
 
   @spec ignoring_request?(conn :: Plug.Conn.t) :: boolean

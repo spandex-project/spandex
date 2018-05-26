@@ -98,4 +98,5 @@ defmodule Spandex do
   delegate_to_adapter(:current_trace_id, [])
   delegate_to_adapter(:current_span_id, [])
   delegate_to_adapter(:current_span, [])
+  delegate_to_adapter(:distributed_context, [conn])
 end

@@ -5,6 +5,7 @@ defmodule Spandex.Adapters.Datadog do
 
   @behaviour Spandex.Adapters.Adapter
 
+  alias Spandex.Adapters.Helpers
   alias Spandex.Datadog.Api
   alias Spandex.Datadog.Span
   alias Spandex.Datadog.Utils
@@ -18,6 +19,7 @@ defmodule Spandex.Adapters.Datadog do
   def start_trace(name) do
     if get_trace() do
       Logger.error("Tried to start a trace over top of another trace.")
+      {:error, :trace_running}
     else
       trace_id = Utils.next_id()
       top_span =
@@ -251,6 +253,22 @@ defmodule Spandex.Adapters.Datadog do
     stacktrace = Exception.format_stacktrace(System.stacktrace)
 
     update_span(%{error: 1, error_message: message, stacktrace: stacktrace, error_type: type})
+  end
+
+  @doc """
+  Fetches the datadog trace & parent IDs from the conn request headers
+  if they are present.
+  """
+  @spec distributed_context(conn :: Plug.Conn.t) :: {:ok, %{trace_id: binary, parent_id: binary}} | {:error, :no_trace_context}
+  def distributed_context(%Plug.Conn{} = conn) do
+    trace_id = Helpers.get_first_header(conn, "x-datadog-trace-id")
+    parent_id = Helpers.get_first_header(conn, "x-datadog-parent-id")
+
+    if is_nil(trace_id) || is_nil(parent_id) do
+      {:error, :no_distributed_trace}
+    else
+      {:ok, %{trace_id: trace_id, parent_id: parent_id}}
+    end
   end
 
   @spec get_trace(term) :: term
