@@ -264,10 +264,10 @@ defmodule Spandex.Adapters.Datadog do
     trace_id = Helpers.get_first_header(conn, "x-datadog-trace-id")
     parent_id = Helpers.get_first_header(conn, "x-datadog-parent-id")
 
-    if !is_nil(trace_id) && !is_nil(parent_id) do
-      {:ok, %{trace_id: trace_id, parent_id: parent_id}}
-    else
+    if is_nil(trace_id) || is_nil(parent_id) do
       {:error, :no_distributed_trace}
+    else
+      {:ok, %{trace_id: trace_id, parent_id: parent_id}}
     end
   end
 
