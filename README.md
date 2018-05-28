@@ -27,12 +27,15 @@ Originally, the library had an api server and spans were sent via `GenServer.cas
 ```elixir
 config :spandex, :datadog,
   batch_size: 10,
-  sync_threshold: 20
+  sync_threshold: 20,
+  max_interval: 8
 ```
 
 Batch size refers to *traces* not spans, so if you send a large amount of spans per trace, then you probably want to keep that number low. If you send only a few spans, then you could set it significantly higher.
 
 Sync threshold refers to the *number of processes concurrently sending spans*. *NOT* the number of traces queued up waiting to be sent. It is used to apply backpressure while still taking advantage of parallelism. Ideally, the sync threshold would be set to a point that you wouldn't reasonably reach often, but that is low enough to not cause systemic performance issues if you don't apply backpressure. A simple way to think about it is that if you are seeing 1000 request per second, and your batch size is 10, then you'll be making 100 requests per second to datadog(probably a bad config). But if your sync_threshold is set to 10, you'll almost certainly exceed that because 100 requests in 1 second will likely overlap in that way. So when that is exceeded, the work is done synchronously, (not waiting for the asynchronous ones to complete even). This concept of backpressure is very important, and strategies for switching to synchronous operation are often surprisingly far more performant than purely asynchronous strategies (and much more predictable).
+
+Max interval refers to the maximum period of time in seconds between sending traces. When there is low load, and you have fewer than `batch_size` traces waiting, the the traces will be sent after `max_interval`. This is important in the case of Datadog, whose agent discards traces received more than 10 seconds after they began. You should configure this to 10 or lower if this is a concern, otherwise `:infinity` will disable this periodic flush. The default is 10 seconds.
 
 ## Configuration
 
@@ -60,6 +63,7 @@ config :spandex, :datadog,
   port: {:system, "DATADOG_PORT", 8126},
   batch_size: 10,
   sync_threshold: 20,
+  max_interval: 10,
   services: [ # for defaults mapping in spans service => type
     ecto: :db,
     my_api: :web,
