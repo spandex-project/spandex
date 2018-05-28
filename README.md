@@ -86,7 +86,7 @@ Ensure that `Spandex.Plug.EndTrace` goes *after* your router. This is important 
 
 ## Distributed Tracing
 
-Distributed tracing is supported via headers `x-ddtrace-parent_trace_id` and `x-ddtrace-parent_span_id`. If they are set, the `StartTrace` plug will act accordingly, continuing that trace and span instead of starting a new one. *Both* must be set for distributed tracing to work.
+Distributed tracing is supported via headers `x-datadog-trace-id` and `x-datadog-parent-id`. If they are set, the `StartTrace` plug will act accordingly, continuing that trace and span instead of starting a new one. *Both* must be set for distributed tracing to work.
 
 ## Logger metadata
 In general, you'll probably want the current span_id and trace_id in your logs, so that you can find them in your tracing service. Make sure to add `span_id` and `trace_id` to logger_metadata
