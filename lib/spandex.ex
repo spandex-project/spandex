@@ -8,15 +8,6 @@ defmodule Spandex do
 
   import Spandex.Adapters.Helpers
 
-  @spandex_levels Confex.get_env(:spandex, :levels, [:low, :medium, :high])
-  @spandex_default_level Confex.get_env(
-                           :spandex,
-                           :default_span_level,
-                           List.first(@spandex_levels)
-                         )
-
-  @spandex_level_precedence Spandex.Adapters.Helpers.build_level_precedence_map(@spandex_levels)
-
   defmacro span(name, attrs \\ [], do: body) do
     quote do
       if Spandex.disabled?() do
@@ -25,26 +16,21 @@ defmodule Spandex do
         unquote(body)
       else
         attrs = Enum.into(unquote(attrs), %{})
-        span_level = Map.get(attrs, :level, Spandex.default_level())
 
-        if Spandex.should_span?(span_level) do
-          name = unquote(name)
-          _ = Spandex.start_span(name, attrs)
-          span_id = Spandex.current_span_id()
-          _ = Logger.metadata(span_id: span_id)
+        name = unquote(name)
+        _ = Spandex.start_span(name, attrs)
+        span_id = Spandex.current_span_id()
+        _ = Logger.metadata(span_id: span_id)
 
-          try do
-            return_value = unquote(body)
-            _ = Spandex.finish_span()
-            return_value
-          rescue
-            exception ->
-              stacktrace = System.stacktrace()
-              _ = Spandex.span_error(exception)
-              reraise exception, stacktrace
-          end
-        else
-          unquote(body)
+        try do
+          return_value = unquote(body)
+          _ = Spandex.finish_span()
+          return_value
+        rescue
+          exception ->
+            stacktrace = System.stacktrace()
+            _ = Spandex.span_error(exception)
+            reraise exception, stacktrace
         end
       end
     end
@@ -57,20 +43,6 @@ defmodule Spandex do
 
   defp truthy?(value) when value in [false, nil], do: false
   defp truthy?(_other), do: true
-
-  def should_span?(level) do
-    configured_level = Confex.get_env(:spandex, :level) || List.first(@spandex_levels)
-    precedence = Map.get(@spandex_level_precedence, configured_level)
-    Map.get(precedence, level)
-  end
-
-  def default_level() do
-    @spandex_default_level
-  end
-
-  def highest_level() do
-    List.last(@spandex_levels)
-  end
 
   def start_trace(name, attributes) do
     case start_trace(name) do

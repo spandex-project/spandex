@@ -24,9 +24,8 @@ defmodule Spandex.Ecto.Trace do
 
   def trace(log_entry) do
     config = config()
-    span_level = config[:level]
 
-    if !Spandex.disabled?() && Spandex.should_span?(span_level) do
+    if !Spandex.disabled?() do
       now = Spandex.Datadog.Utils.now()
       _ = setup(log_entry)
       query = string_query(log_entry)
@@ -150,6 +149,5 @@ defmodule Spandex.Ecto.Trace do
     :spandex
     |> Confex.get_env(:ecto, [])
     |> Keyword.put_new(:service, @default_service_name)
-    |> Keyword.put_new(:level, Spandex.default_level())
   end
 end
