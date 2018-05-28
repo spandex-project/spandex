@@ -27,31 +27,26 @@ defmodule Spandex.TraceDecorator do
         unquote(body)
       else
         attributes = Enum.into(unquote(attributes), %{})
-        level = Map.get(attributes, :level, Spandex.default_level())
 
-        if Spandex.should_span?(level) do
-          name =
-            Spandex.TraceDecorator.span_name(
-              attributes,
-              unquote(context.name),
-              unquote(context.arity)
-            )
+        name =
+          Spandex.TraceDecorator.span_name(
+            attributes,
+            unquote(context.name),
+            unquote(context.arity)
+          )
 
-          _ = Spandex.start_trace(name, attributes)
+        _ = Spandex.start_trace(name, attributes)
 
-          try do
-            unquote(body)
-          rescue
-            exception ->
-              stacktrace = System.stacktrace()
-              _ = Spandex.span_error(exception)
-
-              reraise(exception, stacktrace)
-          after
-            _ = Spandex.finish_trace()
-          end
-        else
+        try do
           unquote(body)
+        rescue
+          exception ->
+            stacktrace = System.stacktrace()
+            _ = Spandex.span_error(exception)
+
+            reraise(exception, stacktrace)
+        after
+          _ = Spandex.finish_trace()
         end
       end
     end
@@ -67,31 +62,26 @@ defmodule Spandex.TraceDecorator do
         unquote(body)
       else
         attributes = Enum.into(unquote(attributes), %{})
-        level = Map.get(attributes, :level, Spandex.default_level())
 
-        if Spandex.should_span?(level) do
-          name =
-            Spandex.TraceDecorator.span_name(
-              attributes,
-              unquote(context.name),
-              unquote(context.arity)
-            )
+        name =
+          Spandex.TraceDecorator.span_name(
+            attributes,
+            unquote(context.name),
+            unquote(context.arity)
+          )
 
-          _ = Spandex.start_span(name, attributes)
+        _ = Spandex.start_span(name, attributes)
 
-          try do
-            unquote(body)
-          rescue
-            exception ->
-              stacktrace = System.stacktrace()
-              _ = Spandex.span_error(exception)
-
-              reraise(exception, stacktrace)
-          after
-            _ = Spandex.finish_span()
-          end
-        else
+        try do
           unquote(body)
+        rescue
+          exception ->
+            stacktrace = System.stacktrace()
+            _ = Spandex.span_error(exception)
+
+            reraise(exception, stacktrace)
+        after
+          _ = Spandex.finish_span()
         end
       end
     end

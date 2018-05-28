@@ -26,7 +26,7 @@ defmodule Spandex.Plug.StartTrace do
         Spandex.continue_trace("request", trace_id, parent_id)
 
       {:error, :no_distributed_trace} ->
-        Spandex.start_trace("request", %{level: Spandex.highest_level()})
+        Spandex.start_trace("request")
     end
 
     Utils.trace(conn, true)
