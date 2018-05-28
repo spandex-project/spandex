@@ -102,6 +102,8 @@ defmodule Spandex.Datadog.ApiServer do
     {:reply, :ok, state}
   end
 
+  @doc false
+  @spec handle_info(term, t) :: {:noreply, t}
   def handle_info(:interval, %__MODULE__{waiting_traces: []} = state) do
     state = send_interval_msg(state)
 
@@ -203,6 +205,7 @@ defmodule Spandex.Datadog.ApiServer do
   defp push(body, %__MODULE__{http: http, host: host, port: port}),
     do: http.put("#{host}:#{port}/v0.3/traces", body, @headers)
 
+  @spec send_interval_msg(t) :: t
   defp send_interval_msg(%__MODULE__{max_interval: :infinity} = state), do: state
   defp send_interval_msg(%__MODULE__{max_interval: interval, interval_ref: interval_ref} = state) do
     if is_reference(interval_ref), do: Process.cancel_timer(interval_ref)
