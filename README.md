@@ -232,42 +232,6 @@ To configure, set it up as an ecto logger like so:
 config :my_app, MyApp.Repo,
   loggers: [{Ecto.LogEntry, :log, [:info]}, {Spandex.Ecto.Trace, :trace, []}]
 
-## Spandex.Logger
-
-Logging can often incur unseen costs, especially for those unfamiliar with elixir's logging paradigm. For instance: Logger will eventually switch to a sync_mode once it reaches some limit of queued logs, which blocks the current process in order to apply backpressure. I highly recommend becoming very familiar with the Logger documentation to avoid missing gotchas like that. It's important to know how long it's taking to do IO, to know how long the functions you pass the logger are taking, and to determine how much of your application response time may be being eaten up by logging.
-
-Tip: Use lists of strings, never concat or manually construct strings in the logger (or ideally anywhere else that is equipped to use iolists)
-
-With that in mind, I've added `Spandex.Logger` which has a very similar interface to `Logger` but takes a `resource` (think of it as a title) as its first argument.
-It also wraps any functions passed to logger in spans in order to report them, and prepends the `resource` to the beginning of the log message.
-
-*IMPORTANT*
-* Only accepts functions as the second parameter, not strings or lists, due to limitations in building the macro. Contributions to remove that badness are more then welcome.
-* Does *NOT* run the provided function if the log level does not line up or has been compile time purged, like the normal logger
-
-```elixir
-require Spandex.Logger
-
-db_records = fetch_db_records!(id)
-
-Spandex.Logger.info("Fetch Database Record", fn ->
-  ["Fetched ", to_string(Enum.count(db_records)), " records from the database."]
-end)
-
-# 11:23:15.334 [info]  Fetch Database Record: Fetched 10 records from the database
-```
-
 ## Asynchronous Processes
-
-Tasks are supported by using `Spandex.Task`
-
-```elixir
-Spandex.Task.async("foo", fn -> do_work() end)
-```
-
-*IMPORTANT*
-Always use `Spandex.Task.await` to await your tasks. Spandex tasks use a special return value to set the span name for the passed in anonymous function.
-
-Managing your own asynchronous work:
 
 The current trace_id and span_id can be retrieved with `Spandex.current_trace_id()` and `Spandex.current_span_id()`. This can then be used as `Spandex.continue_trace("new_trace", trace_id, span_id)`. New spans can then be logged from there and will be sent in a separate batch.
