@@ -8,14 +8,14 @@ defmodule Spandex.Plug.Utils do
   @doc """
   Stores in conn whenever we trace request or not.
   """
-  @spec trace(conn :: Plug.Conn.t, trace? :: boolean) :: Plug.Conn.t
+  @spec trace(conn :: Plug.Conn.t(), trace? :: boolean) :: Plug.Conn.t()
   def trace(conn, trace?),
     do: Plug.Conn.assign(conn, @plug_trace_var, trace?)
 
   @doc """
   Checks conn whenever we trace request or not.
   """
-  @spec trace?(conn :: Plug.Conn.t) :: boolean
+  @spec trace?(conn :: Plug.Conn.t()) :: boolean
   def trace?(conn),
     do: conn.assigns[@plug_trace_var] == true
 end

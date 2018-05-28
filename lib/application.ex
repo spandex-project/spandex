@@ -29,6 +29,7 @@ defmodule Spandex.Application do
           args = Keyword.put(dd_conf, :log_traces?, verbose)
 
           [worker(Spandex.Datadog.ApiServer, [args])]
+
         _ ->
           []
       end

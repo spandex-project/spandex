@@ -15,18 +15,19 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Starts a trace context in process local storage.
   """
-  @spec start_trace(String.t) :: {:ok, term} | {:error, term}
+  @spec start_trace(String.t()) :: {:ok, term} | {:error, term}
   def start_trace(name) do
     if get_trace() do
       Logger.error("Tried to start a trace over top of another trace.")
       {:error, :trace_running}
     else
       trace_id = Utils.next_id()
+
       top_span =
         %{trace_id: trace_id, name: name}
         |> Span.new()
 
-      Logger.metadata([trace_id: trace_id])
+      Logger.metadata(trace_id: trace_id)
 
       put_trace(%{id: trace_id, stack: [top_span], spans: [], start: Utils.now()})
 
@@ -37,20 +38,23 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Starts a span and adds it to the span stack.
   """
-  @spec start_span(String.t) :: {:ok, term} | {:error, term}
+  @spec start_span(String.t()) :: {:ok, term} | {:error, term}
   def start_span(name) do
     trace = get_trace(:undefined)
+
     case trace do
       :undefined ->
         {:error, :no_trace_context}
+
       %{stack: [current_span | _]} ->
         new_span = Span.child_of(current_span, name)
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
-        Logger.metadata([span_id: new_span.id])
+        Logger.metadata(span_id: new_span.id)
 
         {:ok, new_span.id}
+
       _ ->
         new_span =
           %{trace_id: trace.id, name: name}
@@ -58,7 +62,7 @@ defmodule Spandex.Adapters.Datadog do
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
-        Logger.metadata([span_id: new_span.id])
+        Logger.metadata(span_id: new_span.id)
 
         {:ok, new_span.id}
     end
@@ -73,9 +77,10 @@ defmodule Spandex.Adapters.Datadog do
     trace = get_trace()
 
     if trace do
-      new_stack = List.update_at(trace.stack, 0, fn span ->
-        Span.update(span, context)
-      end)
+      new_stack =
+        List.update_at(trace.stack, 0, fn span ->
+          Span.update(span, context)
+        end)
 
       put_trace(%{trace | stack: new_stack})
 
@@ -115,6 +120,7 @@ defmodule Spandex.Adapters.Datadog do
   @spec update_all_spans(map) :: :ok | {}
   def update_all_spans(context) do
     trace = get_trace()
+
     if trace do
       new_stack = Enum.map(trace.stack, &Span.update(&1, context))
       new_spans = Enum.map(trace.spans, &Span.update(&1, context))
@@ -138,10 +144,13 @@ defmodule Spandex.Adapters.Datadog do
     cond do
       is_nil(trace) ->
         {:error, :no_trace_context}
+
       Enum.empty?(trace.stack) ->
         {:error, :no_span_context}
+
       true ->
         new_stack = tl(trace.stack)
+
         completed_span =
           trace.stack
           |> hd()
@@ -194,6 +203,7 @@ defmodule Spandex.Adapters.Datadog do
     case get_trace() do
       %{stack: [%{id: current_span_id} | _]} ->
         current_span_id
+
       _ ->
         nil
     end
@@ -207,6 +217,7 @@ defmodule Spandex.Adapters.Datadog do
     case get_trace() do
       %{stack: [span | _]} ->
         span
+
       _ ->
         nil
     end
@@ -215,7 +226,7 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Continues a trace given a name and a span
   """
-  @spec continue_trace_from_span(String.t, term) :: {:ok, term}
+  @spec continue_trace_from_span(String.t(), term) :: {:ok, term}
   def continue_trace_from_span(name, %{trace_id: trace_id} = span) do
     put_trace(%{id: trace_id, stack: [span], spans: [], start: Utils.now()})
 
@@ -225,7 +236,7 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Continues a trace given a name, a trace_id and a span_id
   """
-  @spec continue_trace(String.t, term, term) :: {:ok, term} | {:error, term}
+  @spec continue_trace(String.t(), term, term) :: {:ok, term} | {:error, term}
   def continue_trace(name, trace_id, span_id) do
     trace = get_trace(:undefined)
 
@@ -237,8 +248,10 @@ defmodule Spandex.Adapters.Datadog do
 
         put_trace(%{id: trace_id, stack: [top_span], spans: [], start: Utils.now()})
         {:ok, trace_id}
+
       trace_id == trace.id ->
         start_span(name)
+
       true ->
         {:error, :trace_already_present}
     end
@@ -247,10 +260,10 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Attaches error data to the current span, and marks it as an error.
   """
-  @spec span_error(Exception.t) :: :ok | {:error, term}
+  @spec span_error(Exception.t()) :: :ok | {:error, term}
   def span_error(%{__struct__: type} = exception) do
     message = Exception.message(exception)
-    stacktrace = Exception.format_stacktrace(System.stacktrace)
+    stacktrace = Exception.format_stacktrace(System.stacktrace())
 
     update_span(%{error: 1, error_message: message, stacktrace: stacktrace, error_type: type})
   end
@@ -259,7 +272,8 @@ defmodule Spandex.Adapters.Datadog do
   Fetches the datadog trace & parent IDs from the conn request headers
   if they are present.
   """
-  @spec distributed_context(conn :: Plug.Conn.t) :: {:ok, %{trace_id: binary, parent_id: binary}} | {:error, :no_trace_context}
+  @spec distributed_context(conn :: Plug.Conn.t()) ::
+          {:ok, %{trace_id: binary, parent_id: binary}} | {:error, :no_trace_context}
   def distributed_context(%Plug.Conn{} = conn) do
     trace_id = Helpers.get_first_header(conn, "x-datadog-trace-id")
     parent_id = Helpers.get_first_header(conn, "x-datadog-parent-id")
@@ -283,7 +297,7 @@ defmodule Spandex.Adapters.Datadog do
 
   @spec delete_trace() :: term | nil
   defp delete_trace() do
-    Logger.metadata([trace_id: nil, span_id: nil])
+    Logger.metadata(trace_id: nil, span_id: nil)
     Process.delete(:spandex_trace)
   end
 end

@@ -9,10 +9,27 @@ defmodule Spandex.Datadog.Span do
   alias Spandex.Datadog.Utils
 
   defstruct [
-    :id, :trace_id, :parent_id, :name, :resource,
-    :service, :env, :start, :completion_time, :error,
-    :error_message, :stacktrace, :type, :error_type,
-    :url, :status, :method, :user, :sql_rows, :sql_db, :sql_query,
+    :id,
+    :trace_id,
+    :parent_id,
+    :name,
+    :resource,
+    :service,
+    :env,
+    :start,
+    :completion_time,
+    :error,
+    :error_message,
+    :stacktrace,
+    :type,
+    :error_type,
+    :url,
+    :status,
+    :method,
+    :user,
+    :sql_rows,
+    :sql_db,
+    :sql_query,
     meta: %{}
   ]
 
@@ -20,9 +37,22 @@ defmodule Spandex.Datadog.Span do
 
   @default "unknown"
   @updateable_keys [
-    :name, :resource, :service, :env, :start, :completion_time, :error,
-    :error_message, :stacktrace, :error_type, :start, :status, :url, :method,
-    :user, :type
+    :name,
+    :resource,
+    :service,
+    :env,
+    :start,
+    :completion_time,
+    :error,
+    :error_message,
+    :stacktrace,
+    :error_type,
+    :start,
+    :status,
+    :url,
+    :method,
+    :user,
+    :type
   ]
 
   @doc """
@@ -31,11 +61,14 @@ defmodule Spandex.Datadog.Span do
   @spec new(map :: map) :: t
   def new(map \\ %{}) do
     core = %Span{
-      id:       default_if_blank(map, :id, &Utils.next_id/0),
-      start:    default_if_blank(map, :start, &Utils.now/0),
-      env:      default_if_blank(map, :env, &default_env/0),
-      service:  default_if_blank(map, :service, &default_service/0),
-      resource: default_if_blank(map, :resource, fn -> default_if_blank(map, :name, fn -> @default end) end),
+      id: default_if_blank(map, :id, &Utils.next_id/0),
+      start: default_if_blank(map, :start, &Utils.now/0),
+      env: default_if_blank(map, :env, &default_env/0),
+      service: default_if_blank(map, :service, &default_service/0),
+      resource:
+        default_if_blank(map, :resource, fn ->
+          default_if_blank(map, :name, fn -> @default end)
+        end)
     }
 
     core
@@ -49,6 +82,7 @@ defmodule Spandex.Datadog.Span do
   @spec stop(span :: t) :: t
   def stop(%Span{completion_time: nil} = span),
     do: %{span | completion_time: Utils.now()}
+
   def stop(%Span{} = span),
     do: span
 
@@ -140,7 +174,12 @@ defmodule Spandex.Datadog.Span do
     |> add_if_not_nil([:meta, "sql.db"], span.sql_db)
   end
 
-  defp add_error_data(json, %{error: 1, error_message: error_message, stacktrace: stacktrace, error_type: error_type}) do
+  defp add_error_data(json, %{
+         error: 1,
+         error_message: error_message,
+         stacktrace: stacktrace,
+         error_type: error_type
+       }) do
     json
     |> add_if_not_nil([:meta, "error.msg"], error_message)
     |> add_if_not_nil([:meta, "error.stack"], stacktrace)
@@ -160,10 +199,12 @@ defmodule Spandex.Datadog.Span do
     |> Enum.reject(fn {_key, value} -> is_nil(value) end)
     |> Enum.into(%{}, fn {key, value} -> {key, filter_nils(value)} end)
   end
+
   defp filter_nils(other), do: other
 
   defp default_service, do: Confex.get_env(:spandex, :service)
   defp default_env, do: Confex.get_env(:spandex, :env)
+
   defp default_type(service) do
     :spandex
     |> Confex.get_env(:datadog)

@@ -22,9 +22,12 @@ defmodule Spandex.Adapters.Helpers do
 
   def build_level_precedence_map(levels) do
     Enum.reduce(levels, %{}, fn level, acc ->
-      Map.put(acc, level, Enum.into(levels, %{}, fn comparing_level ->
-            {comparing_level, should_send?(level, comparing_level, levels)}
-          end)
+      Map.put(
+        acc,
+        level,
+        Enum.into(levels, %{}, fn comparing_level ->
+          {comparing_level, should_send?(level, comparing_level, levels)}
+        end)
       )
     end)
   end
@@ -36,7 +39,7 @@ defmodule Spandex.Adapters.Helpers do
     configured_level_position <= span_level_position
   end
 
-  @spec get_first_header(conn :: Plug.Conn.t, header_name :: binary) :: binary | nil
+  @spec get_first_header(conn :: Plug.Conn.t(), header_name :: binary) :: binary | nil
   def get_first_header(conn, header_name) do
     conn
     |> Plug.Conn.get_req_header(header_name)

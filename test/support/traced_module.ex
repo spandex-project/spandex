@@ -35,6 +35,7 @@ defmodule Spandex.Test.TracedModule do
     rescue
       _ -> nil
     end
+
     _ = do_one_thing()
     _ = error_one_deep()
   end
@@ -47,7 +48,7 @@ defmodule Spandex.Test.TracedModule do
   end
 
   def manually_span_one_thing() do
-    Spandex.span("manually_span_one_thing/0") do
+    Spandex.span "manually_span_one_thing/0" do
       :timer.sleep(100)
     end
   end

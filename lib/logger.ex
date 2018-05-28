@@ -17,6 +17,7 @@ defmodule Spandex.Logger do
   * Does *NOT* run the provided function if the log level does not line up, unlike the normal logger
   """
   defmacro error(resource, fun, metadata \\ [], level \\ Spandex.default_level())
+
   defmacro error(resource, fun, metadata, level) do
     min_level = Application.get_env(:logger, :compile_time_purge_level, :debug)
 
@@ -25,16 +26,20 @@ defmodule Spandex.Logger do
         quote location: :keep, bind_quoted: [resource: resource, fun: fun, metadata: metadata] do
           require Logger
           require Spandex
+
           if Logger.compare_levels(:error, Logger.level()) == :lt do
             :ok
           else
-            Spandex.span("Logger") do
-              Spandex.span("Logger.error", service: :logger, resource: resource) do
-                Logger.error(fn ->
-                  Spandex.span("Logger.error:anonymous_fn") do
-                    [resource, ": ", fun.()]
-                  end
-                end, metadata)
+            Spandex.span "Logger" do
+              Spandex.span "Logger.error", service: :logger, resource: resource do
+                Logger.error(
+                  fn ->
+                    Spandex.span "Logger.error:anonymous_fn" do
+                      [resource, ": ", fun.()]
+                    end
+                  end,
+                  metadata
+                )
               end
             end
           end
@@ -47,9 +52,13 @@ defmodule Spandex.Logger do
     else
       quote do
         require Logger
-        Logger.error(fn ->
-          [unquote(resource), ": ", unquote(fun).()]
-        end, unquote(metadata))
+
+        Logger.error(
+          fn ->
+            [unquote(resource), ": ", unquote(fun).()]
+          end,
+          unquote(metadata)
+        )
       end
     end
   end
@@ -67,23 +76,29 @@ defmodule Spandex.Logger do
   * Does *NOT* run the provided function if the log level does not line up, unlike the normal logger
   """
   defmacro warn(resource, fun, metadata \\ [], level \\ Spandex.default_level())
+
   defmacro warn(resource, fun, metadata, level) do
     if Spandex.should_span?(level) do
       min_level = Application.get_env(:logger, :compile_time_purge_level, :debug)
+
       if Logger.compare_levels(:warn, min_level) in [:gt, :eq] do
         quote location: :keep, bind_quoted: [resource: resource, fun: fun, metadata: metadata] do
           require Logger
           require Spandex
+
           if Logger.compare_levels(:warn, Logger.level()) == :lt do
             :ok
           else
-            Spandex.span("Logger") do
-              Spandex.span("Logger.warn", service: :logger, resource: resource) do
-                Logger.warn(fn ->
-                  Spandex.span("Logger.warn:anonymous_fn") do
-                    [resource, ": ", fun.()]
-                  end
-                end, metadata)
+            Spandex.span "Logger" do
+              Spandex.span "Logger.warn", service: :logger, resource: resource do
+                Logger.warn(
+                  fn ->
+                    Spandex.span "Logger.warn:anonymous_fn" do
+                      [resource, ": ", fun.()]
+                    end
+                  end,
+                  metadata
+                )
               end
             end
           end
@@ -96,9 +111,13 @@ defmodule Spandex.Logger do
     else
       quote do
         require Logger
-        Logger.warn(fn ->
-          [unquote(resource), ": ", unquote(fun).()]
-        end, unquote(metadata))
+
+        Logger.warn(
+          fn ->
+            [unquote(resource), ": ", unquote(fun).()]
+          end,
+          unquote(metadata)
+        )
       end
     end
   end
@@ -117,23 +136,29 @@ defmodule Spandex.Logger do
   * Does *NOT* run the provided function if the log level does not line up, unlike the normal logger
   """
   defmacro info(resource, fun, metadata \\ [], level \\ Spandex.default_level())
+
   defmacro info(resource, fun, metadata, level) do
     if Spandex.should_span?(level) do
       min_level = Application.get_env(:logger, :compile_time_purge_level, :debug)
+
       if Logger.compare_levels(:info, min_level) in [:gt, :eq] do
         quote location: :keep, bind_quoted: [resource: resource, fun: fun, metadata: metadata] do
           require Logger
           require Spandex
+
           if Logger.compare_levels(:info, Logger.level()) == :lt do
             :ok
           else
-            Spandex.span("Logger") do
-              Spandex.span("Logger.info", service: :logger, resource: resource) do
-                Logger.info(fn ->
-                  Spandex.span("Logger.info:anonymous_fn") do
-                    [resource, ": ", fun.()]
-                  end
-                end, metadata)
+            Spandex.span "Logger" do
+              Spandex.span "Logger.info", service: :logger, resource: resource do
+                Logger.info(
+                  fn ->
+                    Spandex.span "Logger.info:anonymous_fn" do
+                      [resource, ": ", fun.()]
+                    end
+                  end,
+                  metadata
+                )
               end
             end
           end
@@ -146,9 +171,13 @@ defmodule Spandex.Logger do
     else
       quote do
         require Logger
-        Logger.info(fn ->
-          [unquote(resource), ": ", unquote(fun).()]
-        end, unquote(metadata))
+
+        Logger.info(
+          fn ->
+            [unquote(resource), ": ", unquote(fun).()]
+          end,
+          unquote(metadata)
+        )
       end
     end
   end
@@ -166,23 +195,29 @@ defmodule Spandex.Logger do
   * Does *NOT* run the provided function if the log level does not line up, unlike the normal logger
   """
   defmacro debug(resource, fun, metadata \\ [], level \\ Spandex.default_level())
+
   defmacro debug(resource, fun, metadata, level) do
     if Spandex.should_span?(level) do
       min_level = Application.get_env(:logger, :compile_time_purge_level, :debug)
+
       if Logger.compare_levels(:debug, min_level) in [:gt, :eq] do
         quote location: :keep, bind_quoted: [resource: resource, fun: fun, metadata: metadata] do
           require Logger
           require Spandex
+
           if Logger.compare_levels(:debug, Logger.level()) == :lt do
             :ok
           else
-            Spandex.span("Logger") do
-              Spandex.span("Logger.debug", service: :logger, resource: resource) do
-                Logger.debug(fn ->
-                  Spandex.span("Logger.debug:anonymous_fn") do
-                    [resource, ": ", fun.()]
-                  end
-                end, metadata)
+            Spandex.span "Logger" do
+              Spandex.span "Logger.debug", service: :logger, resource: resource do
+                Logger.debug(
+                  fn ->
+                    Spandex.span "Logger.debug:anonymous_fn" do
+                      [resource, ": ", fun.()]
+                    end
+                  end,
+                  metadata
+                )
               end
             end
           end
@@ -195,9 +230,13 @@ defmodule Spandex.Logger do
     else
       quote do
         require Logger
-        Logger.debug(fn ->
-          [unquote(resource), ": ", unquote(fun).()]
-        end, unquote(metadata))
+
+        Logger.debug(
+          fn ->
+            [unquote(resource), ": ", unquote(fun).()]
+          end,
+          unquote(metadata)
+        )
       end
     end
   end

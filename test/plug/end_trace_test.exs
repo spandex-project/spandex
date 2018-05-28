@@ -8,9 +8,10 @@ defmodule Spandex.Plug.EndTraceTest do
     {:ok, trace_id} = Spandex.start_trace("request")
 
     {
-      :ok, [
+      :ok,
+      [
         trace_id: trace_id,
-        conn: Plug.Adapters.Test.Conn.conn(%Plug.Conn{}, :get, "/dashboard", nil),
+        conn: Plug.Adapters.Test.Conn.conn(%Plug.Conn{}, :get, "/dashboard", nil)
       ]
     }
   end
@@ -24,14 +25,17 @@ defmodule Spandex.Plug.EndTraceTest do
       :ok = Spandex.finish_trace()
     end
 
-    test "updates top span and finish span, when we trace request for 200", %{conn: conn, trace_id: tid} do
+    test "updates top span and finish span, when we trace request for 200", %{
+      conn: conn,
+      trace_id: tid
+    } do
       %Plug.Conn{} =
         conn
         |> Plug.Conn.put_status(:ok)
         |> Utils.trace(true)
         |> EndTrace.call([])
 
-      assert is_nil(Spandex.current_trace_id() )
+      assert is_nil(Spandex.current_trace_id())
 
       {:error, :no_trace_context} = Spandex.finish_trace()
 
@@ -42,14 +46,17 @@ defmodule Spandex.Plug.EndTraceTest do
       assert error == 0
     end
 
-    test "updates top span and finish span, when we trace request for 404", %{conn: conn, trace_id: tid} do
+    test "updates top span and finish span, when we trace request for 404", %{
+      conn: conn,
+      trace_id: tid
+    } do
       %Plug.Conn{} =
         conn
         |> Plug.Conn.put_status(:not_found)
         |> Utils.trace(true)
         |> EndTrace.call([])
 
-      assert is_nil(Spandex.current_trace_id() )
+      assert is_nil(Spandex.current_trace_id())
 
       {:error, :no_trace_context} = Spandex.finish_trace()
 

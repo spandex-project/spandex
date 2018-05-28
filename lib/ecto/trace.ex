@@ -25,6 +25,7 @@ defmodule Spandex.Ecto.Trace do
   def trace(log_entry) do
     config = config()
     span_level = config[:level]
+
     if !Spandex.disabled?() && Spandex.should_span?(span_level) do
       now = Spandex.Datadog.Utils.now()
       _ = setup(log_entry)
@@ -37,16 +38,14 @@ defmodule Spandex.Ecto.Trace do
 
       start = now - (queue_time + query_time + decoding_time)
 
-      Spandex.update_span(
-        %{
-          start: start,
-          completion_time: now,
-          service: config[:service],
-          resource: query,
-          type: :db,
-          meta: %{"sql.query" => query, "sql.rows" => inspect(num_rows)}
-        }
-      )
+      Spandex.update_span(%{
+        start: start,
+        completion_time: now,
+        service: config[:service],
+        resource: query,
+        type: :db,
+        meta: %{"sql.query" => query, "sql.rows" => inspect(num_rows)}
+      })
 
       _ = report_error(log_entry)
 
@@ -58,7 +57,13 @@ defmodule Spandex.Ecto.Trace do
 
       if query_time != 0 do
         _ = Spandex.start_span("run_query")
-        _ = Spandex.update_span(%{start: start + queue_time, completion_time: start + queue_time + query_time})
+
+        _ =
+          Spandex.update_span(%{
+            start: start + queue_time,
+            completion_time: start + queue_time + query_time
+          })
+
         _ = Spandex.finish_span()
       end
 
@@ -81,6 +86,7 @@ defmodule Spandex.Ecto.Trace do
       Spandex.finish_span()
     end
   end
+
   defp finish_ecto_trace(_), do: :ok
 
   defp setup(%{caller_pid: caller_pid}) when is_pid(caller_pid) do
@@ -93,6 +99,7 @@ defmodule Spandex.Ecto.Trace do
 
       if trace do
         trace_id = trace.id
+
         span_id =
           trace
           |> Map.get(:stack)
@@ -113,11 +120,14 @@ defmodule Spandex.Ecto.Trace do
   end
 
   defp report_error(%{result: {:ok, _}}), do: :ok
+
   defp report_error(%{result: {:error, error}}) do
     Spandex.span_error(%Error{message: inspect(error)})
   end
 
-  defp string_query(%{query: query}) when is_function(query), do: Macro.unescape_string(query.() || "")
+  defp string_query(%{query: query}) when is_function(query),
+    do: Macro.unescape_string(query.() || "")
+
   defp string_query(%{query: query}) when is_bitstring(query), do: Macro.unescape_string(query)
   defp string_query(_), do: ""
 
@@ -126,6 +136,7 @@ defmodule Spandex.Ecto.Trace do
 
   def get_time(log_entry, key) do
     value = Map.get(log_entry, key)
+
     if is_integer(value) do
       to_nanoseconds(value)
     else
