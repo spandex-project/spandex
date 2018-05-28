@@ -19,7 +19,9 @@ defmodule Spandex.Datadog.ApiServer do
     :waiting_traces,
     :batch_size,
     :sync_threshold,
-    :agent_pid
+    :agent_pid,
+    :max_interval,
+    :interval_ref,
   ]
 
   @type t :: %__MODULE__{}
@@ -53,8 +55,11 @@ defmodule Spandex.Datadog.ApiServer do
         Keyword.get_lazy(args, :agent_pid, fn ->
           {:ok, pid} = Agent.start_link(fn -> 0 end, name: :spandex_currently_send_count)
           pid
-        end)
+        end),
+      max_interval: Keyword.get(args, :max_interval, 10)
     }
+
+    state = send_interval_msg(state)
 
     {:ok, state}
   end
@@ -83,30 +88,58 @@ defmodule Spandex.Datadog.ApiServer do
     {:reply, :ok, %{state | waiting_traces: [spans | waiting_traces]}}
   end
 
-  def handle_call(
-        {:send_spans, spans},
-        _from,
-        %__MODULE__{
-          verbose: verbose,
-          asynchronous_send?: asynchronous?,
-          waiting_traces: waiting_traces,
-          sync_threshold: sync_threshold,
-          agent_pid: agent_pid
-        } = state
-      ) do
+  def handle_call({:send_spans, spans}, _from, %__MODULE__{waiting_traces: waiting_traces} = state) do
     all_traces = [spans | waiting_traces]
 
+    state = do_send_spans(%{state | waiting_traces: all_traces})
+
+    {:reply, :ok, state}
+  end
+
+  def handle_call(:send_spans, _from, state) do
+    state = do_send_spans(state)
+
+    {:reply, :ok, state}
+  end
+
+  @doc false
+  @spec handle_info(term, t) :: {:noreply, t}
+  def handle_info(:interval, %__MODULE__{waiting_traces: []} = state) do
+    state = send_interval_msg(state)
+
+    {:noreply, state}
+  end
+
+  def handle_info(:interval, %__MODULE__{verbose: verbose} = state) do
+    if verbose, do: Logger.info(fn -> "Max interval reached, sending spans now." end)
+
+    server = self()
+    Task.start(fn -> GenServer.call(server, :send_spans) end)
+
+    {:noreply, state}
+  end
+
+  defp do_send_spans(
+      %__MODULE__{
+        verbose: verbose,
+        asynchronous_send?: asynchronous?,
+        waiting_traces: waiting_traces,
+        sync_threshold: sync_threshold,
+        agent_pid: agent_pid
+      } = state
+    ) do
+
     if verbose do
-      trace_count = Enum.count(all_traces)
+      trace_count = Enum.count(waiting_traces)
 
       span_count =
-        all_traces
+        waiting_traces
         |> Enum.map(&Enum.count/1)
         |> Enum.sum()
 
       Logger.info(fn -> "Sending #{trace_count} traces, #{span_count} spans." end)
 
-      Logger.debug(fn -> "Trace: #{inspect([Enum.concat(all_traces)])}" end)
+      Logger.debug(fn -> "Trace: #{inspect([Enum.concat(waiting_traces)])}" end)
     end
 
     if asynchronous? do
@@ -122,7 +155,7 @@ defmodule Spandex.Datadog.ApiServer do
       if below_sync_threshold? do
         Task.start(fn ->
           try do
-            send_and_log(all_traces, state)
+            send_and_log(waiting_traces, state)
           after
             Agent.update(agent_pid, fn count -> count - 1 end)
           end
@@ -130,14 +163,15 @@ defmodule Spandex.Datadog.ApiServer do
       else
         # We get benefits from running in a separate process (like better GC)
         # So we async/await here to mimic the behavour above but still apply backpressure
-        task = Task.async(fn -> send_and_log(all_traces, state) end)
+        task = Task.async(fn -> send_and_log(waiting_traces, state) end)
         Task.await(task)
       end
     else
-      send_and_log(all_traces, state)
+      send_and_log(waiting_traces, state)
     end
 
-    {:reply, :ok, %{state | waiting_traces: []}}
+    state = send_interval_msg(state)
+    %{state | waiting_traces: []}
   end
 
   @spec send_and_log(traces :: list(list(map)), any) :: :ok
@@ -170,4 +204,14 @@ defmodule Spandex.Datadog.ApiServer do
   @spec push(body :: iodata, t) :: any
   defp push(body, %__MODULE__{http: http, host: host, port: port}),
     do: http.put("#{host}:#{port}/v0.3/traces", body, @headers)
+
+  @spec send_interval_msg(t) :: t
+  defp send_interval_msg(%__MODULE__{max_interval: :infinity} = state), do: state
+  defp send_interval_msg(%__MODULE__{max_interval: interval, interval_ref: interval_ref} = state) do
+    if is_reference(interval_ref), do: Process.cancel_timer(interval_ref)
+
+    timer_ref = Process.send_after(self(), :interval, trunc(interval * 1000))
+
+    %{state | interval_ref: timer_ref}
+  end
 end

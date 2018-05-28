@@ -34,7 +34,8 @@ defmodule Spandex.Datadog.ApiServerTest do
           http: TestOkApiServer,
           verbose: false,
           waiting_traces: [],
-          batch_size: 1
+          batch_size: 1,
+          max_interval: 10
         }
       ]
     }
@@ -44,20 +45,25 @@ defmodule Spandex.Datadog.ApiServerTest do
     test "correctly builds state with defaults" do
       {:ok, config} = ApiServer.init([])
 
-      assert config ==
-               %ApiServer{
-                 host: nil,
-                 port: nil,
-                 endpoint: nil,
-                 channel: nil,
-                 verbose: false,
-                 http: HTTPoison,
-                 asynchronous_send?: true,
-                 waiting_traces: [],
-                 sync_threshold: 20,
-                 batch_size: 10,
-                 agent_pid: config.agent_pid
-               }
+      agent_pid = config.agent_pid
+
+      assert %ApiServer{
+        host: nil,
+        port: nil,
+        endpoint: nil,
+        channel: nil,
+        verbose: false,
+        http: HTTPoison,
+        asynchronous_send?: true,
+        waiting_traces: [],
+        sync_threshold: 20,
+        batch_size: 10,
+        agent_pid: ^agent_pid,
+        max_interval: 10,
+        interval_ref: ref
+      } = config
+
+      assert is_reference(ref)
     end
 
     test "correctly builds state from confex" do
@@ -72,23 +78,39 @@ defmodule Spandex.Datadog.ApiServerTest do
         |> Keyword.put(:asynchronous_send?, false)
         |> Keyword.put(:batch_size, 50)
         |> Keyword.put(:sync_threshold, 100)
+        |> Keyword.put(:max_interval, 5)
 
       {:ok, config} = ApiServer.init(dd_conf)
 
-      assert config ==
-               %ApiServer{
-                 host: "datadog",
-                 port: 8126,
-                 endpoint: TestBroadcast,
-                 channel: "test_channel",
-                 verbose: true,
-                 http: TestOkApiServer,
-                 asynchronous_send?: false,
-                 agent_pid: config.agent_pid,
-                 batch_size: 50,
-                 sync_threshold: 100,
-                 waiting_traces: []
-               }
+      agent_pid = config.agent_pid
+
+      assert %ApiServer{
+        host: "datadog",
+        port: 8126,
+        endpoint: TestBroadcast,
+        channel: "test_channel",
+        verbose: true,
+        http: TestOkApiServer,
+        asynchronous_send?: false,
+        agent_pid: ^agent_pid,
+        batch_size: 50,
+        sync_threshold: 100,
+        waiting_traces: [],
+        max_interval: 5,
+        interval_ref: ref
+      } = config
+
+      assert is_reference(ref)
+    end
+
+    test "starts a max interval timer" do
+      {:ok, _config} = ApiServer.init([max_interval: 0.1])
+      assert_receive :interval, 200
+    end
+
+    test "doesn't start a max interval timer when it is infinity" do
+      {:ok, _config} = ApiServer.init([max_interval: :infinity])
+      refute_receive :interval, 200
     end
   end
 
@@ -155,6 +177,36 @@ defmodule Spandex.Datadog.ApiServerTest do
       {:reply, :ok, _} = ApiServer.handle_call({:send_spans, spans}, self(), state)
 
       assert_received {:received_spans, ^spans}
+    end
+
+    test "sends an :interval message when spans are sent", %{spans: spans, state: state, url: url} do
+      state = Map.put(state, :max_interval, 0.1)
+      {:reply, :ok, _state} = ApiServer.handle_call({:send_spans, spans}, self(), state)
+
+      assert_receive {:put_datadog_spans, ^spans, ^url, _}
+      assert_receive :interval, 200
+    end
+
+    test "does not send an :interval message when max interval is infinity", %{spans: spans, state: state, url: url} do
+      state = Map.put(state, :max_interval, :infinity)
+      {:reply, :ok, _state} = ApiServer.handle_call({:send_spans, spans}, self(), state)
+
+      assert_receive {:put_datadog_spans, ^spans, ^url, _}
+      refute_receive :interval, 200
+    end
+  end
+
+  describe "ApiServer.handle_info/1 - :interval" do
+    test "sends spans when there are some waiting", %{spans: spans, state: state} do
+      {:noreply, _state} = ApiServer.handle_info(:interval, %{state | waiting_traces: spans})
+
+      assert_receive {:"$gen_call", _, :send_spans}, 250
+    end
+
+    test "doesn't attempt to send when there are no spans waiting", %{state: state} do
+      {:noreply, _state} = ApiServer.handle_info(:interval, state)
+
+      refute_receive {:"$gen_call", _, :send_spans}, 250
     end
   end
 end
