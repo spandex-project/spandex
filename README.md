@@ -98,56 +98,7 @@ config :logger, :console,
 
 ## General Usage
 
-In general, the nicest interface is to use function decorators.
-
-Span function decorators take an optional argument which is the attributes to update the span with.
-
-*IMPORTANT*
-If you define multiple clauses for a function, you'll have to decorate all of the ones you want to span.
-
-```elixir
-defmodule TracedModule do
-  use Spandex.TraceDecorator
-
-  @decorate trace(service: :my_app, type: :web)
-  def trace_me() do
-    span_1()
-  end
-
-  @decorate span()
-  def span_1() do
-    inner_span_1()
-  end
-
-  @decorate span()
-  def inner_span_1() do
-    _ = ThirdPartyApi.different_service_call()
-    inner_span_2()
-  end
-
-  @decorate span()
-  def inner_span_2() do
-    "this produces the span stack you would expect"
-  end
-
-  # Multiple Clauses
-  @decorate span()
-  def divide(n, 0), do: {:error, :divide_by_zero}
-  @decorate span()
-  def divide(n, m), do: n / m
-end
-
-defmodule ThirdPartyApi do
-  use Spandex.TraceDecorator
-
-  @decorate span(service: :third_party, type: :cache)
-  def different_service_call() do
-
-  end
-end
-```
-
-There is also a few ways to manually start spans.
+The nicest interface for working with spans is the `span` macro, illustrated in `span_me_also` below.
 
 ```elixir
 defmodule ManuallyTraced do
@@ -184,23 +135,7 @@ defmodule ManuallyTraced do
 end
 ```
 
-## Ecto Logger
-
-See module documentation for `Spandex.Ecto.Trace` for more information
-
-A trace builder that can be given to ecto as a logger. It will try to get
-the trace_id and span_id from the caller pid in the case that the particular
-query is being run asynchronously (as in the case of parallel preloads).
-
-Traces will default to the service name `:ecto` but can be configured.
-
-config :spandex, :ecto,
-  service: :my_ecto
-
-To configure, set it up as an ecto logger like so:
-
-config :my_app, MyApp.Repo,
-  loggers: [{Ecto.LogEntry, :log, [:info]}, {Spandex.Ecto.Trace, :trace, []}]
+Spandex used to ship with function decorators, but those decorators had a habit of causing weird compilation issues for certain users, and could be easily implemented by any user of the library.
 
 ## Asynchronous Processes
 

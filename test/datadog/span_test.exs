@@ -19,10 +19,6 @@ defmodule Spandex.Datadog.SpanTest do
       assert Span.new(%Span{name: "ecto.query"}).resource == "ecto.query"
     end
 
-    test "fallbacks for type from service in config" do
-      assert Span.new(%Span{service: :ecto}).type == :sql
-    end
-
     test "sets unknown type when service is not configured" do
       assert Span.new(%Span{service: :phoenix}).type == "unknown"
     end
