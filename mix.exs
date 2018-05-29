@@ -62,7 +62,7 @@ defmodule Spandex.Mixfile do
       {:excoveralls, "~> 0.6", only: :test},
       {:httpoison, "~> 0.13", only: :test},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
-      {:optimal, "~> 0.3.1"},
+      {:optimal, "~> 0.3.2"},
       {:msgpax, "~> 1.1"},
       {:plug, "~> 1.0"},
       {:exjsx, "~> 3.2", only: :test}
