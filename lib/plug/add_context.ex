@@ -7,23 +7,67 @@ defmodule Spandex.Plug.AddContext do
 
   alias Spandex.Plug.Utils
 
+  @init_opts Optimal.schema(
+               opts: [
+                 allowed_route_replacements: [{:list, :atom}, nil],
+                 disallowed_route_replacements: {:list, :atom},
+                 query_params: {:list, :atom},
+                 tracer: :atom,
+                 tracer_opts: :keyword
+               ],
+               defaults: [
+                 allowed_route_replacements: nil,
+                 disallowed_route_replacements: [],
+                 query_params: [],
+                 tracer_opts: []
+               ],
+               required: [:tracer],
+               describe: [
+                 tracer: "The tracing module to be used to start the trace.",
+                 tracer_opts:
+                   "Any opts to be passed to the tracer when starting or continuing the trace.",
+                 allowed_route_replacements:
+                   "A list of route parts that may be replaced with their actual value. " <>
+                     "If not set or set to nil, then all will be allowed, unless they are disallowed.",
+                 disallowed_route_replacements:
+                   "A list of route parts that may *not* be replaced with their actual value.",
+                 query_params:
+                   "A list of query params who's value will be included in the resource name."
+               ]
+             )
+
+  @doc """
+  Starts a trace, considering the filters/parameters in the provided options.
+
+  #{Optimal.Doc.document(@init_opts)}
+
+  You would generally not use `allowed_route_replacements` and `disallowed_route_replacements` together.
+  """
   @spec init(opts :: Keyword.t()) :: Keyword.t()
   def init(opts) do
+    opts = Optimal.validate!(opts, @init_opts)
+
     opts
-    |> Keyword.update(:allowed_route_replacements, nil, fn config ->
+    |> Keyword.update!(:allowed_route_replacements, fn config ->
+      if config do
+        Enum.map(config, &Atom.to_string/1)
+      else
+        config
+      end
+    end)
+    |> Keyword.update!(:disallowed_route_replacements, fn config ->
       Enum.map(config, &Atom.to_string/1)
     end)
-    |> Keyword.update(:disallowed_route_replacements, [], fn config ->
-      Enum.map(config, &Atom.to_string/1)
-    end)
-    |> Keyword.update(:query_params, [], fn config ->
+    |> Keyword.update!(:query_params, fn config ->
       Enum.map(config || [], &Atom.to_string/1)
     end)
-    |> Keyword.take([:allowed_route_replacements, :disallowed_route_replacements, :query_params])
   end
 
   @spec call(conn :: Plug.Conn.t(), _opts :: Keyword.t()) :: Plug.Conn.t()
   def call(conn, opts) do
+    tracer = opts[:tracer]
+    tracer_opts = opts[:tracer_opts]
+
     if Utils.trace?(conn) do
       conn = Plug.Conn.fetch_query_params(conn)
 
@@ -49,9 +93,7 @@ defmodule Spandex.Plug.AddContext do
         url: conn.request_path,
         type: :web
       }
-      |> Spandex.update_top_span()
-
-      Logger.metadata(trace_id: Spandex.current_trace_id(), span_id: Spandex.current_span_id())
+      |> tracer.update_top_span(tracer_opts)
 
       conn
     else

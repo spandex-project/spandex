@@ -5,7 +5,8 @@ defmodule Spandex.Datadog.SpanTest do
 
   describe "Span.new/1" do
     test "initialize struct with defaults" do
-      span = Span.new(%Span{})
+      span =
+        Span.new(%Span{}, env: "test", service: :spandex_test, services: [spandex_test: :job])
 
       refute is_nil(span.id)
       refute is_nil(span.start)

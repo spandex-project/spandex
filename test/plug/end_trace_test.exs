@@ -3,9 +3,10 @@ defmodule Spandex.Plug.EndTraceTest do
 
   alias Spandex.Plug.EndTrace
   alias Spandex.Plug.Utils
+  alias Spandex.Test.Support.Tracer
 
   setup do
-    {:ok, trace_id} = Spandex.start_trace("request")
+    {:ok, trace_id} = Tracer.start_trace("request")
 
     {
       :ok,
@@ -18,11 +19,11 @@ defmodule Spandex.Plug.EndTraceTest do
 
   describe "EndTrace.call/2" do
     test "doesn't finish trace, when we don't trace request", %{conn: conn, trace_id: tid} do
-      %Plug.Conn{} = EndTrace.call(conn, [])
+      %Plug.Conn{} = EndTrace.call(conn, tracer: Tracer)
 
-      assert Spandex.current_trace_id() == tid
+      assert Tracer.current_trace_id() == tid
 
-      :ok = Spandex.finish_trace()
+      :ok = Tracer.finish_trace()
     end
 
     test "updates top span and finish span, when we trace request for 200", %{
@@ -33,11 +34,11 @@ defmodule Spandex.Plug.EndTraceTest do
         conn
         |> Plug.Conn.put_status(:ok)
         |> Utils.trace(true)
-        |> EndTrace.call([])
+        |> EndTrace.call(tracer: Tracer)
 
-      assert is_nil(Spandex.current_trace_id())
+      assert is_nil(Tracer.current_trace_id())
 
-      {:error, :no_trace_context} = Spandex.finish_trace()
+      {:error, :no_trace_context} = Tracer.finish_trace()
 
       %{trace_id: trace_id, meta: meta, error: error} = Spandex.Test.Util.find_span("request")
 
@@ -54,11 +55,11 @@ defmodule Spandex.Plug.EndTraceTest do
         conn
         |> Plug.Conn.put_status(:not_found)
         |> Utils.trace(true)
-        |> EndTrace.call([])
+        |> EndTrace.call(tracer: Tracer)
 
-      assert is_nil(Spandex.current_trace_id())
+      assert is_nil(Tracer.current_trace_id())
 
-      {:error, :no_trace_context} = Spandex.finish_trace()
+      {:error, :no_trace_context} = Tracer.finish_trace()
 
       %{trace_id: trace_id, meta: meta, error: error} = Spandex.Test.Util.find_span("request")
 

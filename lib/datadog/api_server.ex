@@ -13,9 +13,7 @@ defmodule Spandex.Datadog.ApiServer do
     :url,
     :host,
     :port,
-    :endpoint,
-    :channel,
-    :verbose,
+    :verbose?,
     :waiting_traces,
     :batch_size,
     :sync_threshold,
@@ -26,34 +24,68 @@ defmodule Spandex.Datadog.ApiServer do
 
   @headers [{"Content-Type", "application/msgpack"}]
 
-  @doc """
-  Starts genserver with given arguments.
-  """
-  @spec start_link(args :: Keyword.t()) :: GenServer.on_start()
-  def start_link(args),
-    do: GenServer.start_link(__MODULE__, args, name: Keyword.get(args, :name, __MODULE__))
+  @start_link_opts Optimal.schema(
+                     opts: [
+                       host: :string,
+                       port: [:integer, :string],
+                       verbose?: :boolean,
+                       http: :atom,
+                       batch_size: :integer,
+                       sync_threshold: :integer,
+                       api_adapter: :atom
+                     ],
+                     defaults: [
+                       host: "localhost",
+                       port: 8126,
+                       verbose?: false,
+                       batch_size: 10,
+                       sync_threshold: 20,
+                       api_adapter: Spandex.Datadog.ApiServer
+                     ],
+                     required: [:http],
+                     describe: [
+                       verbose?:
+                         "Only to be used for debugging: All finished traces will be logged",
+                       host: "The host the agent can be reached at",
+                       port: "The port to use when sending traces to the agent",
+                       batch_size: "The number of traces that should be sent in a single batch",
+                       sync_threshold:
+                         "The maximum number of processes that may be sending traces at any one time. This adds backpressure",
+                       http:
+                         "The HTTP module to use for sending spans to the agent. Currently only HTTPoison has been tested",
+                       api_adapter: "Which api adapter to use. Currently only used for testing"
+                     ]
+                   )
 
   @doc """
-  Builds proper state for server with some defaults.
+  Starts genserver with given options.
+
+  #{Optimal.Doc.document(@start_link_opts)}
   """
-  @spec init(args :: Keyword.t()) :: {:ok, t}
-  def init(args) do
+  @spec start_link(opts :: Keyword.t()) :: GenServer.on_start()
+  def start_link(opts) do
+    opts = Optimal.validate!(opts, @start_link_opts)
+
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc """
+  Builds server state.
+  """
+  @spec init(opts :: Keyword.t()) :: {:ok, t}
+  def init(opts) do
+    {:ok, agent_pid} = Agent.start_link(fn -> 0 end, name: :spandex_currently_send_count)
+
     state = %__MODULE__{
-      host: Keyword.get(args, :host),
-      port: Keyword.get(args, :port),
-      endpoint: Keyword.get(args, :endpoint),
-      channel: Keyword.get(args, :channel),
-      verbose: Keyword.get(args, :log_traces?, false),
-      http: Keyword.get(args, :http, HTTPoison),
-      asynchronous_send?: Keyword.get(args, :asynchronous_send?, true),
+      asynchronous_send?: true,
+      host: opts[:host],
+      port: opts[:port],
+      verbose?: opts[:verbose?],
+      http: opts[:http],
       waiting_traces: [],
-      batch_size: Keyword.get(args, :batch_size, 10),
-      sync_threshold: Keyword.get(args, :sync_threshold, 20),
-      agent_pid:
-        Keyword.get_lazy(args, :agent_pid, fn ->
-          {:ok, pid} = Agent.start_link(fn -> 0 end, name: :spandex_currently_send_count)
-          pid
-        end)
+      batch_size: opts[:batch_size],
+      sync_threshold: opts[:sync_threshold],
+      agent_pid: agent_pid
     }
 
     {:ok, state}
@@ -68,17 +100,18 @@ defmodule Spandex.Datadog.ApiServer do
   end
 
   @doc false
-  @spec handle_call({:send_spans, spans :: list(map)}, pid, state :: t) :: {:noreply, t}
+  @spec handle_call({:send_spans, spans :: list(map)}, term, state :: t) :: {:reply, :ok, t}
   def handle_call(
         {:send_spans, spans},
         _from,
-        %__MODULE__{waiting_traces: waiting_traces, batch_size: batch_size, verbose: verbose} =
+        %__MODULE__{waiting_traces: waiting_traces, batch_size: batch_size, verbose?: verbose?} =
           state
       )
       when length(waiting_traces) + 1 < batch_size do
-    if verbose do
-      Logger.info(fn -> "Adding trace to stack with #{Enum.count(spans)} spans" end)
-    end
+    _ =
+      if verbose? do
+        Logger.info(fn -> "Adding trace to stack with #{Enum.count(spans)} spans" end)
+      end
 
     {:reply, :ok, %{state | waiting_traces: [spans | waiting_traces]}}
   end
@@ -87,7 +120,7 @@ defmodule Spandex.Datadog.ApiServer do
         {:send_spans, spans},
         _from,
         %__MODULE__{
-          verbose: verbose,
+          verbose?: verbose?,
           asynchronous_send?: asynchronous?,
           waiting_traces: waiting_traces,
           sync_threshold: sync_threshold,
@@ -96,18 +129,19 @@ defmodule Spandex.Datadog.ApiServer do
       ) do
     all_traces = [spans | waiting_traces]
 
-    if verbose do
-      trace_count = Enum.count(all_traces)
+    _ =
+      if verbose? do
+        trace_count = Enum.count(all_traces)
 
-      span_count =
-        all_traces
-        |> Enum.map(&Enum.count/1)
-        |> Enum.sum()
+        span_count =
+          all_traces
+          |> Enum.map(&Enum.count/1)
+          |> Enum.sum()
 
-      Logger.info(fn -> "Sending #{trace_count} traces, #{span_count} spans." end)
+        _ = Logger.info(fn -> "Sending #{trace_count} traces, #{span_count} spans." end)
 
-      Logger.debug(fn -> "Trace: #{inspect([Enum.concat(all_traces)])}" end)
-    end
+        Logger.debug(fn -> "Trace: #{inspect([Enum.concat(all_traces)])}" end)
+      end
 
     if asynchronous? do
       below_sync_threshold? =
@@ -141,27 +175,19 @@ defmodule Spandex.Datadog.ApiServer do
   end
 
   @spec send_and_log(traces :: list(list(map)), any) :: :ok
-  def send_and_log(traces, %{verbose: verbose} = state) do
+  def send_and_log(traces, %{verbose?: verbose?} = state) do
     response =
       traces
       |> encode()
       |> push(state)
 
-    if verbose do
-      Logger.debug(fn -> "Trace response: #{inspect(response)}" end)
-    end
-
-    broadcast(traces, state)
+    _ =
+      if verbose? do
+        Logger.debug(fn -> "Trace response: #{inspect(response)}" end)
+      end
 
     :ok
   end
-
-  @spec broadcast(traces :: list(list(map)), t) :: any
-  defp broadcast(_spans, %__MODULE__{endpoint: e, channel: c}) when is_nil(e) or is_nil(c),
-    do: :noop
-
-  defp broadcast(traces, %__MODULE__{endpoint: endpoint, channel: channel}),
-    do: endpoint.broadcast(channel, "trace", %{spans: Enum.concat(traces)})
 
   @spec encode(data :: term) :: iodata | no_return
   defp encode(data),

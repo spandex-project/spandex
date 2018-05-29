@@ -10,85 +10,84 @@ View the [documentation](https://hexdocs.pm/spandex)
 
 Spandex is a platform agnostic tracing library. Currently there is only a datadog APM adapter, but its designed to be able to have more adapters written for it.
 
+This library is undergoing some structural changes for future versions. This documentation will be kept up to date, but if there are any inconsistencies, don't hesitate to make an issue.
+
 ## Installation
+
 ```elixir
 def deps do
-  [{:spandex, "~> 1.3.4"}]
+  [{:spandex, "~> 1.4.0"}]
 end
 ```
-## Warning
 
-Don't use the endpoint/channel configuration in your production environment. We saw a significant increase in scheduler/cpu load during high traffic times due to this feature. It was intended to provide a way to write custom visualizations by subscribing to a channel. We haven't removed it yet, but we probably will soon.
+## Setup and Configuration
 
-## Performance
-
-Originally, the library had an api server and spans were sent via `GenServer.cast`, but we've seen the need to introduce backpressure, and limit the overall amount of requests made. As such, there are two new configuration options (also shown in the configuration section below)
+Define your tracer:
 
 ```elixir
-config :spandex, :datadog,
-  batch_size: 10,
-  sync_threshold: 20
+defmodule MyApp.Tracer do
+  use Spandex.Tracer, otp_app: :mya_app
+end
 ```
 
-Batch size refers to *traces* not spans, so if you send a large amount of spans per trace, then you probably want to keep that number low. If you send only a few spans, then you could set it significantly higher.
-
-Sync threshold refers to the *number of processes concurrently sending spans*. *NOT* the number of traces queued up waiting to be sent. It is used to apply backpressure while still taking advantage of parallelism. Ideally, the sync threshold would be set to a point that you wouldn't reasonably reach often, but that is low enough to not cause systemic performance issues if you don't apply backpressure. A simple way to think about it is that if you are seeing 1000 request per second, and your batch size is 10, then you'll be making 100 requests per second to datadog(probably a bad config). But if your sync_threshold is set to 10, you'll almost certainly exceed that because 100 requests in 1 second will likely overlap in that way. So when that is exceeded, the work is done synchronously, (not waiting for the asynchronous ones to complete even). This concept of backpressure is very important, and strategies for switching to synchronous operation are often surprisingly far more performant than purely asynchronous strategies (and much more predictable).
-
-## Configuration
-
-Spandex uses `Confex` under the hood. See the formats usable for declaring values at their [documentation](https://github.com/Nebo15/confex)
+Configure it:
 
 ```elixir
-config :spandex,
-  service: :my_api, # required, default service name
-  adapter: Spandex.Adapters.Datadog, # required
-  disabled?: {:system, :boolean, "DISABLE_SPANDEX", false},
-  env: {:system, "APM_ENVIRONMENT", "unknown"},
-  application: :my_app,
-  ignored_methods: ["OPTIONS"],
-  # ignored routes accepts regexes, and strings. If it is a string it must match exactly.
-  ignored_routes: [~r/health_check/, "/status"],
-  # do not set the following configurations unless you are sure.
-  log_traces?: false # You probably don't want this to be on, *especially* if you have high load. For debugging.
+config :my_app, MyApp.Tracer,
+  service: :my_api,
+  adapter: Spandex.Adapters.Datadog,
+  disabled?: false,
+  env: "PROD"
 ```
 
-Even though datadog is the only adapter currently, configurations are still namespaced by the adapter to allow adding more in the future.
+Or at runtime, by calling `configure/1` (usually in your application's startup)
 
 ```elixir
-config :spandex, :datadog,
-  host: {:system, "DATADOG_HOST", "localhost"},
-  port: {:system, "DATADOG_PORT", 8126},
-  batch_size: 10,
-  sync_threshold: 20,
-  services: [ # for defaults mapping in spans service => type
-    ecto: :db,
-    my_api: :web,
-    my_cache: :cache,
-  ],
-  # Do not set the following configurations unless you are sure.
-  api_adapter: Spandex.Datadog.ApiServer, # Traces will get sent in background
-  asynchronous_send?: true, # Defaults to `true`. no reason to change it except perhaps for testing purposes. If changed, expect performance impacts.
-  endpoint: MyApp.Endpoint, # See notice about potential performance impacts from publishing traces to channels.
-  channel: "spandex_traces", # If endpoint and channel are set, all traces will be broadcast across that channel
+MyApp.Tracer.configure(disabled?: Mix.env == :test)
+```
+
+For more information on tracer configuration, view the docs for `Spandex.Tracer`. There you will find the documentation for the opts schema. The entire configuration can also be passed into each function in your tracer to be overridden if desired. For example:
+
+`MyApp.Tracer.start_span("span_name", service: :some_special_service)`
+
+Your configuration and the configuration in your config files is merged together, to avoid needing to specify this config at all times.
+
+To bypass the tracer pattern entirely, you can call directly into the functions in `Spandex`, like `Spandex.start_span("span_name", [adapter: Foo, service: :bar])`
+
+### Adapter specific configuration
+
+To start the datadog adapter, add a worker to your application's supervisor
+
+```elixir
+# Example configuration
+opts =
+  [
+    host: System.get_env("DATADOG_HOST") || "localhost",
+    port: System.get_env("DATADOG_PORT") || 8126,
+    batch_size: System.get_env("SPANDEX_BATCH_SIZE") || 10,
+    sync_threshold: System.get_env("SPANDEX_SYNC_THRESHOLD") || 100,
+    http: HTTPoison
+  ]
+
+# in your supervision tree
+
+worker(Spandex.Datadog.ApiServer, [opts])
 ```
 
 ## Phoenix Plugs
 
 There are 3 plugs provided for usage w/ Phoenix:
 
-* `Spandex.Plug.StartTrace`
-* `Spandex.Plug.AddContext`
-* `Spandex.Plug.EndTrace`
-
-`Spandex.Plug.AddContext` can be modified to include options for `:allowed_route_replacements` and `:disallowed_route_replacements`, so a route of `:base_route/:id/:relationship` would only have `:base_route` and `:relationship` swapped to their param values if included in `:allowed_route_replacements` and not included in `:disallowed_route_replacements`.
-
-Ensure that `Spandex.Plug.EndTrace` goes *after* your router. This is important because we want rendering the response to be included in the tracing/timing. Put `Spandex.Plug.StartTrace` as early as is reasonable in your pipeline. Put `Spandex.Plug.AddContext` either after router or inside a pipeline in router.
+* `Spandex.Plug.StartTrace` - See moduledocs for options. Goes as early in your pipeline as possible.
+* `Spandex.Plug.AddContext` - See moduledocs for options. Either after the router, or inside a pipeline in the router.
+* `Spandex.Plug.EndTrace` - Must go *after* your router.
 
 ## Distributed Tracing
 
 Distributed tracing is supported via headers `x-datadog-trace-id` and `x-datadog-parent-id`. If they are set, the `StartTrace` plug will act accordingly, continuing that trace and span instead of starting a new one. *Both* must be set for distributed tracing to work.
 
 ## Logger metadata
+
 In general, you'll probably want the current span_id and trace_id in your logs, so that you can find them in your tracing service. Make sure to add `span_id` and `trace_id` to logger_metadata
 
 ```elixir
@@ -106,29 +105,29 @@ defmodule ManuallyTraced do
 
   # Does not handle exceptions for you.
   def trace_me() do
-    _ = Spandex.start_trace("my_trace") #also opens a span
-    _ = Spandex.update_span(%{service: :my_app, type: :db})
+    _ = Tracer.start_trace("my_trace") #also opens a span
+    _ = Tracer.update_span(%{service: :my_app, type: :db})
 
     result = span_me()
 
-    _ = Spandex.finish_trace()
+    _ = Tracer.finish_trace()
 
     result
   end
 
   # Does not handle exceptions for you.
   def span_me() do
-    _ = Spandex.start_span("this_span")
-    _ = Spandex.update_span(%{service: :my_app, type: :web})
+    _ = Tracer.start_span("this_span")
+    _ = Tracer.update_span(%{service: :my_app, type: :web})
 
     result = span_me_also()
 
-    _ = Spandex.finish_span()
+    _ = Tracer.finish_span()
   end
 
   # Handles exception at the span level. Trace still must be reported.
   def span_me_also() do
-    Spandex.span("span_me_also) do
+    Tracer.span("span_me_also) do
       ...
     end
   end
@@ -139,4 +138,12 @@ Spandex used to ship with function decorators, but those decorators had a habit 
 
 ## Asynchronous Processes
 
-The current trace_id and span_id can be retrieved with `Spandex.current_trace_id()` and `Spandex.current_span_id()`. This can then be used as `Spandex.continue_trace("new_trace", trace_id, span_id)`. New spans can then be logged from there and will be sent in a separate batch.
+The current trace_id and span_id can be retrieved with `Tracer.current_trace_id()` and `Tracer.current_span_id()`. This can then be used as `Tracer.continue_trace("new_trace", trace_id, span_id)`. New spans can then be logged from there and will be sent in a separate batch.
+
+## Datadog Api Sender Performance
+
+Originally, the library had an api server and spans were sent via `GenServer.cast`, but we've seen the need to introduce backpressure, and limit the overall amount of requests made. As such, the datadog api sender accepts `batch_size` and `sync_threshold` options.
+
+Batch size refers to *traces* not spans, so if you send a large amount of spans per trace, then you probably want to keep that number low. If you send only a few spans, then you could set it significantly higher.
+
+Sync threshold refers to the *number of processes concurrently sending spans*. *NOT* the number of traces queued up waiting to be sent. It is used to apply backpressure while still taking advantage of parallelism. Ideally, the sync threshold would be set to a point that you wouldn't reasonably reach often, but that is low enough to not cause systemic performance issues if you don't apply backpressure. A simple way to think about it is that if you are seeing 1000 request per second, and your batch size is 10, then you'll be making 100 requests per second to datadog(probably a bad config). But if your sync_threshold is set to 10, you'll almost certainly exceed that because 100 requests in 1 second will likely overlap in that way. So when that is exceeded, the work is done synchronously, (not waiting for the asynchronous ones to complete even). This concept of backpressure is very important, and strategies for switching to synchronous operation are often surprisingly far more performant than purely asynchronous strategies (and much more predictable).
