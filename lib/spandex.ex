@@ -8,6 +8,34 @@ defmodule Spandex do
 
   import Spandex.Adapters.Helpers
 
+  defmacro trace(name, attrs \\ [], do: body) do
+    quote do
+      if Spandex.disabled?() do
+        _ = unquote(name)
+        _ = unquote(attrs)
+        unquote(body)
+      else
+        attrs = Enum.into(unquote(attrs), %{})
+
+        name = unquote(name)
+        _ = Spandex.start_trace(name, attrs)
+        span_id = Spandex.current_span_id()
+        _ = Logger.metadata(span_id: span_id)
+
+        try do
+          unquote(body)
+        rescue
+          exception ->
+            stacktrace = System.stacktrace()
+            _ = Spandex.span_error(exception)
+            reraise exception, stacktrace
+        after
+          Spandex.finish_trace()
+        end
+      end
+    end
+  end
+
   defmacro span(name, attrs \\ [], do: body) do
     quote do
       if Spandex.disabled?() do
@@ -23,14 +51,14 @@ defmodule Spandex do
         _ = Logger.metadata(span_id: span_id)
 
         try do
-          return_value = unquote(body)
-          _ = Spandex.finish_span()
-          return_value
+          unquote(body)
         rescue
           exception ->
             stacktrace = System.stacktrace()
             _ = Spandex.span_error(exception)
             reraise exception, stacktrace
+        after
+          Spandex.finish_span()
         end
       end
     end
