@@ -7,51 +7,85 @@ defmodule Spandex.Plug.StartTrace do
 
   alias Spandex.Plug.Utils
 
-  @spec init(opts :: Keyword.t()) :: Keyword.t()
-  def init(opts), do: opts
+  # TODO: Get support for `regex` type or `matchable` type into optimal
+  @init_opts Optimal.schema(
+               opts: [
+                 ignored_methods: {:list, :string},
+                 ignored_routes: {:list, :any},
+                 tracer: :atom,
+                 tracer_opts: :keyword,
+                 span_name: :string
+               ],
+               defaults: [
+                 ignored_methods: [],
+                 ignored_routes: [],
+                 tracer_opts: [],
+                 span_name: "request"
+               ],
+               required: [:tracer],
+               describe: [
+                 ignored_methods:
+                   "A list of strings representing methods to ignore. A good example would be `[\"OPTIONS\"]`",
+                 ignored_routes:
+                   "A list of strings or regexes. If it is a string, it must match exactly.",
+                 tracer: "The tracing module to be used to start the trace.",
+                 tracer_opts:
+                   "Any opts to be passed to the tracer when starting or continuing the trace.",
+                 span_name: "The name to be used for the top level span."
+               ]
+             )
 
-  @spec call(conn :: Plug.Conn.t(), _opts :: Keyword.t()) :: Plug.Conn.t()
-  def call(conn, _opts) do
-    if ignoring_request?(conn) do
+  @doc """
+  Accepts and validates opts for the plug, and underlying tracer.
+
+  #{Optimal.Doc.document(@init_opts)}
+  """
+  @spec init(opts :: Keyword.t()) :: Keyword.t()
+  def init(opts), do: Optimal.validate!(opts, @init_opts)
+
+  @spec call(conn :: Plug.Conn.t(), opts :: Keyword.t()) :: Plug.Conn.t()
+  def call(conn, opts) do
+    if ignoring_request?(conn, opts) do
       Utils.trace(conn, false)
     else
-      begin_tracing(conn)
+      begin_tracing(conn, opts)
     end
   end
 
-  @spec begin_tracing(conn :: Plug.Conn.t()) :: Plug.Conn.t()
-  defp begin_tracing(conn) do
-    case Spandex.distributed_context(conn) do
+  @spec begin_tracing(conn :: Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
+  defp begin_tracing(conn, opts) do
+    tracer = opts[:tracer]
+    tracer_opts = opts[:tracer_opts]
+
+    case tracer.distributed_context(conn, tracer_opts) do
       {:ok, %{trace_id: trace_id, parent_id: parent_id}} ->
-        Spandex.continue_trace("request", trace_id, parent_id)
+        tracer.continue_trace("request", trace_id, parent_id, tracer_opts)
+
+        Utils.trace(conn, true)
 
       {:error, :no_distributed_trace} ->
-        Spandex.start_trace("request")
+        tracer.start_trace(opts[:span_name], %{}, tracer_opts)
+
+        Utils.trace(conn, true)
+
+      {:error, :disabled} ->
+        conn
     end
-
-    Utils.trace(conn, true)
   end
 
-  @spec ignoring_request?(conn :: Plug.Conn.t()) :: boolean
-  defp ignoring_request?(conn) do
-    disabled?() || ignored_method?(conn) || ignored_route?(conn)
+  @spec ignoring_request?(conn :: Plug.Conn.t(), Keyword.t()) :: boolean
+  defp ignoring_request?(conn, opts) do
+    ignored_method?(conn, opts) || ignored_route?(conn, opts)
   end
 
-  @spec disabled?() :: boolean
-  defp disabled?,
-    do: Spandex.disabled?()
-
-  @spec ignored_method?(conn :: Plug.Conn.t()) :: boolean
-  defp ignored_method?(conn) do
-    ignored_methods = Confex.get_env(:spandex, :ignored_methods, [])
-    conn.method in ignored_methods
+  @spec ignored_method?(conn :: Plug.Conn.t(), Keyword.t()) :: boolean
+  defp ignored_method?(conn, opts) do
+    conn.method in opts[:ignored_methods]
   end
 
-  @spec ignored_route?(conn :: Plug.Conn.t()) :: boolean
-  defp ignored_route?(conn) do
-    ignored_routes = Confex.get_env(:spandex, :ignored_routes, [])
-
-    Enum.any?(ignored_routes, fn ignored_route ->
+  @spec ignored_route?(conn :: Plug.Conn.t(), Keyword.t()) :: boolean
+  defp ignored_route?(conn, opts) do
+    Enum.any?(opts[:ignored_routes], fn ignored_route ->
       match_route?(conn.request_path, ignored_route)
     end)
   end

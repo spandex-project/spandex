@@ -4,8 +4,8 @@ defmodule Spandex.Mixfile do
   def project do
     [
       app: :spandex,
-      version: "1.3.4",
-      elixir: "~> 1.4",
+      version: "1.4.0",
+      elixir: "~> 1.5",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -23,13 +23,6 @@ defmodule Spandex.Mixfile do
         "coveralls.html": :test
       ],
       deps: deps()
-    ]
-  end
-
-  def application() do
-    [
-      extra_applications: [:logger],
-      mod: {Spandex.Application, []}
     ]
   end
 
@@ -62,24 +55,14 @@ defmodule Spandex.Mixfile do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  # Dependencies can be Hex packages:
-  #
-  #   {:my_dep, "~> 0.3.0"}
-  #
-  # Or git/path repositories:
-  #
-  #   {:my_dep, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
-  #
-  # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:confex, "3.2.2"},
-      {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
-      {:decorator, "~> 1.2.3"},
+      {:credo, "~> 0.9.2", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:excoveralls, "~> 0.6", only: :test},
-      {:httpoison, "~> 0.13"},
+      {:httpoison, "~> 0.13", only: :test},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
+      {:optimal, "~> 0.3.2"},
       {:msgpax, "~> 1.1"},
       {:plug, "~> 1.0"},
       {:exjsx, "~> 3.2", only: :test}

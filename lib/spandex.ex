@@ -1,112 +1,112 @@
 defmodule Spandex do
   @moduledoc """
-  Provides the entry point for the application, in addition to a standardized
-  interface. The functions here call the corresponding functions on the
-  configured adapter.
+  The functions here call the corresponding functions on the configured adapter.
   """
   require Logger
 
-  import Spandex.Adapters.Helpers
+  def start_trace(name, attributes, opts) do
+    adapter = opts[:adapter]
 
-  defmacro trace(name, attrs \\ [], do: body) do
-    quote do
-      if Spandex.disabled?() do
-        _ = unquote(name)
-        _ = unquote(attrs)
-        unquote(body)
-      else
-        attrs = Enum.into(unquote(attrs), %{})
-
-        name = unquote(name)
-        _ = Spandex.start_trace(name, attrs)
-        span_id = Spandex.current_span_id()
-        _ = Logger.metadata(span_id: span_id)
-
-        try do
-          unquote(body)
-        rescue
-          exception ->
-            stacktrace = System.stacktrace()
-            _ = Spandex.span_error(exception)
-            reraise exception, stacktrace
-        after
-          Spandex.finish_trace()
-        end
-      end
-    end
-  end
-
-  defmacro span(name, attrs \\ [], do: body) do
-    quote do
-      if Spandex.disabled?() do
-        _ = unquote(name)
-        _ = unquote(attrs)
-        unquote(body)
-      else
-        attrs = Enum.into(unquote(attrs), %{})
-
-        name = unquote(name)
-        _ = Spandex.start_span(name, attrs)
-        span_id = Spandex.current_span_id()
-        _ = Logger.metadata(span_id: span_id)
-
-        try do
-          unquote(body)
-        rescue
-          exception ->
-            stacktrace = System.stacktrace()
-            _ = Spandex.span_error(exception)
-            reraise exception, stacktrace
-        after
-          Spandex.finish_span()
-        end
-      end
-    end
-  end
-
-  def disabled?() do
-    truthy?(Confex.get_env(:spandex, :disabled?)) or
-      not truthy?(Confex.get_env(:spandex, :adapter))
-  end
-
-  defp truthy?(value) when value in [false, nil], do: false
-  defp truthy?(_other), do: true
-
-  def start_trace(name, attributes) do
-    case start_trace(name) do
+    case adapter.start_trace(name, opts) do
       {:ok, trace_id} ->
         Logger.metadata(trace_id: trace_id)
 
-        Spandex.update_span(attributes)
+        adapter.update_span(attributes, opts)
+        {:ok, trace_id}
 
       {:error, error} ->
         {:error, error}
     end
   end
 
-  def start_span(name, attributes) do
-    case start_span(name) do
+  def start_span(name, attributes, opts) do
+    adapter = opts[:adapter]
+
+    case adapter.start_span(name, opts) do
       {:ok, span_id} ->
         Logger.metadata(span_id: span_id)
 
-        Spandex.update_span(attributes)
+        adapter.update_span(attributes, opts)
+        {:ok, span_id}
 
       {:error, error} ->
         {:error, error}
     end
   end
 
-  delegate_to_adapter(:start_span, [name])
-  delegate_to_adapter(:start_trace, [name])
-  delegate_to_adapter(:update_span, [context])
-  delegate_to_adapter(:update_top_span, [context])
-  delegate_to_adapter(:finish_trace, [])
-  delegate_to_adapter(:finish_span, [])
-  delegate_to_adapter(:span_error, [error])
-  delegate_to_adapter(:continue_trace, [name, trace_id, span_id])
-  delegate_to_adapter(:continue_trace_from_span, [name, span])
-  delegate_to_adapter(:current_trace_id, [])
-  delegate_to_adapter(:current_span_id, [])
-  delegate_to_adapter(:current_span, [])
-  delegate_to_adapter(:distributed_context, [conn])
+  def update_span(attributes, opts) do
+    adapter = opts[:adapter]
+
+    adapter.update_span(attributes, opts)
+  end
+
+  def update_top_span(attributes, opts) do
+    adapter = opts[:adapter]
+
+    adapter.update_top_span(attributes, opts)
+  end
+
+  # All of these need to honor `disabled?: true`
+  def finish_trace(opts) do
+    wrap_adapter(opts, fn adapter ->
+      adapter.finish_trace(opts)
+    end)
+  end
+
+  def finish_span(opts) do
+    wrap_adapter(opts, fn adapter ->
+      adapter.finish_span(opts)
+    end)
+  end
+
+  def span_error(error, opts) do
+    wrap_adapter(opts, fn adapter ->
+      adapter.span_error(error, opts)
+    end)
+  end
+
+  def continue_trace(name, trace_id, span_id, opts) do
+    wrap_adapter(opts, fn adapter ->
+      adapter.continue_trace(name, trace_id, span_id, opts)
+    end)
+  end
+
+  def continue_trace_from_span(name, span, opts) do
+    wrap_adapter(opts, fn adapter ->
+      adapter.continue_trace_from_span(name, span, opts)
+    end)
+  end
+
+  def current_trace_id(opts) do
+    wrap_adapter(opts, {:error, :no_trace}, fn adapter ->
+      adapter.current_trace_id(opts)
+    end)
+  end
+
+  def current_span_id(opts) do
+    wrap_adapter(opts, {:error, :no_trace}, fn adapter ->
+      adapter.current_span_id(opts)
+    end)
+  end
+
+  def current_span(opts) do
+    wrap_adapter(opts, {:error, :no_trace}, fn adapter ->
+      adapter.current_span(opts)
+    end)
+  end
+
+  def distributed_context(conn, opts) do
+    wrap_adapter(opts, {:error, :disabled}, fn adapter ->
+      adapter.distributed_context(conn, opts)
+    end)
+  end
+
+  defp wrap_adapter(opts, ret \\ {:ok, :disabled}, fun) do
+    if opts[:disabled?] == true do
+      ret
+    else
+      adapter = opts[:adapter]
+      fun.(adapter)
+    end
+  end
 end

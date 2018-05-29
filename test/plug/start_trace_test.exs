@@ -2,19 +2,10 @@ defmodule Spandex.Plug.StartTraceTest do
   use ExUnit.Case
 
   alias Spandex.Plug.StartTrace
+  alias Spandex.Test.Support.Tracer
 
   def gen_conn(method, path),
     do: Plug.Adapters.Test.Conn.conn(%Plug.Conn{}, method, path, nil)
-
-  def with_conf(app, key, val, fun),
-    do: with_conf(app, key, val, Application.get_env(app, key), fun)
-
-  def with_conf(app, key, new_val, old_val, fun) do
-    Application.put_env(app, key, new_val)
-    fun.()
-  after
-    Application.put_env(app, key, old_val)
-  end
 
   setup_all do
     {:ok, [conn: gen_conn(:get, "/dashboard")]}
@@ -22,53 +13,82 @@ defmodule Spandex.Plug.StartTraceTest do
 
   describe "StartTrace.call/2" do
     test "doesn't create a trace, when Spandex is disabled", %{conn: conn} do
-      with_conf(:spandex, :disabled?, true, fn ->
-        new_conn = StartTrace.call(conn, [])
-        assert is_nil(Spandex.current_trace_id())
-        refute new_conn.assigns[:spandex_trace_request?]
-      end)
+      new_conn =
+        StartTrace.call(
+          conn,
+          ignored_routes: [],
+          ignored_methods: [],
+          tracer: Tracer,
+          tracer_opts: [disabled?: true]
+        )
+
+      assert is_nil(Tracer.current_trace_id())
+      refute new_conn.assigns[:spandex_trace_request?]
     end
 
     test "doesn't create a trace, when method is configured as ignored", %{conn: conn} do
-      with_conf(:spandex, :ignored_methods, ["GET", "POST"], fn ->
-        refute Spandex.disabled?()
+      new_conn = StartTrace.call(conn, ignored_routes: [], ignored_methods: ["GET", "POST"])
+      assert is_nil(Tracer.current_trace_id())
+      refute new_conn.assigns[:spandex_trace_request?]
 
-        new_conn = StartTrace.call(conn, [])
-        assert is_nil(Spandex.current_trace_id())
-        refute new_conn.assigns[:spandex_trace_request?]
+      new_conn =
+        StartTrace.call(
+          gen_conn(:post, "/foo"),
+          ignored_routes: [],
+          ignored_methods: ["GET", "POST"],
+          tracer: Tracer
+        )
 
-        new_conn = StartTrace.call(gen_conn(:post, "/foo"), [])
-        assert is_nil(Spandex.current_trace_id())
-        refute new_conn.assigns[:spandex_trace_request?]
-      end)
+      assert is_nil(Tracer.current_trace_id())
+      refute new_conn.assigns[:spandex_trace_request?]
     end
 
     test "doesn't create a trace, when path is marked as ignored with regex", %{conn: conn} do
-      with_conf(:spandex, :ignored_routes, [~r|/dashboard|, ~r|/users/\d+/edit|], fn ->
-        refute Spandex.disabled?()
+      new_conn =
+        StartTrace.call(
+          conn,
+          ignored_routes: [~r|/dashboard|, ~r|/users/\d+/edit|],
+          ignored_methods: [],
+          tracer: Tracer
+        )
 
-        new_conn = StartTrace.call(conn, [])
-        assert is_nil(Spandex.current_trace_id())
-        refute new_conn.assigns[:spandex_trace_request?]
+      assert is_nil(Tracer.current_trace_id())
+      refute new_conn.assigns[:spandex_trace_request?]
 
-        new_conn = StartTrace.call(gen_conn(:post, "/users/23/edit"), [])
-        assert is_nil(Spandex.current_trace_id())
-        refute new_conn.assigns[:spandex_trace_request?]
-      end)
+      new_conn =
+        StartTrace.call(
+          gen_conn(:post, "/users/23/edit"),
+          ignored_routes: [~r|/dashboard|, ~r|/users/\d+/edit|],
+          ignored_methods: [],
+          tracer: Tracer
+        )
+
+      assert is_nil(Tracer.current_trace_id())
+      refute new_conn.assigns[:spandex_trace_request?]
     end
 
     test "doesn't create a trace, when path is marked as ignored with exact match", %{conn: conn} do
-      with_conf(:spandex, :ignored_routes, ["/foobars", "/dashboard"], fn ->
-        refute Spandex.disabled?()
+      new_conn =
+        StartTrace.call(
+          conn,
+          ignored_routes: ["/foobars", "/dashboard"],
+          ignored_methods: [],
+          tracer: Tracer
+        )
 
-        new_conn = StartTrace.call(conn, [])
+      assert is_nil(Tracer.current_trace_id())
+      refute new_conn.assigns[:spandex_trace_request?]
 
-        assert is_nil(Spandex.current_trace_id())
-        refute new_conn.assigns[:spandex_trace_request?]
-        new_conn = StartTrace.call(gen_conn(:get, "/foobars"), [])
-        assert is_nil(Spandex.current_trace_id())
-        refute new_conn.assigns[:spandex_trace_request?]
-      end)
+      new_conn =
+        StartTrace.call(
+          gen_conn(:get, "/foobars"),
+          ignored_routes: ["/foobars", "/dashboard"],
+          ignored_methods: [],
+          tracer: Tracer
+        )
+
+      assert is_nil(Tracer.current_trace_id())
+      refute new_conn.assigns[:spandex_trace_request?]
     end
 
     test "continues existing trace when distributed context exists", %{conn: conn} do
@@ -77,20 +97,20 @@ defmodule Spandex.Plug.StartTraceTest do
         |> Plug.Conn.put_req_header("x-datadog-trace-id", "12345")
         |> Plug.Conn.put_req_header("x-datadog-parent-id", "67890")
 
-      new_conn = StartTrace.call(conn, [])
+      new_conn = StartTrace.call(conn, ignored_routes: [], ignored_methods: [], tracer: Tracer)
 
-      assert %{trace_id: "12345", parent_id: "67890"} = Spandex.current_span()
+      assert %{trace_id: "12345", parent_id: "67890"} = Tracer.current_span()
 
-      refute Spandex.current_span_id() == "67890"
-      refute is_nil(Spandex.current_span_id())
+      refute Tracer.current_span_id() == "67890"
+      refute is_nil(Tracer.current_span_id())
 
       assert new_conn.assigns[:spandex_trace_request?]
     end
 
     test "starts new trace", %{conn: conn} do
-      new_conn = StartTrace.call(conn, [])
+      new_conn = StartTrace.call(conn, ignored_routes: [], ignored_methods: [], tracer: Tracer)
 
-      refute is_nil(Spandex.current_trace_id())
+      refute is_nil(Tracer.current_trace_id())
       assert new_conn.assigns[:spandex_trace_request?]
     end
   end

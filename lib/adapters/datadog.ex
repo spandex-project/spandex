@@ -5,8 +5,6 @@ defmodule Spandex.Adapters.Datadog do
 
   @behaviour Spandex.Adapters.Adapter
 
-  alias Spandex.Adapters.Helpers
-  alias Spandex.Datadog.Api
   alias Spandex.Datadog.Span
   alias Spandex.Datadog.Utils
 
@@ -15,17 +13,18 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Starts a trace context in process local storage.
   """
-  @spec start_trace(String.t()) :: {:ok, term} | {:error, term}
-  def start_trace(name) do
+  @impl Spandex.Adapters.Adapter
+  @spec start_trace(String.t(), opts :: Keyword.t()) :: {:ok, term} | {:error, term}
+  def start_trace(name, opts) do
     if get_trace() do
-      Logger.error("Tried to start a trace over top of another trace.")
+      _ = Logger.error("Tried to start a trace over top of another trace.")
       {:error, :trace_running}
     else
       trace_id = Utils.next_id()
 
       top_span =
         %{trace_id: trace_id, name: name}
-        |> Span.new()
+        |> Span.new(opts)
 
       Logger.metadata(trace_id: trace_id)
 
@@ -38,8 +37,9 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Starts a span and adds it to the span stack.
   """
-  @spec start_span(String.t()) :: {:ok, term} | {:error, term}
-  def start_span(name) do
+  @impl Spandex.Adapters.Adapter
+  @spec start_span(String.t(), opts :: Keyword.t()) :: {:ok, term} | {:error, term}
+  def start_span(name, opts) do
     trace = get_trace(:undefined)
 
     case trace do
@@ -58,7 +58,7 @@ defmodule Spandex.Adapters.Datadog do
       _ ->
         new_span =
           %{trace_id: trace.id, name: name}
-          |> Span.new()
+          |> Span.new(opts)
 
         put_trace(%{trace | stack: [new_span | trace.stack]})
 
@@ -72,8 +72,9 @@ defmodule Spandex.Adapters.Datadog do
   Updates a span according to the provided context.
   See `Spandex.Datadog.Span.update/2` for more information.
   """
-  @spec update_span(map) :: :ok | {:error, term}
-  def update_span(context) do
+  @impl Spandex.Adapters.Adapter
+  @spec update_span(map, Keyword.t()) :: :ok | {:error, term}
+  def update_span(context, _opts) do
     trace = get_trace()
 
     if trace do
@@ -93,8 +94,9 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Updates the top level span with information. Useful for setting overal trace context
   """
-  @spec update_top_span(map) :: :ok | {:error, term}
-  def update_top_span(context) do
+  @impl Spandex.Adapters.Adapter
+  @spec update_top_span(map, Keyword.t()) :: :ok | {:error, term}
+  def update_top_span(context, _opts) do
     trace = get_trace()
 
     if trace do
@@ -117,8 +119,9 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Updates all spans
   """
-  @spec update_all_spans(map) :: :ok | {}
-  def update_all_spans(context) do
+  @impl Spandex.Adapters.Adapter
+  @spec update_all_spans(map, Keyword.t()) :: :ok | {}
+  def update_all_spans(context, _opts) do
     trace = get_trace()
 
     if trace do
@@ -137,8 +140,9 @@ defmodule Spandex.Adapters.Datadog do
   Completes the current span, moving it from the top of the span stack
   to the list of completed spans.
   """
-  @spec finish_span() :: :ok | {:error, term}
-  def finish_span() do
+  @impl Spandex.Adapters.Adapter
+  @spec finish_span(Keyword.t()) :: :ok | {:error, term}
+  def finish_span(_opts) do
     trace = get_trace()
 
     cond do
@@ -165,9 +169,11 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Sends the trace to datadog and clears out the current trace data
   """
-  @spec finish_trace() :: :ok | {:error, :no_trace_context}
-  def finish_trace() do
+  @impl Spandex.Adapters.Adapter
+  @spec finish_trace(opts :: Keyword.t()) :: :ok | {:error, :no_trace_context}
+  def finish_trace(opts) do
     trace = get_trace()
+    sender = opts[:sender]
 
     if trace do
       unfinished_spans = Enum.map(trace.stack, &Span.stop/1)
@@ -175,8 +181,8 @@ defmodule Spandex.Adapters.Datadog do
       trace.spans
       |> Kernel.++(unfinished_spans)
       |> Enum.map(&Span.stop/1)
-      |> Enum.map(&Span.to_map/1)
-      |> Api.create_trace()
+      |> Enum.map(&Span.to_map(&1, opts))
+      |> sender.send_spans()
 
       delete_trace()
 
@@ -189,8 +195,9 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Gets the current trace id
   """
-  @spec current_trace_id() :: term | nil | {:error, term}
-  def current_trace_id() do
+  @impl Spandex.Adapters.Adapter
+  @spec current_trace_id(Keyword.t()) :: term | nil | {:error, term}
+  def current_trace_id(_opts) do
     %{id: id} = get_trace(%{id: nil})
     id
   end
@@ -198,8 +205,9 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Gets the current span id
   """
-  @spec current_span_id() :: term | nil | {:error, term}
-  def current_span_id() do
+  @impl Spandex.Adapters.Adapter
+  @spec current_span_id(Keyword.t()) :: term | nil | {:error, term}
+  def current_span_id(_opts) do
     case get_trace() do
       %{stack: [%{id: current_span_id} | _]} ->
         current_span_id
@@ -212,8 +220,9 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Gets the current span
   """
-  @spec current_span() :: term | nil | {:error, term}
-  def current_span() do
+  @impl Spandex.Adapters.Adapter
+  @spec current_span(Keyword.t()) :: term | nil | {:error, term}
+  def current_span(_opts) do
     case get_trace() do
       %{stack: [span | _]} ->
         span
@@ -226,31 +235,33 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Continues a trace given a name and a span
   """
-  @spec continue_trace_from_span(String.t(), term) :: {:ok, term}
-  def continue_trace_from_span(name, %{trace_id: trace_id} = span) do
+  @impl Spandex.Adapters.Adapter
+  @spec continue_trace_from_span(String.t(), term, Keyword.t()) :: {:ok, term}
+  def continue_trace_from_span(name, %{trace_id: trace_id} = span, opts) do
     put_trace(%{id: trace_id, stack: [span], spans: [], start: Utils.now()})
 
-    start_span(name)
+    start_span(name, opts)
   end
 
   @doc """
   Continues a trace given a name, a trace_id and a span_id
   """
-  @spec continue_trace(String.t(), term, term) :: {:ok, term} | {:error, term}
-  def continue_trace(name, trace_id, span_id) do
+  @impl Spandex.Adapters.Adapter
+  @spec continue_trace(String.t(), term, term, Keyword.t()) :: {:ok, term} | {:error, term}
+  def continue_trace(name, trace_id, span_id, opts) do
     trace = get_trace(:undefined)
 
     cond do
       trace == :undefined ->
         top_span =
           %{trace_id: trace_id, parent_id: span_id, name: name}
-          |> Span.new()
+          |> Span.new(opts)
 
         put_trace(%{id: trace_id, stack: [top_span], spans: [], start: Utils.now()})
         {:ok, trace_id}
 
       trace_id == trace.id ->
-        start_span(name)
+        start_span(name, opts)
 
       true ->
         {:error, :trace_already_present}
@@ -260,29 +271,41 @@ defmodule Spandex.Adapters.Datadog do
   @doc """
   Attaches error data to the current span, and marks it as an error.
   """
-  @spec span_error(Exception.t()) :: :ok | {:error, term}
-  def span_error(%{__struct__: type} = exception) do
+  @impl Spandex.Adapters.Adapter
+  @spec span_error(Exception.t(), Keyword.t()) :: :ok | {:error, term}
+  def span_error(%{__struct__: type} = exception, opts) do
     message = Exception.message(exception)
     stacktrace = Exception.format_stacktrace(System.stacktrace())
 
-    update_span(%{error: 1, error_message: message, stacktrace: stacktrace, error_type: type})
+    update_span(
+      %{error: 1, error_message: message, stacktrace: stacktrace, error_type: type},
+      opts
+    )
   end
 
   @doc """
   Fetches the datadog trace & parent IDs from the conn request headers
   if they are present.
   """
-  @spec distributed_context(conn :: Plug.Conn.t()) ::
+  @impl Spandex.Adapters.Adapter
+  @spec distributed_context(conn :: Plug.Conn.t(), Keyword.t()) ::
           {:ok, %{trace_id: binary, parent_id: binary}} | {:error, :no_trace_context}
-  def distributed_context(%Plug.Conn{} = conn) do
-    trace_id = Helpers.get_first_header(conn, "x-datadog-trace-id")
-    parent_id = Helpers.get_first_header(conn, "x-datadog-parent-id")
+  def distributed_context(%Plug.Conn{} = conn, _opts) do
+    trace_id = get_first_header(conn, "x-datadog-trace-id")
+    parent_id = get_first_header(conn, "x-datadog-parent-id")
 
     if is_nil(trace_id) || is_nil(parent_id) do
       {:error, :no_distributed_trace}
     else
       {:ok, %{trace_id: trace_id, parent_id: parent_id}}
     end
+  end
+
+  @spec get_first_header(conn :: Plug.Conn.t(), header_name :: binary) :: binary | nil
+  defp get_first_header(conn, header_name) do
+    conn
+    |> Plug.Conn.get_req_header(header_name)
+    |> List.first()
   end
 
   @spec get_trace(term) :: term

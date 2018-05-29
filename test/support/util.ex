@@ -1,4 +1,6 @@
 defmodule Spandex.Test.Util do
+  @moduledoc false
+
   def can_fail(func) do
     func.()
   rescue
