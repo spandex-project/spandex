@@ -248,7 +248,7 @@ defmodule Spandex.Adapters.Datadog do
   """
   @impl Spandex.Adapters.Adapter
   @spec continue_trace(String.t(), term, term, Keyword.t()) :: {:ok, term} | {:error, term}
-  def continue_trace(name, trace_id, span_id, opts) do
+  def continue_trace(name, trace_id, span_id, opts) when is_integer(trace_id) and is_integer(span_id) do
     trace = get_trace(:undefined)
 
     cond do
@@ -306,7 +306,17 @@ defmodule Spandex.Adapters.Datadog do
     conn
     |> Plug.Conn.get_req_header(header_name)
     |> List.first()
+    |> parse_header()
   end
+
+  defp parse_header(header) when is_bitstring(header) do
+    case Integer.parse(header) do
+      {int, _} -> int
+      _        -> nil
+    end
+  end
+
+  defp parse_header(_header), do: nil
 
   @spec get_trace(term) :: term
   defp get_trace(default \\ nil) do
