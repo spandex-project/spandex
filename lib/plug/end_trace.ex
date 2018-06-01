@@ -32,24 +32,22 @@ defmodule Spandex.Plug.EndTrace do
     tracer = opts[:tracer]
     tracer_opts = opts[:tracer_opts]
 
+    opts =
+      if conn.status in 200..399 do
+        Keyword.merge([http: [status_code: conn.status]], tracer_opts)
+      else
+        Keyword.merge(
+          [http: [status_code: conn.status], error: %Spandex.Span.Error{}],
+          tracer_opts
+        )
+      end
+
     if Utils.trace?(conn) do
-      tracer.update_top_span(
-        %{
-          status: conn.status,
-          error: error_count(conn)
-        },
-        tracer_opts
-      )
+      tracer.update_top_span(opts)
 
       tracer.finish_trace(tracer_opts)
     end
 
     conn
   end
-
-  defp error_count(%{status: status}) when status in 200..399,
-    do: 0
-
-  defp error_count(%{status: _status}),
-    do: 1
 end

@@ -1,7 +1,5 @@
 use Mix.Config
 
-# TODO: Update this!
-
 config :logger, :console,
   level: :debug,
   colors: [enabled: false],
@@ -12,4 +10,8 @@ config :spandex, Spandex.Test.Support.Tracer,
   service: :spandex_test,
   adapter: Spandex.Adapters.Datadog,
   env: "test",
-  sender: Spandex.Test.DatadogTestApiServer
+  sender: Spandex.Test.DatadogTestApiServer,
+  resource: "default",
+  services: [
+    spandex_test: :db
+  ]

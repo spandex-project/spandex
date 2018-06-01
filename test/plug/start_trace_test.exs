@@ -99,16 +99,23 @@ defmodule Spandex.Plug.StartTraceTest do
 
       new_conn = StartTrace.call(conn, ignored_routes: [], ignored_methods: [], tracer: Tracer)
 
-      assert %{trace_id: 12345, parent_id: 67890} = Tracer.current_span()
+      assert %{trace_id: 12_345, parent_id: 67_890} = Tracer.current_span()
 
-      refute Tracer.current_span_id() == 67890
+      refute Tracer.current_span_id() == 67_890
       refute is_nil(Tracer.current_span_id())
 
       assert new_conn.assigns[:spandex_trace_request?]
     end
 
     test "starts new trace", %{conn: conn} do
-      new_conn = StartTrace.call(conn, ignored_routes: [], ignored_methods: [], tracer: Tracer)
+      new_conn =
+        StartTrace.call(
+          conn,
+          ignored_routes: [],
+          ignored_methods: [],
+          tracer: Tracer,
+          span_name: "request"
+        )
 
       refute is_nil(Tracer.current_trace_id())
       assert new_conn.assigns[:spandex_trace_request?]

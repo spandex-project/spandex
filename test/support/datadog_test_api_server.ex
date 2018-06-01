@@ -4,6 +4,8 @@ defmodule Spandex.Test.DatadogTestApiServer do
   so that the test can assert on payloads that would have been sent to datadog
   """
   def send_spans(spans) do
-    send(self(), {:sent_datadog_spans, spans})
+    formatted = Enum.map(spans, &Spandex.Datadog.ApiServer.format/1)
+
+    send(self(), {:sent_datadog_spans, formatted})
   end
 end

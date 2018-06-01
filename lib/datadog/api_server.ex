@@ -178,6 +178,11 @@ defmodule Spandex.Datadog.ApiServer do
   def send_and_log(traces, %{verbose?: verbose?} = state) do
     response =
       traces
+      |> Enum.map(fn trace ->
+        trace
+        |> Enum.map(&format/1)
+        |> Enum.sort_by(&Map.get(&1, :start))
+      end)
       |> encode()
       |> push(state)
 
@@ -189,11 +194,123 @@ defmodule Spandex.Datadog.ApiServer do
     :ok
   end
 
+  @spec format(Spandex.Span.t()) :: map
+  def format(span) do
+    %{
+      trace_id: span.trace_id,
+      span_id: span.id,
+      name: span.name,
+      start: span.start,
+      duration: (span.completion_time || Spandex.Datadog.Utils.now()) - span.start,
+      parent_id: span.parent_id,
+      error: error(span.error),
+      resource: span.resource,
+      service: span.service,
+      type: span.type,
+      meta: meta(span)
+    }
+  end
+
+  @spec meta(Spandex.Span.t()) :: map
+  defp meta(span) do
+    %{}
+    |> add_datadog_meta(span)
+    |> add_error_data(span)
+    |> add_http_data(span)
+    |> add_sql_data(span)
+    |> add_tags(span)
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.into(%{})
+  end
+
+  @spec add_datadog_meta(map, Spandex.Span.t()) :: map
+  defp add_datadog_meta(meta, span) do
+    Map.put(meta, :env, span.env)
+  end
+
+  @spec add_error_data(map, Spandex.Span.t()) :: map
+  defp add_error_data(meta, %{error: nil}), do: meta
+
+  defp add_error_data(meta, %{error: error}) do
+    meta
+    |> Map.put("error.type", error.__struct__)
+    |> add_error_message(error.exception)
+    |> add_error_stacktrace(error.stacktrace)
+  end
+
+  @spec add_error_message(map, Exception.t() | nil) :: map
+  defp add_error_message(meta, nil), do: meta
+
+  defp add_error_message(meta, exception),
+    do: Map.put(meta, "error.msg", Exception.message(exception))
+
+  @spec add_error_stacktrace(map, list | nil) :: map
+  defp add_error_stacktrace(meta, nil), do: meta
+
+  defp add_error_stacktrace(meta, stacktrace),
+    do: Map.put(meta, "error.msg", Exception.format_stacktrace(stacktrace))
+
+  @spec add_http_data(map, Spandex.Span.t()) :: map
+  defp add_http_data(meta, %{http: nil}), do: meta
+
+  defp add_http_data(meta, %{http: http}) do
+    status_code =
+      if http.status_code do
+        to_string(http.status_code)
+      end
+
+    meta
+    |> Map.put("http.url", http.url)
+    |> Map.put("http.status_code", status_code)
+    |> Map.put("http.method", http.method)
+  end
+
+  @spec add_sql_data(map, Spandex.Span.t()) :: map
+  defp add_sql_data(meta, %{sql_query: nil}), do: meta
+
+  defp add_sql_data(meta, %{sql_query: sql}) do
+    meta
+    |> Map.put("sql.query", sql.query)
+    |> Map.put("sql.rows", sql.rows)
+    |> Map.put("sql.db", sql.db)
+  end
+
+  @spec add_tags(map, Spandex.Span.t()) :: map
+  defp add_tags(meta, %{tags: nil}), do: meta
+
+  defp add_tags(meta, %{tags: tags}) do
+    Map.merge(meta, Enum.into(tags, %{}))
+  end
+
+  @spec error(nil | Spandex.Span.Error.t()) :: integer
+  defp error(nil), do: 0
+  defp error(_), do: 1
+
   @spec encode(data :: term) :: iodata | no_return
   defp encode(data),
-    do: Msgpax.pack!(data)
+    do: data |> deep_remove_nils() |> Msgpax.pack!(data)
 
   @spec push(body :: iodata, t) :: any
   defp push(body, %__MODULE__{http: http, host: host, port: port}),
     do: http.put("#{host}:#{port}/v0.3/traces", body, @headers)
+
+  @spec deep_remove_nils(term) :: term
+  defp deep_remove_nils(term) when is_map(term) do
+    term
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.map(fn {k, v} -> {k, deep_remove_nils(v)} end)
+    |> Enum.into(%{})
+  end
+
+  defp deep_remove_nils(term) when is_list(term) do
+    if Keyword.keyword?(term) do
+      term
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Enum.map(fn {k, v} -> {k, deep_remove_nils(v)} end)
+    else
+      Enum.map(term, &deep_remove_nils/1)
+    end
+  end
+
+  defp deep_remove_nils(term), do: term
 end

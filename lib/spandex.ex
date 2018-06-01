@@ -4,14 +4,14 @@ defmodule Spandex do
   """
   require Logger
 
-  def start_trace(name, attributes, opts) do
+  def start_trace(name, opts) do
     adapter = opts[:adapter]
 
     case adapter.start_trace(name, opts) do
       {:ok, trace_id} ->
         Logger.metadata(trace_id: trace_id)
 
-        adapter.update_span(attributes, opts)
+        adapter.update_span(opts)
         {:ok, trace_id}
 
       {:error, error} ->
@@ -19,14 +19,14 @@ defmodule Spandex do
     end
   end
 
-  def start_span(name, attributes, opts) do
+  def start_span(name, opts) do
     adapter = opts[:adapter]
 
     case adapter.start_span(name, opts) do
       {:ok, span_id} ->
         Logger.metadata(span_id: span_id)
 
-        adapter.update_span(attributes, opts)
+        adapter.update_span(opts)
         {:ok, span_id}
 
       {:error, error} ->
@@ -34,16 +34,16 @@ defmodule Spandex do
     end
   end
 
-  def update_span(attributes, opts) do
+  def update_span(opts) do
     adapter = opts[:adapter]
 
-    adapter.update_span(attributes, opts)
+    adapter.update_span(opts)
   end
 
-  def update_top_span(attributes, opts) do
+  def update_top_span(opts) do
     adapter = opts[:adapter]
 
-    adapter.update_top_span(attributes, opts)
+    adapter.update_top_span(opts)
   end
 
   # All of these need to honor `disabled?: true`
@@ -78,19 +78,19 @@ defmodule Spandex do
   end
 
   def current_trace_id(opts) do
-    wrap_adapter(opts, {:error, :no_trace}, fn adapter ->
+    wrap_adapter(opts, nil, fn adapter ->
       adapter.current_trace_id(opts)
     end)
   end
 
   def current_span_id(opts) do
-    wrap_adapter(opts, {:error, :no_trace}, fn adapter ->
+    wrap_adapter(opts, nil, fn adapter ->
       adapter.current_span_id(opts)
     end)
   end
 
   def current_span(opts) do
-    wrap_adapter(opts, {:error, :no_trace}, fn adapter ->
+    wrap_adapter(opts, nil, fn adapter ->
       adapter.current_span(opts)
     end)
   end

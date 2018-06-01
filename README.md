@@ -106,7 +106,7 @@ defmodule ManuallyTraced do
   # Does not handle exceptions for you.
   def trace_me() do
     _ = Tracer.start_trace("my_trace") #also opens a span
-    _ = Tracer.update_span(%{service: :my_app, type: :db})
+    _ = Tracer.update_span(service: :my_app, type: :db)
 
     result = span_me()
 
@@ -118,7 +118,7 @@ defmodule ManuallyTraced do
   # Does not handle exceptions for you.
   def span_me() do
     _ = Tracer.start_span("this_span")
-    _ = Tracer.update_span(%{service: :my_app, type: :web})
+    _ = Tracer.update_span(service: :my_app, type: :web)
 
     result = span_me_also()
 
@@ -132,6 +132,17 @@ defmodule ManuallyTraced do
     end
   end
 end
+```
+
+### Metadata
+
+See the module documentation for `Spandex.Span` as well as the documentation for the structs
+contained as keys for that struct. They illustrate the keys that are known to either be common
+keys or to have UI sugar with certain clients. Its hard to find any kind of list of these published
+anywhere, so let me know if you know of more! Examples
+
+```
+Spandex.update_span(type: :db, http: [url: "/posts", status_code: 400], sql_query: [query: "SELECT * FROM posts", rows: 10])
 ```
 
 Spandex used to ship with function decorators, but those decorators had a habit of causing weird compilation issues for certain users, and could be easily implemented by any user of the library.
