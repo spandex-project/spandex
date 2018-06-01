@@ -309,7 +309,7 @@ defmodule Spandex.Adapters.Datadog do
     |> parse_header()
   end
 
-  defp parse_header(<< header :: binary >>) do
+  defp parse_header(header) when is_bitstring(header) do
     case Integer.parse(header) do
       {int, _} -> int
       _        -> nil
