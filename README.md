@@ -16,7 +16,7 @@ This library is undergoing some structural changes for future versions. This doc
 
 ```elixir
 def deps do
-  [{:spandex, "~> 1.4.0"}]
+  [{:spandex, "~> 1.4.1"}]
 end
 ```
 
