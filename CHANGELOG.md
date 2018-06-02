@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - No unreleased changes currently.
 
+## [1.5.0] - 2018-06-02
+### Changed
+- Interface for updating span metadata, and creating with metadata has been updated
+- Check documentation for examples
+
+[1.5.0]: https://github.com/olivierlacan/keep-a-changelog/compare/v1.5.0...v1.4.1
+
 ## [1.4.1] - 2018-05-31
 ### Changed
 - Resolved an issue with distributed trace header parsing
