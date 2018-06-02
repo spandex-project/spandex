@@ -13,13 +13,12 @@ defmodule Spandex.Tracer do
   @type tagged_tuple :: {:ok, term} | {:error, term}
   @type span_name() :: String.t()
   @type opts :: Keyword.t()
-  @type attributes :: map
 
   @callback configure(opts) :: :ok
-  @callback start_trace(span_name, attributes, opts) :: tagged_tuple
-  @callback start_span(span_name, attributes, opts) :: tagged_tuple
-  @callback update_span(attributes, opts) :: tagged_tuple
-  @callback update_top_span(attributes, opts) :: tagged_tuple
+  @callback start_trace(span_name, opts) :: tagged_tuple
+  @callback start_span(span_name, opts) :: tagged_tuple
+  @callback update_span(opts) :: tagged_tuple
+  @callback update_top_span(opts) :: tagged_tuple
   @callback finish_trace(opts) :: tagged_tuple
   @callback finish_span(opts) :: tagged_tuple
   @callback span_error(error :: Exception.t(), opts) :: tagged_tuple
@@ -29,8 +28,8 @@ defmodule Spandex.Tracer do
   @callback current_span_id(opts) :: tagged_tuple
   @callback current_span(opts) :: tagged_tuple
   @callback distributed_context(Plug.Conn.t(), opts) :: tagged_tuple
-  @macrocallback span(span_name, attributes, opts, do: Macro.t()) :: Macro.t()
-  @macrocallback trace(span_name, attributes, opts, do: Macro.t()) :: Macro.t()
+  @macrocallback span(span_name, opts, do: Macro.t()) :: Macro.t()
+  @macrocallback trace(span_name, opts, do: Macro.t()) :: Macro.t()
 
   @tracer_opts Optimal.schema(
                  opts: [
@@ -62,14 +61,24 @@ defmodule Spandex.Tracer do
                  ]
                )
 
+  @all_tracer_opts @tracer_opts
+                   |> Optimal.merge(
+                     Spandex.Span.span_opts(),
+                     annotate: "Span Creation",
+                     add_required?: false
+                   )
+                   |> Map.put(:extra_keys?, false)
+
   @doc """
   A schema for the opts that a tracer accepts.
 
-  #{Optimal.Doc.document(@tracer_opts)}
+  #{Optimal.Doc.document(@all_tracer_opts)}
 
   All tracer functions that take opts use this schema.
+  This also accepts defaults for any value that can
+  be given to a span.
   """
-  def tracer_opts(), do: @tracer_opts
+  def tracer_opts(), do: @all_tracer_opts
 
   defmacro __using__(opts) do
     quote do
@@ -78,6 +87,8 @@ defmodule Spandex.Tracer do
       @behaviour Spandex.Tracer
 
       alias Spandex.Tracer
+
+      @opts Spandex.Tracer.tracer_opts()
 
       @doc """
       Use to create and configure a tracer.
@@ -88,12 +99,12 @@ defmodule Spandex.Tracer do
         Application.put_env(@otp_app, __MODULE__, config)
       end
 
-      defmacro trace(name, attrs \\ [], opts \\ [], do: body) do
+      defmacro trace(name, opts \\ [], do: body) do
         quote do
-          attrs = Enum.into(unquote(attrs), %{})
+          opts = unquote(opts)
 
           name = unquote(name)
-          _ = unquote(__MODULE__).start_trace(name, attrs)
+          _ = unquote(__MODULE__).start_trace(name, opts)
           span_id = unquote(__MODULE__).current_span_id()
           _ = Logger.metadata(span_id: span_id)
 
@@ -102,7 +113,7 @@ defmodule Spandex.Tracer do
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              _ = unquote(__MODULE__).span_error(exception)
+              _ = unquote(__MODULE__).span_error(exception, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_trace()
@@ -110,12 +121,11 @@ defmodule Spandex.Tracer do
         end
       end
 
-      defmacro span(name, attrs \\ [], opts \\ [], do: body) do
+      defmacro span(name, opts \\ [], do: body) do
         quote do
-          attrs = Enum.into(unquote(attrs), %{})
-
+          opts = unquote(opts)
           name = unquote(name)
-          _ = unquote(__MODULE__).start_span(name, attrs)
+          _ = unquote(__MODULE__).start_span(name, opts)
           span_id = unquote(__MODULE__).current_span_id()
           _ = Logger.metadata(span_id: span_id)
 
@@ -124,7 +134,7 @@ defmodule Spandex.Tracer do
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              _ = unquote(__MODULE__).span_error(exception)
+              _ = unquote(__MODULE__).span_error(exception, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_span()
@@ -132,26 +142,24 @@ defmodule Spandex.Tracer do
         end
       end
 
-      @spec start_trace(Tracer.span_name(), Tracer.attributes(), Tracer.opts()) ::
-              Tracer.tagged_tuple()
-      def start_trace(name, attributes \\ %{}, opts \\ []) do
-        Spandex.start_trace(name, attributes, config(opts, @otp_app))
+      @spec start_trace(Tracer.span_name(), Tracer.opts()) :: Tracer.tagged_tuple()
+      def start_trace(name, opts \\ []) do
+        Spandex.start_trace(name, config(opts, @otp_app))
       end
 
-      @spec start_span(Tracer.span_name(), Tracer.attributes(), Tracer.opts()) ::
-              Tracer.tagged_tuple()
-      def start_span(name, attributes \\ %{}, opts \\ []) do
-        Spandex.start_span(name, attributes, config(opts, @otp_app))
+      @spec start_span(Tracer.span_name(), Tracer.opts()) :: Tracer.tagged_tuple()
+      def start_span(name, opts \\ []) do
+        Spandex.start_span(name, config(opts, @otp_app))
       end
 
-      @spec update_span(Tracer.attributes(), Tracer.opts()) :: Tracer.tagged_tuple()
-      def update_span(attributes \\ %{}, opts \\ []) do
-        Spandex.update_span(attributes, config(opts, @otp_app))
+      @spec update_span(Tracer.opts()) :: Tracer.tagged_tuple()
+      def update_span(opts) do
+        Spandex.update_span(config(opts, @otp_app))
       end
 
-      @spec update_top_span(Tracer.attributes(), Tracer.opts()) :: Tracer.tagged_tuple()
-      def update_top_span(attributes \\ %{}, opts \\ []) do
-        Spandex.update_top_span(attributes, config(opts, @otp_app))
+      @spec update_top_span(Tracer.opts()) :: Tracer.tagged_tuple()
+      def update_top_span(opts) do
+        Spandex.update_top_span(config(opts, @otp_app))
       end
 
       @spec finish_trace(Tracer.opts()) :: Tracer.tagged_tuple()
@@ -210,7 +218,7 @@ defmodule Spandex.Tracer do
         |> Application.get_env(__MODULE__)
         |> Kernel.||([])
         |> Keyword.merge(opts || [])
-        |> Optimal.validate!(Spandex.Tracer.tracer_opts())
+        |> Optimal.validate!(@opts)
       end
     end
   end

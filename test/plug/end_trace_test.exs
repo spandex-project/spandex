@@ -19,7 +19,7 @@ defmodule Spandex.Plug.EndTraceTest do
 
   describe "EndTrace.call/2" do
     test "doesn't finish trace, when we don't trace request", %{conn: conn, trace_id: tid} do
-      %Plug.Conn{} = EndTrace.call(conn, tracer: Tracer)
+      %Plug.Conn{} = EndTrace.call(conn, tracer: Tracer, tracer_opts: [])
 
       assert Tracer.current_trace_id() == tid
 
@@ -34,7 +34,7 @@ defmodule Spandex.Plug.EndTraceTest do
         conn
         |> Plug.Conn.put_status(:ok)
         |> Utils.trace(true)
-        |> EndTrace.call(tracer: Tracer)
+        |> EndTrace.call(tracer: Tracer, tracer_opts: [])
 
       assert is_nil(Tracer.current_trace_id())
 
@@ -55,7 +55,7 @@ defmodule Spandex.Plug.EndTraceTest do
         conn
         |> Plug.Conn.put_status(:not_found)
         |> Utils.trace(true)
-        |> EndTrace.call(tracer: Tracer)
+        |> EndTrace.call(tracer: Tracer, tracer_opts: [])
 
       assert is_nil(Tracer.current_trace_id())
 

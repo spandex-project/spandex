@@ -24,7 +24,8 @@ defmodule Spandex.Plug.AddContextTest do
           conn,
           allowed_route_replacements: nil,
           disallowed_route_replacements: [],
-          tracer: Tracer
+          tracer: Tracer,
+          tracer_opts: []
         )
 
       :ok = Tracer.finish_trace()
@@ -36,7 +37,7 @@ defmodule Spandex.Plug.AddContextTest do
 
       assert is_nil(Map.get(meta, "http.url"))
       assert is_nil(Map.get(meta, "http.method"))
-      assert resource == "request"
+      assert resource == "default"
     end
 
     test "updates top span and logger, when we trace request", %{conn: conn, trace_id: tid} do
@@ -46,7 +47,8 @@ defmodule Spandex.Plug.AddContextTest do
         |> AddContext.call(
           allowed_route_replacements: nil,
           disallowed_route_replacements: [],
-          tracer: Tracer
+          tracer: Tracer,
+          tracer_opts: []
         )
 
       {:ok, expected_span_id} = Tracer.start_span("foobar")

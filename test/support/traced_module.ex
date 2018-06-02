@@ -18,7 +18,7 @@ defmodule Spandex.Test.TracedModule do
   end
 
   def trace_with_special_name() do
-    Tracer.trace "special_name", %{service: :special_service} do
+    Tracer.trace "special_name", service: :special_service do
       do_one_special_name_thing()
     end
   end
@@ -69,7 +69,7 @@ defmodule Spandex.Test.TracedModule do
   end
 
   def do_one_special_name_thing() do
-    Tracer.span "special_name_span", %{service: :special_span_service} do
+    Tracer.span "special_name_span", service: :special_span_service do
       :timer.sleep(100)
     end
   end

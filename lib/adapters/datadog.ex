@@ -5,8 +5,8 @@ defmodule Spandex.Adapters.Datadog do
 
   @behaviour Spandex.Adapters.Adapter
 
-  alias Spandex.Datadog.Span
   alias Spandex.Datadog.Utils
+  alias Spandex.Span
 
   require Logger
 
@@ -22,15 +22,25 @@ defmodule Spandex.Adapters.Datadog do
     else
       trace_id = Utils.next_id()
 
-      top_span =
-        %{trace_id: trace_id, name: name}
-        |> Span.new(opts)
+      span =
+        opts
+        |> Keyword.put_new(:name, name)
+        |> Keyword.put(:trace_id, trace_id)
+        |> Keyword.put(:start, Utils.now())
+        |> Keyword.put(:id, Utils.next_id())
+        |> Span.new()
 
-      Logger.metadata(trace_id: trace_id)
+      case span do
+        {:error, errors} ->
+          {:error, errors}
 
-      put_trace(%{id: trace_id, stack: [top_span], spans: [], start: Utils.now()})
+        span ->
+          Logger.metadata(trace_id: trace_id)
 
-      {:ok, trace_id}
+          put_trace(%{id: trace_id, stack: [span], spans: []})
+
+          {:ok, trace_id}
+      end
     end
   end
 
@@ -47,40 +57,59 @@ defmodule Spandex.Adapters.Datadog do
         {:error, :no_trace_context}
 
       %{stack: [current_span | _]} ->
-        new_span = Span.child_of(current_span, name)
+        new_span = Span.child_of(current_span, name, Utils.next_id(), Utils.now(), opts)
 
-        put_trace(%{trace | stack: [new_span | trace.stack]})
+        case new_span do
+          {:error, errors} ->
+            {:error, errors}
 
-        Logger.metadata(span_id: new_span.id)
+          new_span ->
+            put_trace(%{trace | stack: [new_span | trace.stack]})
 
-        {:ok, new_span.id}
+            Logger.metadata(span_id: new_span.id)
+
+            {:ok, new_span.id}
+        end
 
       _ ->
         new_span =
-          %{trace_id: trace.id, name: name}
-          |> Span.new(opts)
+          opts
+          |> Keyword.put_new(:name, name)
+          |> Keyword.put(:trace_id, trace.id)
+          |> Keyword.put(:start, Utils.now())
+          |> Keyword.put(:id, Utils.next_id())
+          |> Span.new()
 
-        put_trace(%{trace | stack: [new_span | trace.stack]})
+        case new_span do
+          {:error, errors} ->
+            {:error, errors}
 
-        Logger.metadata(span_id: new_span.id)
+          new_span ->
+            put_trace(%{trace | stack: [new_span | trace.stack]})
 
-        {:ok, new_span.id}
+            Logger.metadata(span_id: new_span.id)
+
+            {:ok, new_span.id}
+        end
     end
   end
 
   @doc """
   Updates a span according to the provided context.
-  See `Spandex.Datadog.Span.update/2` for more information.
+  See `Spandex.Span.update/2` for more information.
   """
   @impl Spandex.Adapters.Adapter
-  @spec update_span(map, Keyword.t()) :: :ok | {:error, term}
-  def update_span(context, _opts) do
+  @spec update_span(Keyword.t()) :: :ok | {:error, term}
+  def update_span(opts) do
     trace = get_trace()
 
     if trace do
       new_stack =
         List.update_at(trace.stack, 0, fn span ->
-          Span.update(span, context)
+          case Span.update(span, opts) do
+            {:error, _} -> span
+            span -> span
+          end
         end)
 
       put_trace(%{trace | stack: new_stack})
@@ -95,8 +124,8 @@ defmodule Spandex.Adapters.Datadog do
   Updates the top level span with information. Useful for setting overal trace context
   """
   @impl Spandex.Adapters.Adapter
-  @spec update_top_span(map, Keyword.t()) :: :ok | {:error, term}
-  def update_top_span(context, _opts) do
+  @spec update_top_span(Keyword.t()) :: :ok | {:error, term}
+  def update_top_span(opts) do
     trace = get_trace()
 
     if trace do
@@ -104,13 +133,17 @@ defmodule Spandex.Adapters.Datadog do
         trace.stack
         |> Enum.reverse()
         |> List.update_at(0, fn span ->
-          Span.update(span, context)
+          case Span.update(span, opts) do
+            {:error, _} -> span
+            span -> span
+          end
         end)
-        |> Enum.reverse()
 
-      put_trace(%{trace | stack: new_stack})
+      top_span = List.first(new_stack)
 
-      :ok
+      put_trace(%{trace | stack: Enum.reverse(new_stack)})
+
+      {:ok, top_span}
     else
       {:error, :no_trace_context}
     end
@@ -120,13 +153,26 @@ defmodule Spandex.Adapters.Datadog do
   Updates all spans
   """
   @impl Spandex.Adapters.Adapter
-  @spec update_all_spans(map, Keyword.t()) :: :ok | {}
-  def update_all_spans(context, _opts) do
+  @spec update_all_spans(Keyword.t()) :: :ok | {}
+  def update_all_spans(opts) do
     trace = get_trace()
 
     if trace do
-      new_stack = Enum.map(trace.stack, &Span.update(&1, context))
-      new_spans = Enum.map(trace.spans, &Span.update(&1, context))
+      new_stack =
+        Enum.map(trace.stack, fn span ->
+          case Span.update(span, opts) do
+            {:error, _} -> span
+            span -> span
+          end
+        end)
+
+      new_spans =
+        Enum.map(trace.spans, fn span ->
+          case Span.update(span, opts) do
+            {:error, _} -> span
+            span -> span
+          end
+        end)
 
       put_trace(%{trace | stack: new_stack, spans: new_spans})
 
@@ -158,7 +204,7 @@ defmodule Spandex.Adapters.Datadog do
         completed_span =
           trace.stack
           |> hd()
-          |> Span.stop()
+          |> Span.update(completion_time: Utils.now())
 
         put_trace(%{trace | stack: new_stack, spans: [completed_span | trace.spans]})
 
@@ -176,12 +222,13 @@ defmodule Spandex.Adapters.Datadog do
     sender = opts[:sender]
 
     if trace do
-      unfinished_spans = Enum.map(trace.stack, &Span.stop/1)
+      unfinished_spans = Enum.map(trace.stack, &Span.update(&1, completion_time: Utils.now()))
 
       trace.spans
       |> Kernel.++(unfinished_spans)
-      |> Enum.map(&Span.stop/1)
-      |> Enum.map(&Span.to_map(&1, opts))
+      |> Enum.map(fn span ->
+        Span.update(span, completion_time: Utils.now())
+      end)
       |> sender.send_spans()
 
       delete_trace()
@@ -238,9 +285,19 @@ defmodule Spandex.Adapters.Datadog do
   @impl Spandex.Adapters.Adapter
   @spec continue_trace_from_span(String.t(), term, Keyword.t()) :: {:ok, term}
   def continue_trace_from_span(name, %{trace_id: trace_id} = span, opts) do
-    put_trace(%{id: trace_id, stack: [span], spans: [], start: Utils.now()})
+    new_span = Span.child_of(span, name, Utils.next_id(), Utils.now(), opts)
 
-    start_span(name, opts)
+    case new_span do
+      {:error, errors} ->
+        {:error, errors}
+
+      new_span ->
+        put_trace(%{id: trace_id, stack: [new_span], spans: []})
+
+        Logger.metadata(span_id: new_span.id)
+
+        {:ok, new_span.id}
+    end
   end
 
   @doc """
@@ -248,14 +305,20 @@ defmodule Spandex.Adapters.Datadog do
   """
   @impl Spandex.Adapters.Adapter
   @spec continue_trace(String.t(), term, term, Keyword.t()) :: {:ok, term} | {:error, term}
-  def continue_trace(name, trace_id, span_id, opts) when is_integer(trace_id) and is_integer(span_id) do
+  def continue_trace(name, trace_id, span_id, opts)
+      when is_integer(trace_id) and is_integer(span_id) do
     trace = get_trace(:undefined)
 
     cond do
       trace == :undefined ->
         top_span =
-          %{trace_id: trace_id, parent_id: span_id, name: name}
-          |> Span.new(opts)
+          opts
+          |> Keyword.put_new(:name, name)
+          |> Keyword.put(:trace_id, trace_id)
+          |> Keyword.put(:start, Utils.now())
+          |> Keyword.put(:parent_id, span_id)
+          |> Keyword.put(:id, Utils.next_id())
+          |> Span.new()
 
         put_trace(%{id: trace_id, stack: [top_span], spans: [], start: Utils.now()})
         {:ok, trace_id}
@@ -273,14 +336,10 @@ defmodule Spandex.Adapters.Datadog do
   """
   @impl Spandex.Adapters.Adapter
   @spec span_error(Exception.t(), Keyword.t()) :: :ok | {:error, term}
-  def span_error(%{__struct__: type} = exception, opts) do
-    message = Exception.message(exception)
-    stacktrace = Exception.format_stacktrace(System.stacktrace())
+  def span_error(exception, opts) do
+    updates = [error: [exception: exception, stacktrace: System.stacktrace()]]
 
-    update_span(
-      %{error: 1, error_message: message, stacktrace: stacktrace, error_type: type},
-      opts
-    )
+    update_span(Keyword.put_new(opts, :error, updates))
   end
 
   @doc """
@@ -312,7 +371,7 @@ defmodule Spandex.Adapters.Datadog do
   defp parse_header(header) when is_bitstring(header) do
     case Integer.parse(header) do
       {int, _} -> int
-      _        -> nil
+      _ -> nil
     end
   end
 

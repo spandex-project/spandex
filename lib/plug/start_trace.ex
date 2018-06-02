@@ -7,11 +7,10 @@ defmodule Spandex.Plug.StartTrace do
 
   alias Spandex.Plug.Utils
 
-  # TODO: Get support for `regex` type or `matchable` type into optimal
   @init_opts Optimal.schema(
                opts: [
                  ignored_methods: {:list, :string},
-                 ignored_routes: {:list, :any},
+                 ignored_routes: {:list, [:regex, :string]},
                  tracer: :atom,
                  tracer_opts: :keyword,
                  span_name: :string
@@ -64,11 +63,11 @@ defmodule Spandex.Plug.StartTrace do
         Utils.trace(conn, true)
 
       {:error, :no_distributed_trace} ->
-        tracer.start_trace(opts[:span_name], %{}, tracer_opts)
+        tracer.start_trace(opts[:span_name], tracer_opts)
 
         Utils.trace(conn, true)
 
-      {:error, :disabled} ->
+      _ ->
         conn
     end
   end

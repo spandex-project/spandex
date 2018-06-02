@@ -87,13 +87,27 @@ defmodule Spandex.Plug.AddContext do
         |> add_query_params(conn.params, opts[:query_params])
         |> URI.decode_www_form()
 
-      %{
-        resource: String.upcase(conn.method) <> " /" <> route,
-        method: conn.method,
-        url: conn.request_path,
-        type: :web
-      }
-      |> tracer.update_top_span(tracer_opts)
+      user_agent =
+        conn
+        |> Plug.Conn.get_req_header("user-agent")
+        |> List.first()
+
+      opts =
+        Keyword.merge(
+          [
+            resource: String.upcase(conn.method) <> " /" <> route,
+            http: [
+              method: conn.method,
+              url: conn.request_path,
+              query_string: conn.query_string,
+              user_agent: user_agent
+            ],
+            type: :web
+          ],
+          tracer_opts
+        )
+
+      tracer.update_top_span(opts)
 
       conn
     else
