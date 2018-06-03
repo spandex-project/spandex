@@ -141,7 +141,7 @@ contained as keys for that struct. They illustrate the keys that are known to ei
 keys or to have UI sugar with certain clients. Its hard to find any kind of list of these published
 anywhere, so let me know if you know of more! Examples
 
-```
+```elixir
 Spandex.update_span(type: :db, http: [url: "/posts", status_code: 400], sql_query: [query: "SELECT * FROM posts", rows: 10])
 ```
 
@@ -150,6 +150,10 @@ Spandex used to ship with function decorators, but those decorators had a habit 
 ## Asynchronous Processes
 
 The current trace_id and span_id can be retrieved with `Tracer.current_trace_id()` and `Tracer.current_span_id()`. This can then be used as `Tracer.continue_trace("new_trace", trace_id, span_id)`. New spans can then be logged from there and will be sent in a separate batch.
+
+## Strategies
+
+There is (currently and temporarily) only one storage strategy, which can be changed via the `strategy` option. See tracer opt documentation for an example of setting it. To implement your own (ETS adapter should be on its way) simply implement the `Spandex.Strategy` behaviour. Keep in mind that the strategy is not an atomic pattern. It represents retrieving and wholesale replacing a trace, meaning that it is *not* safe to use across processes or concurrently. Each process should have its own store for its own generated spans. This should be fine because you can send multiple batches of spans for the same trace separately.
 
 ## Datadog Api Sender Performance
 

@@ -6,12 +6,12 @@ defmodule Spandex.Plug.AddContextTest do
   alias Spandex.Test.Support.Tracer
 
   setup do
-    {:ok, trace_id} = Tracer.start_trace("request")
+    {:ok, trace} = Tracer.start_trace("request")
 
     {
       :ok,
       [
-        trace_id: trace_id,
+        trace_id: trace.id,
         conn: Plug.Adapters.Test.Conn.conn(%Plug.Conn{}, :get, "/dashboard", nil)
       ]
     }
@@ -29,9 +29,6 @@ defmodule Spandex.Plug.AddContextTest do
         )
 
       :ok = Tracer.finish_trace()
-
-      refute Keyword.has_key?(Logger.metadata(), :trace_id)
-      refute Keyword.has_key?(Logger.metadata(), :span_id)
 
       %{resource: resource, meta: meta} = Spandex.Test.Util.find_span("request")
 
@@ -51,10 +48,10 @@ defmodule Spandex.Plug.AddContextTest do
           tracer_opts: []
         )
 
-      {:ok, expected_span_id} = Tracer.start_span("foobar")
+      {:ok, expected_span} = Tracer.start_span("foobar")
 
       assert Keyword.fetch!(Logger.metadata(), :trace_id) == tid
-      assert Keyword.fetch!(Logger.metadata(), :span_id) == expected_span_id
+      assert Keyword.fetch!(Logger.metadata(), :span_id) == expected_span.id
 
       :ok = Tracer.finish_trace()
 

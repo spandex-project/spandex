@@ -9,8 +9,8 @@ config :logger, :console,
 config :spandex, Spandex.Test.Support.Tracer,
   service: :spandex_test,
   adapter: Spandex.Adapters.Datadog,
-  env: "test",
   sender: Spandex.Test.DatadogTestApiServer,
+  env: "test",
   resource: "default",
   services: [
     spandex_test: :db

@@ -10,24 +10,29 @@ defmodule Spandex.Tracer do
   end
   ```
   """
-  @type tagged_tuple :: {:ok, term} | {:error, term}
+
+  alias Spandex.Trace
+  alias Spandex.Span
+
+  @type tagged_tuple(arg) :: {:ok, arg} | {:error, term}
   @type span_name() :: String.t()
   @type opts :: Keyword.t()
 
   @callback configure(opts) :: :ok
-  @callback start_trace(span_name, opts) :: tagged_tuple
-  @callback start_span(span_name, opts) :: tagged_tuple
-  @callback update_span(opts) :: tagged_tuple
-  @callback update_top_span(opts) :: tagged_tuple
-  @callback finish_trace(opts) :: tagged_tuple
-  @callback finish_span(opts) :: tagged_tuple
-  @callback span_error(error :: Exception.t(), opts) :: tagged_tuple
-  @callback continue_trace(span_name, trace_id :: term, span_id :: term, opts) :: tagged_tuple
-  @callback continue_trace_from_span(span_name, span :: term, opts) :: tagged_tuple
-  @callback current_trace_id(opts) :: tagged_tuple
-  @callback current_span_id(opts) :: tagged_tuple
-  @callback current_span(opts) :: tagged_tuple
-  @callback distributed_context(Plug.Conn.t(), opts) :: tagged_tuple
+  @callback start_trace(span_name, opts) :: tagged_tuple(Trace.t())
+  @callback start_span(span_name, opts) :: tagged_tuple(Span.t())
+  @callback update_span(opts) :: tagged_tuple(Span.t())
+  @callback update_top_span(opts) :: tagged_tuple(Span.t())
+  @callback finish_trace(opts) :: tagged_tuple(Trace.t())
+  @callback finish_span(opts) :: tagged_tuple(Span.t())
+  @callback span_error(error :: Exception.t(), opts) :: tagged_tuple(Span.t())
+  @callback continue_trace(span_name, trace_id :: term, span_id :: term, opts) ::
+              tagged_tuple(Trace.t())
+  @callback continue_trace_from_span(span_name, span :: term, opts) :: tagged_tuple(Trace.t())
+  @callback current_trace_id(opts) :: nil | term
+  @callback current_span_id(opts) :: nil | term
+  @callback current_span(opts) :: nil | Span.t()
+  @callback distributed_context(Plug.Conn.t(), opts) :: tagged_tuple(map)
   @macrocallback span(span_name, opts, do: Macro.t()) :: Macro.t()
   @macrocallback trace(span_name, opts, do: Macro.t()) :: Macro.t()
 
@@ -38,26 +43,31 @@ defmodule Spandex.Tracer do
                    disabled?: :boolean,
                    env: :string,
                    services: {:keyword, :atom},
-                   sender: :atom
+                   strategy: :atom,
+                   sender: :atom,
+                   tracer: :atom
                  ],
                  required: [:adapter, :service],
                  defaults: [
                    disabled?: false,
                    env: "unknown",
                    services: [],
-                   sender: Spandex.Datadog.ApiServer
+                   strategy: Spandex.Strategy.Pdict
                  ],
                  describe: [
-                   adapter: "The third party adapter to use.",
+                   adapter: "The third party adapter to use",
+                   tracer: "Don't set manually. This option is passed automatically.",
+                   sender:
+                     "Once a trace is complete, it is sent using this module. Defaults to the `default_sender/0` of the selected adapter",
                    service:
-                     "The default service name to use for spans declared without a service.",
-                   disabled?: "Allows for wholesale disabling a tracer.",
+                     "The default service name to use for spans declared without a service",
+                   disabled?: "Allows for wholesale disabling a tracer",
                    env:
                      "A name used to identify the environment name, e.g `prod` or `development`",
                    services:
                      "A mapping of service name to the default span types. For instance datadog knows about `:db`, `:cache` and `:web`",
-                   sender:
-                     "Will be deprecated soon, but this is a module that defines a `send_spans/1` function."
+                   strategy:
+                     "The storage and tracing strategy. Currently only supports local process dictionary."
                  ]
                )
 
@@ -93,12 +103,19 @@ defmodule Spandex.Tracer do
       @doc """
       Use to create and configure a tracer.
       """
+      @impl Spandex.Tracer
       @spec configure(Tracer.opts()) :: :ok
       def configure(opts) do
-        config = config(opts, @otp_app)
-        Application.put_env(@otp_app, __MODULE__, config)
+        case config(opts, @otp_app) do
+          :disabled ->
+            :ok
+
+          config ->
+            Application.put_env(@otp_app, __MODULE__, config)
+        end
       end
 
+      @impl Spandex.Tracer
       defmacro trace(name, opts \\ [], do: body) do
         quote do
           opts = unquote(opts)
@@ -113,7 +130,7 @@ defmodule Spandex.Tracer do
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              _ = unquote(__MODULE__).span_error(exception, opts)
+              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_trace()
@@ -121,6 +138,7 @@ defmodule Spandex.Tracer do
         end
       end
 
+      @impl Spandex.Tracer
       defmacro span(name, opts \\ [], do: body) do
         quote do
           opts = unquote(opts)
@@ -134,7 +152,7 @@ defmodule Spandex.Tracer do
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              _ = unquote(__MODULE__).span_error(exception, opts)
+              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_span()
@@ -142,83 +160,89 @@ defmodule Spandex.Tracer do
         end
       end
 
-      @spec start_trace(Tracer.span_name(), Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def start_trace(name, opts \\ []) do
         Spandex.start_trace(name, config(opts, @otp_app))
       end
 
-      @spec start_span(Tracer.span_name(), Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def start_span(name, opts \\ []) do
         Spandex.start_span(name, config(opts, @otp_app))
       end
 
-      @spec update_span(Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def update_span(opts) do
         Spandex.update_span(config(opts, @otp_app))
       end
 
-      @spec update_top_span(Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def update_top_span(opts) do
         Spandex.update_top_span(config(opts, @otp_app))
       end
 
-      @spec finish_trace(Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def finish_trace(opts \\ []) do
         opts
         |> config(@otp_app)
         |> Spandex.finish_trace()
       end
 
-      @spec finish_span(Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def finish_span(opts \\ []) do
         opts
         |> config(@otp_app)
         |> Spandex.finish_span()
       end
 
-      @spec span_error(error :: Exception.t(), Tracer.opts()) :: Tracer.tagged_tuple()
-      def span_error(error, opts \\ []) do
-        Spandex.span_error(error, config(opts, @otp_app))
+      @impl Spandex.Tracer
+      def span_error(error, stacktrace, opts \\ []) do
+        Spandex.span_error(error, stacktrace, config(opts, @otp_app))
       end
 
-      @spec continue_trace(Tracer.span_name(), trace_id :: term, span_id :: term, Tracer.opts()) ::
-              Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def continue_trace(span_name, trace_id, span_id, opts \\ []) do
         Spandex.continue_trace(span_name, trace_id, span_id, config(opts, @otp_app))
       end
 
-      @spec continue_trace_from_span(Tracer.span_name(), span :: term, Tracer.opts()) ::
-              Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def continue_trace_from_span(span_name, span, opts \\ []) do
         Spandex.continue_trace_from_span(span_name, span, config(opts, @otp_app))
       end
 
-      @spec current_trace_id(Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def current_trace_id(opts \\ []) do
         Spandex.current_trace_id(config(opts, @otp_app))
       end
 
-      @spec current_span_id(Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def current_span_id(opts \\ []) do
         Spandex.current_span_id(config(opts, @otp_app))
       end
 
-      @spec current_span(Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def current_span(opts \\ []) do
         Spandex.current_span(config(opts, @otp_app))
       end
 
-      @spec distributed_context(conn :: Plug.Conn.t(), Tracer.opts()) :: Tracer.tagged_tuple()
+      @impl Spandex.Tracer
       def distributed_context(conn, opts \\ []) do
         Spandex.distributed_context(conn, config(opts, @otp_app))
       end
 
-      def config(opts, otp_app) do
-        otp_app
-        |> Application.get_env(__MODULE__)
-        |> Kernel.||([])
-        |> Keyword.merge(opts || [])
-        |> Optimal.validate!(@opts)
+      defp config(opts, otp_app) do
+        config =
+          otp_app
+          |> Application.get_env(__MODULE__)
+          |> Kernel.||([])
+          |> Keyword.merge(opts || [])
+          |> Optimal.validate!(@opts)
+          |> Keyword.put(:tracer, __MODULE__)
+
+        if config[:disabled?] do
+          :disabled
+        else
+          config
+        end
       end
     end
   end

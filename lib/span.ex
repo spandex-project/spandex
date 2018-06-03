@@ -108,7 +108,7 @@ defmodule Spandex.Span do
             left = struct_to_keyword(v1)
             right = struct_to_keyword(v2)
 
-            Keyword.merge(left, right)
+            merge_non_nils(left, right)
 
           :tags ->
             Keyword.merge(v1 || [], v2 || [])
@@ -128,6 +128,17 @@ defmodule Spandex.Span do
       end
 
     validate_and_merge(span, with_type, schema)
+  end
+
+  @spec merge_non_nils(Keyword.t(), Keyword.t()) :: Keyword.t()
+  defp merge_non_nils(left, right) do
+    Keyword.merge(left, right, fn _k, v1, v2 ->
+      if is_nil(v2) do
+        v1
+      else
+        v2
+      end
+    end)
   end
 
   @spec validate_and_merge(t(), Keyword.t(), Optimal.schema()) :: t() | {:error, term}
