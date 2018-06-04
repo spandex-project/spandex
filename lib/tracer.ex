@@ -25,7 +25,8 @@ defmodule Spandex.Tracer do
   @callback update_top_span(opts) :: tagged_tuple(Span.t())
   @callback finish_trace(opts) :: tagged_tuple(Trace.t())
   @callback finish_span(opts) :: tagged_tuple(Span.t())
-  @callback span_error(error :: Exception.t(), opts) :: tagged_tuple(Span.t())
+  @callback span_error(error :: Exception.t(), stacktrace :: [term], opts) ::
+              tagged_tuple(Span.t())
   @callback continue_trace(span_name, trace_id :: term, span_id :: term, opts) ::
               tagged_tuple(Trace.t())
   @callback continue_trace_from_span(span_name, span :: term, opts) :: tagged_tuple(Trace.t())
