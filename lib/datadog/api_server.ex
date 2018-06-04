@@ -201,7 +201,7 @@ defmodule Spandex.Datadog.ApiServer do
       span_id: span.id,
       name: span.name,
       start: span.start,
-      duration: (span.completion_time || Spandex.Datadog.Utils.now()) - span.start,
+      duration: (span.completion_time || Spandex.Adapters.Datadog.now()) - span.start,
       parent_id: span.parent_id,
       error: error(span.error),
       resource: span.resource,
@@ -233,10 +233,14 @@ defmodule Spandex.Datadog.ApiServer do
 
   defp add_error_data(meta, %{error: error}) do
     meta
-    |> Map.put("error.type", error.__struct__)
+    |> add_error_type(error.exception)
     |> add_error_message(error.exception)
     |> add_error_stacktrace(error.stacktrace)
   end
+
+  @spec add_error_type(map, Exception.t() | nil) :: map
+  defp add_error_type(meta, nil), do: meta
+  defp add_error_type(meta, exception), do: Map.put(meta, "error.type", exception.__struct__)
 
   @spec add_error_message(map, Exception.t() | nil) :: map
   defp add_error_message(meta, nil), do: meta
@@ -248,7 +252,7 @@ defmodule Spandex.Datadog.ApiServer do
   defp add_error_stacktrace(meta, nil), do: meta
 
   defp add_error_stacktrace(meta, stacktrace),
-    do: Map.put(meta, "error.msg", Exception.format_stacktrace(stacktrace))
+    do: Map.put(meta, "error.stack", Exception.format_stacktrace(stacktrace))
 
   @spec add_http_data(map, Spandex.Span.t()) :: map
   defp add_http_data(meta, %{http: nil}), do: meta

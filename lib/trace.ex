@@ -11,7 +11,6 @@ defmodule Spandex.Trace do
   @type t :: %__MODULE__{
           stack: [Spandex.Span.t()],
           spans: [Spandex.Span.t()],
-          id: term,
-          start: term
+          id: term
         }
 end

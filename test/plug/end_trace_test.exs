@@ -6,12 +6,12 @@ defmodule Spandex.Plug.EndTraceTest do
   alias Spandex.Test.Support.Tracer
 
   setup do
-    {:ok, trace_id} = Tracer.start_trace("request")
+    {:ok, trace} = Tracer.start_trace("request")
 
     {
       :ok,
       [
-        trace_id: trace_id,
+        trace_id: trace.id,
         conn: Plug.Adapters.Test.Conn.conn(%Plug.Conn{}, :get, "/dashboard", nil)
       ]
     }
