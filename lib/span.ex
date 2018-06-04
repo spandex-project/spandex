@@ -10,6 +10,7 @@ defmodule Spandex.Span do
     :id,
     :name,
     :parent_id,
+    :private,
     :resource,
     :service,
     :sql_query,
@@ -19,27 +20,22 @@ defmodule Spandex.Span do
     :type
   ]
 
-  @nested_opt_structs %{
-    http: %Spandex.Span.Http{},
-    sql_query: %Spandex.Span.SqlQuery{},
-    error: %Spandex.Span.Error{}
-  }
-
-  @nested_opts Map.keys(@nested_opt_structs)
+  @nested_opts [:error, :http, :sql_query]
 
   @type timestamp :: term
 
   @type t :: %__MODULE__{
           completion_time: timestamp,
           env: String.t(),
-          error: Spandex.Span.Error.t() | nil,
+          error: Keyword.t() | nil,
           id: term,
           name: String.t(),
           parent_id: term,
+          private: Keyword.t(),
           resource: String.t(),
           service: atom,
-          http: Spandex.Span.Http.t() | nil,
-          sql_query: Spandex.Span.SqlQuery.t() | nil,
+          http: Keyword.t() | nil,
+          sql_query: Keyword.t() | nil,
           start: timestamp,
           trace_id: term,
           tags: Keyword.t() | nil,
@@ -51,22 +47,24 @@ defmodule Spandex.Span do
                  id: :any,
                  trace_id: :any,
                  name: :string,
-                 http: [:keyword, {:struct, Spandex.Span.Http}],
-                 error: [:keyword, {:struct, Spandex.Span.Error}],
+                 http: :keyword,
+                 error: :keyword,
                  completion_time: :any,
                  env: :string,
                  parent_id: :any,
+                 private: :keyword,
                  resource: [:atom, :string],
                  service: :atom,
                  services: :keyword,
-                 sql_query: [:keyword, {:struct, Spandex.Span.SqlQuery}],
+                 sql_query: :keyword,
                  start: :any,
                  type: :atom,
                  tags: :keyword
                ],
                defaults: [
                  tags: [],
-                 services: []
+                 services: [],
+                 private: []
                ],
                required: [
                  :id,
@@ -94,6 +92,36 @@ defmodule Spandex.Span do
   Update an existing span.
 
   #{Optimal.Doc.document(Map.put(@span_opts, :required, []))}
+
+  ## Special Meta
+
+  ```elixir
+  [
+    http: [
+      url: "my_website.com?foo=bar",
+      status_code: "400",
+      method: "GET",
+      query_string: "foo=bar",
+      user_agent: "Mozilla/5.0...",
+      request_id: "special_id"
+    ],
+    error: [
+      exception: ArgumentError.exception("foo"),
+      stacktrace: System.stacktrace(),
+      error?: true # Used for specifying that a span is an error when there is no exception or stacktrace.
+    ],
+    sql_query: [
+      rows: 100,
+      db: "my_database",
+      query: "SELECT * FROM users;"
+    ],
+    # Private has the same structure as the outer meta structure, but private metadata does not
+    # transfer from parent span to child span.
+    private: [
+      ...
+    ]
+  ]
+  ```
   """
   def update(span, opts, schema \\ Map.put(@span_opts, :required, [])) do
     opts_without_nils = Enum.reject(opts, fn {_key, value} -> is_nil(value) end)
@@ -102,21 +130,7 @@ defmodule Spandex.Span do
       span
       |> Map.take(schema.opts)
       |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-      |> Keyword.merge(opts_without_nils, fn key, v1, v2 ->
-        case key do
-          k when k in @nested_opts ->
-            left = struct_to_keyword(v1)
-            right = struct_to_keyword(v2)
-
-            merge_non_nils(left, right)
-
-          :tags ->
-            Keyword.merge(v1 || [], v2 || [])
-
-          _ ->
-            v2
-        end
-      end)
+      |> merge_retaining_nested(opts_without_nils)
 
     with_type =
       case {starting_opts[:type], starting_opts[:services]} do
@@ -128,6 +142,32 @@ defmodule Spandex.Span do
       end
 
     validate_and_merge(span, with_type, schema)
+  end
+
+  @spec merge_retaining_nested(Keyword.t(), Keyword.t()) :: Keyword.t()
+  defp merge_retaining_nested(left, right) do
+    Keyword.merge(left, right, fn key, v1, v2 ->
+      case key do
+        k when k in @nested_opts ->
+          left = struct_to_keyword(v1)
+          right = struct_to_keyword(v2)
+
+          merge_non_nils(left, right)
+
+        :tags ->
+          Keyword.merge(v1 || [], v2 || [])
+
+        :private ->
+          if v1 && v2 do
+            merge_retaining_nested(v1, v2)
+          else
+            v1 || v2
+          end
+
+        _ ->
+          v2
+      end
+    end)
   end
 
   @spec merge_non_nils(Keyword.t(), Keyword.t()) :: Keyword.t()
@@ -145,32 +185,10 @@ defmodule Spandex.Span do
   defp validate_and_merge(span, opts, schema) do
     case Optimal.validate(opts, schema) do
       {:ok, opts} ->
-        non_composite_opts = Keyword.drop(opts, @nested_opts)
-
-        span = struct(span, non_composite_opts)
-
-        opts
-        |> Keyword.take(@nested_opts)
-        |> Enum.reduce(span, fn {key, opts}, span ->
-          struct = Map.get(span, key) || @nested_opt_structs[key]
-
-          value = do_merge(struct, opts)
-
-          Map.put(span, key, value)
-        end)
+        struct(span, opts)
 
       {:error, errors} ->
         {:error, errors}
-    end
-  end
-
-  @spec do_merge(struct, struct | Keyword.t()) :: struct
-  defp do_merge(struct, keyword_or_opts) do
-    struct_name = struct.__struct__
-
-    case keyword_or_opts do
-      %^struct_name{} -> Map.merge(struct, keyword_or_opts)
-      keyword -> struct(struct, keyword)
     end
   end
 
