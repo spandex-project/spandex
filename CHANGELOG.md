@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - No unreleased changes currently.
 
+## [1.6.0] - 2018-06-04
+- Storage strategy behaviour
+- Centralize most storage logic, requiring only the most adapter specific behaviour to be defined by the adapter.
+
 ## [1.5.0] - 2018-06-02
 ### Changed
 - Interface for updating span metadata, and creating with metadata has been updated
