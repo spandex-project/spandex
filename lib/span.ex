@@ -158,16 +158,21 @@ defmodule Spandex.Span do
           Keyword.merge(v1 || [], v2 || [])
 
         :private ->
-          if v1 && v2 do
-            merge_retaining_nested(v1, v2)
-          else
-            v1 || v2
-          end
+          merge_or_choose(v1, v2)
 
         _ ->
           v2
       end
     end)
+  end
+
+  @spec merge_or_choose(Keyword.t() | nil, Keyword.t() | nil) :: Keyword.t() | nil
+  defp merge_or_choose(left, right) do
+    if left && right do
+      merge_retaining_nested(left, right)
+    else
+      left || right
+    end
   end
 
   @spec merge_non_nils(Keyword.t(), Keyword.t()) :: Keyword.t()
