@@ -179,12 +179,6 @@ defmodule Spandex.Datadog.ApiServer do
     response =
       traces
       |> Enum.map(fn trace ->
-        # Enum.map(trace, fn span ->
-        #   case Spandex.Span.update(span, span.private) do
-        #     {:error, _errors} -> format(span)
-        #     updated -> format(updated)
-        #   end
-        # end)
         Enum.map(trace, &format/1)
       end)
       |> encode()
