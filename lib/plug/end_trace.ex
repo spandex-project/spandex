@@ -37,7 +37,7 @@ defmodule Spandex.Plug.EndTrace do
         Keyword.merge([http: [status_code: conn.status]], tracer_opts)
       else
         Keyword.merge(
-          [http: [status_code: conn.status], error: %Spandex.Span.Error{}],
+          [http: [status_code: conn.status], error: [error?: true]],
           tracer_opts
         )
       end

@@ -179,9 +179,13 @@ defmodule Spandex.Datadog.ApiServer do
     response =
       traces
       |> Enum.map(fn trace ->
-        trace
-        |> Enum.map(&format/1)
-        |> Enum.sort_by(&Map.get(&1, :start))
+        # Enum.map(trace, fn span ->
+        #   case Spandex.Span.update(span, span.private) do
+        #     {:error, _errors} -> format(span)
+        #     updated -> format(updated)
+        #   end
+        # end)
+        Enum.map(trace, &format/1)
       end)
       |> encode()
       |> push(state)
@@ -233,9 +237,9 @@ defmodule Spandex.Datadog.ApiServer do
 
   defp add_error_data(meta, %{error: error}) do
     meta
-    |> add_error_type(error.exception)
-    |> add_error_message(error.exception)
-    |> add_error_stacktrace(error.stacktrace)
+    |> add_error_type(error[:exception])
+    |> add_error_message(error[:exception])
+    |> add_error_stacktrace(error[:stacktrace])
   end
 
   @spec add_error_type(map, Exception.t() | nil) :: map
@@ -259,14 +263,14 @@ defmodule Spandex.Datadog.ApiServer do
 
   defp add_http_data(meta, %{http: http}) do
     status_code =
-      if http.status_code do
-        to_string(http.status_code)
+      if http[:status_code] do
+        to_string(http[:status_code])
       end
 
     meta
-    |> Map.put("http.url", http.url)
+    |> Map.put("http.url", http[:url])
     |> Map.put("http.status_code", status_code)
-    |> Map.put("http.method", http.method)
+    |> Map.put("http.method", http[:method])
   end
 
   @spec add_sql_data(map, Spandex.Span.t()) :: map
@@ -274,9 +278,9 @@ defmodule Spandex.Datadog.ApiServer do
 
   defp add_sql_data(meta, %{sql_query: sql}) do
     meta
-    |> Map.put("sql.query", sql.query)
-    |> Map.put("sql.rows", sql.rows)
-    |> Map.put("sql.db", sql.db)
+    |> Map.put("sql.query", sql[:query])
+    |> Map.put("sql.rows", sql[:rows])
+    |> Map.put("sql.db", sql[:db])
   end
 
   @spec add_tags(map, Spandex.Span.t()) :: map
@@ -286,9 +290,16 @@ defmodule Spandex.Datadog.ApiServer do
     Map.merge(meta, Enum.into(tags, %{}))
   end
 
-  @spec error(nil | Spandex.Span.Error.t()) :: integer
+  @spec error(nil | Keyword.t()) :: integer
   defp error(nil), do: 0
-  defp error(_), do: 1
+
+  defp error(keyword) do
+    if Enum.any?(keyword, fn {_, v} -> not is_nil(v) end) do
+      1
+    else
+      0
+    end
+  end
 
   @spec encode(data :: term) :: iodata | no_return
   defp encode(data),

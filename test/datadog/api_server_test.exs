@@ -48,7 +48,7 @@ defmodule Spandex.Datadog.ApiServerTest do
     {
       :ok,
       [
-        spans: [span_2, span_1],
+        spans: [span_1, span_2],
         url: "localhost:8126/v0.3/traces",
         state: %ApiServer{
           asynchronous_send?: false,
