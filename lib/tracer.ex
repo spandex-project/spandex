@@ -173,12 +173,12 @@ defmodule Spandex.Tracer do
 
       @impl Spandex.Tracer
       def update_span(opts) do
-        Spandex.update_span(config(opts, @otp_app))
+        Spandex.update_span(validate_update_config(opts, @otp_app))
       end
 
       @impl Spandex.Tracer
       def update_top_span(opts) do
-        Spandex.update_top_span(config(opts, @otp_app))
+        Spandex.update_top_span(validate_update_config(opts, @otp_app))
       end
 
       @impl Spandex.Tracer
@@ -243,6 +243,24 @@ defmodule Spandex.Tracer do
           :disabled
         else
           config
+        end
+      end
+
+      defp validate_update_config(opts, otp_app) do
+        env = Application.get_env(otp_app, __MODULE__)
+
+        if env[:disabled] do
+          :disabled
+        else
+          schema = %{@opts | defaults: [], required: []}
+
+          # TODO: We may want to have some concept of "the quintessential tracer configs"
+          # So that we can take those here, instead of embedding that knowledge here.
+
+          opts
+          |> Optimal.validate!(schema)
+          |> Keyword.put(:tracer, __MODULE__)
+          |> Keyword.put(:strategy, env[:strategy] || Spandex.Strategy.Pdict)
         end
       end
     end

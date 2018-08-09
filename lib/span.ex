@@ -130,6 +130,7 @@ defmodule Spandex.Span do
       span
       |> Map.take(schema.opts)
       |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+      # |> IO.inspect(label: "LEFT")
       |> merge_retaining_nested(opts_without_nils)
 
     with_type =
