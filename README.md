@@ -12,6 +12,10 @@ Spandex is a platform agnostic tracing library. Currently there is only a datado
 
 This library is undergoing some structural changes for future versions. This documentation will be kept up to date, but if there are any inconsistencies, don't hesitate to make an issue.
 
+## Attention
+
+This library could use some work! I've become unexpectedly busy lately, so I haven't had the time I thought I would to work on it. Any contributions, to things like sampling, strict mode, different storage strategies and the like would be greatly appreciated.
+
 ## Installation
 
 ```elixir
@@ -154,6 +158,10 @@ The current trace_id and span_id can be retrieved with `Tracer.current_trace_id(
 ## Strategies
 
 There is (currently and temporarily) only one storage strategy, which can be changed via the `strategy` option. See tracer opt documentation for an example of setting it. To implement your own (ETS adapter should be on its way) simply implement the `Spandex.Strategy` behaviour. Keep in mind that the strategy is not an atomic pattern. It represents retrieving and wholesale replacing a trace, meaning that it is *not* safe to use across processes or concurrently. Each process should have its own store for its own generated spans. This should be fine because you can send multiple batches of spans for the same trace separately.
+
+## Ecto Tracing
+
+I would like to see a separate library called `spandex_ecto` created to house the ecto specific code, but for now if you want it, an example implementation of an ecto logger that sends spandex data can be found in this issue: https://github.com/zachdaniel/spandex/issues/55. If anyone would like to make that repo, that would be a very nice contribution.
 
 ## Datadog Api Sender Performance
 
