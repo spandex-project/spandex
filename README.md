@@ -8,6 +8,15 @@
 
 View the [documentation](https://hexdocs.pm/spandex)
 
+
+## 2.0 Upgrade Guide
+
+This is datadog specific since thats the only adapter.
+
+* Include the adapter as a dependency (see below).
+* Replace any occurrences of `Spandex.Adapters.Datadog` with `SpandexDatadog.Adapter` in your code.
+* Replace any occurences of `Spandex.Adapters.ApiSender` with `SpandexDatadog.ApiSender` in your code.
+
 ## Adapters
 
 * [Datadog](https://github.com/zachdaniel/spandex_datadog)
