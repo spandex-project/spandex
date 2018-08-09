@@ -65,8 +65,7 @@ defmodule Spandex.Tracer do
                    disabled?: "Allows for wholesale disabling a tracer",
                    env:
                      "A name used to identify the environment name, e.g `prod` or `development`",
-                   services:
-                     "A mapping of service name to the default span types. For instance datadog knows about `:db`, `:cache` and `:web`",
+                   services: "A mapping of service name to the default span types.",
                    strategy:
                      "The storage and tracing strategy. Currently only supports local process dictionary."
                  ]

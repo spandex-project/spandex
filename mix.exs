@@ -60,10 +60,8 @@ defmodule Spandex.Mixfile do
       {:credo, "~> 0.9.2", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:excoveralls, "~> 0.6", only: :test},
-      {:httpoison, "~> 0.13", only: :test},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
       {:optimal, "~> 0.3.3"},
-      {:msgpax, "~> 1.1"},
       {:plug, ">= 1.0.0"}
     ]
   end

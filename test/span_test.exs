@@ -5,7 +5,7 @@ defmodule Spandex.Test.SpanTest do
   require Spandex.Test.Support.Tracer
   alias Spandex.Test.Support.Tracer
 
-  test "starting updating a span does not override the service unintentionally" do
+  test "updating a span does not override the service unintentionally" do
     Tracer.trace "trace_name", service: :special_service do
       Tracer.update_span(sql_query: [query: "SELECT ..", db: "some_db", rows: "42"])
     end

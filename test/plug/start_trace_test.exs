@@ -94,8 +94,8 @@ defmodule Spandex.Plug.StartTraceTest do
     test "continues existing trace when distributed context exists", %{conn: conn} do
       conn =
         conn
-        |> Plug.Conn.put_req_header("x-datadog-trace-id", "12345")
-        |> Plug.Conn.put_req_header("x-datadog-parent-id", "67890")
+        |> Plug.Conn.put_req_header("x-test-trace-id", "12345")
+        |> Plug.Conn.put_req_header("x-test-parent-id", "67890")
 
       new_conn = StartTrace.call(conn, ignored_routes: [], ignored_methods: [], tracer: Tracer)
 

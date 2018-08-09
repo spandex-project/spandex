@@ -27,12 +27,12 @@ defmodule Spandex.Test.Util do
 
   def sent_spans() do
     receive do
-      {:sent_datadog_spans, spans} ->
-        send(self(), {:sent_datadog_spans, spans})
+      {:sent_spans, spans} ->
+        send(self(), {:sent_spans, spans})
         spans
     after
       5000 ->
-        raise "No datadog spans sent"
+        raise "No spans sent"
     end
   end
 end

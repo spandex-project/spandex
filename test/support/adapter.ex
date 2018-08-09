@@ -1,38 +1,35 @@
-defmodule Spandex.Adapters.Datadog do
-  @moduledoc """
-  A datadog APM implementation for spandex.
-  """
-
-  @behaviour Spandex.Adapters.Adapter
+defmodule Spandex.TestAdapter do
+  @moduledoc false
+  @behaviour Spandex.Adapter
 
   require Logger
 
   @max_id 9_223_372_036_854_775_807
 
-  @impl Spandex.Adapters.Adapter
+  @impl Spandex.Adapter
   def trace_id(), do: :rand.uniform(@max_id)
 
-  @impl Spandex.Adapters.Adapter
+  @impl Spandex.Adapter
   def span_id(), do: trace_id()
 
-  @impl Spandex.Adapters.Adapter
+  @impl Spandex.Adapter
   def now(), do: :os.system_time(:nano_seconds)
 
-  @impl Spandex.Adapters.Adapter
+  @impl Spandex.Adapter
   def default_sender() do
-    Spandex.Datadog.ApiServer
+    Spandex.TestSender
   end
 
   @doc """
-  Fetches the datadog trace & parent IDs from the conn request headers
+  Fetches the test trace & parent IDs from the conn request headers
   if they are present.
   """
-  @impl Spandex.Adapters.Adapter
+  @impl Spandex.Adapter
   @spec distributed_context(conn :: Plug.Conn.t(), Keyword.t()) ::
           {:ok, %{trace_id: binary, parent_id: binary}} | {:error, :no_trace_context}
   def distributed_context(%Plug.Conn{} = conn, _opts) do
-    trace_id = get_first_header(conn, "x-datadog-trace-id")
-    parent_id = get_first_header(conn, "x-datadog-parent-id")
+    trace_id = get_first_header(conn, "x-test-trace-id")
+    parent_id = get_first_header(conn, "x-test-parent-id")
 
     if is_nil(trace_id) || is_nil(parent_id) do
       {:error, :no_distributed_trace}
