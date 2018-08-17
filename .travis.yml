@@ -8,5 +8,5 @@ script:
   - mix credo
   - mix coveralls.travis
 after_script:
-  - mix deps.get --only docs
-  - MIX_ENV=docs mix inch.report
+  - mix deps.get
+  - mix inch.report
