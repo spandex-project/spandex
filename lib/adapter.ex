@@ -1,4 +1,4 @@
-defmodule Spandex.Adapters.Adapter do
+defmodule Spandex.Adapter do
   @moduledoc """
   The callbacks required to implement an adapter.
   """

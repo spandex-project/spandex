@@ -30,10 +30,10 @@ defmodule Spandex.Plug.AddContextTest do
 
       :ok = Tracer.finish_trace()
 
-      %{resource: resource, meta: meta} = Spandex.Test.Util.find_span("request")
+      %{resource: resource, http: http} = Spandex.Test.Util.find_span("request")
 
-      assert is_nil(Map.get(meta, "http.url"))
-      assert is_nil(Map.get(meta, "http.method"))
+      assert is_nil(http[:url])
+      assert is_nil(http[:method])
       assert resource == "default"
     end
 
@@ -55,13 +55,13 @@ defmodule Spandex.Plug.AddContextTest do
 
       :ok = Tracer.finish_trace()
 
-      %{trace_id: trace_id, type: type, meta: meta, resource: resource} =
+      %{trace_id: trace_id, type: type, http: http, resource: resource} =
         Spandex.Test.Util.find_span("request")
 
       assert trace_id == tid
       assert type == :web
-      assert Map.get(meta, "http.url") == "/dashboard"
-      assert Map.get(meta, "http.method") == "GET"
+      assert http[:url] == "/dashboard"
+      assert http[:method] == "GET"
       assert resource == "GET /dashboard"
     end
   end

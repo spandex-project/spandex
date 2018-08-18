@@ -8,8 +8,8 @@ config :logger, :console,
 
 config :spandex, Spandex.Test.Support.Tracer,
   service: :spandex_test,
-  adapter: Spandex.Adapters.Datadog,
-  sender: Spandex.Test.DatadogTestApiServer,
+  adapter: Spandex.TestAdapter,
+  sender: Spandex.TestSender,
   env: "test",
   resource: "default",
   services: [

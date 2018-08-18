@@ -40,11 +40,11 @@ defmodule Spandex.Plug.EndTraceTest do
 
       {:error, :no_trace_context} = Tracer.finish_trace()
 
-      %{trace_id: trace_id, meta: meta, error: error} = Spandex.Test.Util.find_span("request")
+      %{trace_id: trace_id, http: http, error: error} = Spandex.Test.Util.find_span("request")
 
       assert trace_id == tid
-      assert Map.get(meta, "http.status_code") == "200"
-      assert error == 0
+      assert http[:status_code] == 200
+      refute error[:error?]
     end
 
     test "updates top span and finish span, when we trace request for 404", %{
@@ -61,11 +61,11 @@ defmodule Spandex.Plug.EndTraceTest do
 
       {:error, :no_trace_context} = Tracer.finish_trace()
 
-      %{trace_id: trace_id, meta: meta, error: error} = Spandex.Test.Util.find_span("request")
+      %{trace_id: trace_id, http: http, error: error} = Spandex.Test.Util.find_span("request")
 
       assert trace_id == tid
-      assert Map.get(meta, "http.status_code") == "404"
-      assert error == 1
+      assert http[:status_code] == 404
+      assert error[:error?] == true
     end
   end
 end
