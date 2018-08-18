@@ -49,7 +49,7 @@ Configure it:
 ```elixir
 config :my_app, MyApp.Tracer,
   service: :my_api,
-  adapter: My.Adapter,
+  adapter: SpandexDatadog.Adapter,
   disabled?: false,
   env: "PROD"
 ```
