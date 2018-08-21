@@ -157,12 +157,18 @@ defmodule Spandex do
         {:error, :no_span_context}
 
       %Trace{stack: [span | tail], spans: spans} = trace ->
-        finished_span = update_or_keep(span, completion_time: adapter.now())
+        finished_span = ensure_completion_time_set(span, adapter)
 
         strategy.put_trace(opts[:tracer], %{trace | stack: tail, spans: [finished_span | spans]})
         {:ok, finished_span}
     end
   end
+
+  defp ensure_completion_time_set(span = %Span{completion_time: nil}, adapter) do
+    update_or_keep(span, completion_time: adapter.now()) |> ensure_completion_time_set(adapter)
+  end
+
+  defp ensure_completion_time_set(span = %Span{}, _adapter), do: span
 
   def span_error(_error, _stacktrace, :disabled), do: {:error, :disabled}
 

@@ -14,4 +14,15 @@ defmodule Spandex.Test.SpanTest do
 
     assert(span.service == :special_service)
   end
+
+  test "finishing a span does not override the completion time" do
+    completion_time = :os.system_time(:nano_seconds)
+    Tracer.start_trace("my_trace")
+    Tracer.update_span(service: :my_app, type: :web, completion_time: completion_time)
+    Tracer.finish_span()
+    Tracer.finish_trace()
+
+    span = Util.find_span("my_trace")
+    assert(span.completion_time == completion_time)
+  end
 end
