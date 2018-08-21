@@ -25,4 +25,13 @@ defmodule Spandex.Test.SpanTest do
     span = Util.find_span("my_trace")
     assert(span.completion_time == completion_time)
   end
+
+  test "unfinished spans should have a completion time after trace finishes" do
+    Tracer.start_trace("my_trace")
+    Tracer.update_span(service: :my_app, type: :web)
+    Tracer.finish_trace()
+    span = Util.find_span("my_trace")
+
+    assert(span.completion_time != nil)
+  end
 end

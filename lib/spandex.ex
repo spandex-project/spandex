@@ -131,7 +131,7 @@ defmodule Spandex do
         {:error, :no_trace_context}
 
       %Trace{spans: spans, stack: stack} ->
-        unfinished_spans = Enum.map(stack, &update_or_keep(&1, completion_time: adapter.now()))
+        unfinished_spans = Enum.map(stack, &ensure_completion_time_set(&1, adapter))
 
         sender = opts[:sender] || adapter.default_sender()
 
