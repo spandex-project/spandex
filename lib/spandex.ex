@@ -131,7 +131,7 @@ defmodule Spandex do
         {:error, :no_trace_context}
 
       %Trace{spans: spans, stack: stack} ->
-        unfinished_spans = Enum.map(stack, &update_or_keep(&1, completion_time: adapter.now()))
+        unfinished_spans = Enum.map(stack, &ensure_completion_time_set(&1, adapter))
 
         sender = opts[:sender] || adapter.default_sender()
 
@@ -157,12 +157,18 @@ defmodule Spandex do
         {:error, :no_span_context}
 
       %Trace{stack: [span | tail], spans: spans} = trace ->
-        finished_span = update_or_keep(span, completion_time: adapter.now())
+        finished_span = ensure_completion_time_set(span, adapter)
 
         strategy.put_trace(opts[:tracer], %{trace | stack: tail, spans: [finished_span | spans]})
         {:ok, finished_span}
     end
   end
+
+  defp ensure_completion_time_set(%Span{completion_time: nil} = span, adapter) do
+    update_or_keep(span, completion_time: adapter.now())
+  end
+
+  defp ensure_completion_time_set(%Span{} = span, _adapter), do: span
 
   def span_error(_error, _stacktrace, :disabled), do: {:error, :disabled}
 
