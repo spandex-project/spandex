@@ -57,6 +57,7 @@ defmodule Spandex.Mixfile do
 
   defp deps do
     [
+      {:benchee, "~> 0.13.2", only: [:dev, :test]},
       {:credo, "~> 0.9.2", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:excoveralls, "~> 0.6", only: :test},
