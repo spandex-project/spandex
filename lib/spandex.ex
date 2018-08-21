@@ -164,11 +164,13 @@ defmodule Spandex do
     end
   end
 
-  defp ensure_completion_time_set(span = %Span{completion_time: nil}, adapter) do
-    update_or_keep(span, completion_time: adapter.now()) |> ensure_completion_time_set(adapter)
+  defp ensure_completion_time_set(%Span{completion_time: nil} = span, adapter) do
+    span
+    |> update_or_keep(completion_time: adapter.now())
+    |> ensure_completion_time_set(adapter)
   end
 
-  defp ensure_completion_time_set(span = %Span{}, _adapter), do: span
+  defp ensure_completion_time_set(%Span{} = span, _adapter), do: span
 
   def span_error(_error, _stacktrace, :disabled), do: {:error, :disabled}
 
