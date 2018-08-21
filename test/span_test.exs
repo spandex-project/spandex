@@ -14,4 +14,24 @@ defmodule Spandex.Test.SpanTest do
 
     assert(span.service == :special_service)
   end
+
+  test "updating a span does not override a manually set completion_time" do
+    completion = Spandex.TestAdapter.now() + :timer.minutes(10)
+
+    Tracer.trace "trace_name" do
+      Tracer.start_span("span_name")
+
+      Tracer.update_span(completion_time: completion)
+
+      Tracer.finish_span()
+
+      Tracer.update_span(completion_time: completion)
+    end
+
+    span1 = Util.find_span("span_name")
+    span2 = Util.find_span("trace_name")
+
+    assert(span1.completion_time == completion)
+    assert(span2.completion_time == completion)
+  end
 end

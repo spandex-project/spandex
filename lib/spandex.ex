@@ -131,7 +131,16 @@ defmodule Spandex do
         {:error, :no_trace_context}
 
       %Trace{spans: spans, stack: stack} ->
-        unfinished_spans = Enum.map(stack, &update_or_keep(&1, completion_time: adapter.now()))
+        unfinished_spans =
+          Enum.map(stack, fn span ->
+            case span.completion_time do
+              nil ->
+                update_or_keep(span, completion_time: adapter.now())
+
+              _ ->
+                span
+            end
+          end)
 
         sender = opts[:sender] || adapter.default_sender()
 
@@ -156,14 +165,30 @@ defmodule Spandex do
       %Trace{stack: []} ->
         {:error, :no_span_context}
 
-      %Trace{stack: [span | tail], spans: spans} = trace ->
+      %Trace{stack: [%{completion_time: nil} = span | tail], spans: spans} = trace ->
         finished_span = update_or_keep(span, completion_time: adapter.now())
 
-        strategy.put_trace(opts[:tracer], %{trace | stack: tail, spans: [finished_span | spans]})
+        strategy.put_trace(opts[:tracer], %{
+          trace
+          | stack: tail,
+            spans: [finished_span | spans]
+        })
+
+        {:ok, finished_span}
+
+      %Trace{stack: [finished_span | tail], spans: spans} = trace ->
+        strategy.put_trace(opts[:tracer], %{
+          trace
+          | stack: tail,
+            spans: [finished_span | spans]
+        })
+
         {:ok, finished_span}
     end
   end
 
+  @spec span_error(any(), any(), :disabled | keyword()) ::
+          {:error, :disabled | :no_trace_context} | {:ok, any()}
   def span_error(_error, _stacktrace, :disabled), do: {:error, :disabled}
 
   def span_error(exception, stacktrace, opts) do
