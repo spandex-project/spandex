@@ -30,7 +30,7 @@ This library could use some work! I've become unexpectedly busy lately, so I hav
 
 ```elixir
 def deps do
-  [{:spandex, "~> 1.6.2"}]
+  [{:spandex, "~> 2.0.0"}]
 end
 ```
 
