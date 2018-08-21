@@ -165,9 +165,7 @@ defmodule Spandex do
   end
 
   defp ensure_completion_time_set(%Span{completion_time: nil} = span, adapter) do
-    span
-    |> update_or_keep(completion_time: adapter.now())
-    |> ensure_completion_time_set(adapter)
+    update_or_keep(span, completion_time: adapter.now())
   end
 
   defp ensure_completion_time_set(%Span{} = span, _adapter), do: span
