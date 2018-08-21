@@ -1,21 +1,25 @@
-Application.put_env(:benchmark, BenchmarkTracer, [
+[
+  "support/adapter.ex",
+  "support/sender.ex",
+  "support/tracer.ex"
+]
+|> Enum.each(&Code.load_file(&1, __DIR__))
+
+Application.put_env(
+  :benchmark,
+  Benchmark.Tracer,
   service: :benchmark_service,
-  adapter: Spandex.Adapters.Datadog,
+  adapter: Benchmark.Adapter,
   disabled?: false,
   env: to_string(Mix.env())
-])
-
-defmodule BenchmarkTracer do
-  use Spandex.Tracer, otp_app: :benchmark
-end
+)
 
 defmodule Benchmarks.Plug do
-
   defmodule BaselineRouter do
     use Plug.Router
 
-    plug :match
-    plug :dispatch
+    plug(:match)
+    plug(:dispatch)
 
     get "/" do
       resp(conn, 200, "OK")
@@ -25,10 +29,10 @@ defmodule Benchmarks.Plug do
   defmodule StartEndRouter do
     use Plug.Router
 
-    plug Spandex.Plug.StartTrace, tracer: BenchmarkTracer
-    plug :match
-    plug :dispatch
-    plug Spandex.Plug.EndTrace, tracer: BenchmarkTracer
+    plug(Spandex.Plug.StartTrace, tracer: Benchmark.Tracer)
+    plug(:match)
+    plug(:dispatch)
+    plug(Spandex.Plug.EndTrace, tracer: Benchmark.Tracer)
 
     get "/" do
       resp(conn, 200, "OK")
@@ -38,26 +42,26 @@ defmodule Benchmarks.Plug do
   defmodule AddContextRouter do
     use Plug.Router
 
-    plug Spandex.Plug.StartTrace, tracer: BenchmarkTracer
-    plug :match
-    plug :dispatch
-    plug Spandex.Plug.AddContext, tracer: BenchmarkTracer
-    plug Spandex.Plug.EndTrace, tracer: BenchmarkTracer
+    plug(Spandex.Plug.StartTrace, tracer: Benchmark.Tracer)
+    plug(:match)
+    plug(:dispatch)
+    plug(Spandex.Plug.AddContext, tracer: Benchmark.Tracer)
+    plug(Spandex.Plug.EndTrace, tracer: Benchmark.Tracer)
 
     get "/" do
       resp(conn, 200, "OK")
     end
   end
 
-  def baseline(opts \\ []) do
+  def baseline do
     call(BaselineRouter, :get, "/")
   end
 
-  def start_end(opts \\ []) do
+  def start_end do
     call(StartEndRouter, :get, "/")
   end
 
-  def addcontext(opts \\ []) do
+  def addcontext do
     call(AddContextRouter, :get, "/")
   end
 
@@ -68,31 +72,13 @@ defmodule Benchmarks.Plug do
   end
 end
 
-{:ok, pid} = GenServer.start_link(
-  Spandex.Datadog.ApiServer,
-  [
-    host: "localhost",
-    port: 8126,
-    batch_size: 1000,
-    sync_threshold: 100,
-    http: HTTPoison
-  ],
-  name: Spandex.Datadog.ApiServer
-)
-
-HTTPoison.start
-
 Benchee.run(
   %{
-    baseline: &Benchmarks.Plug.baseline/1,
-    start_finish: &Benchmarks.Plug.start_end/1,
-    addcontext: &Benchmarks.Plug.addcontext/1
+    baseline: &Benchmarks.Plug.baseline/0,
+    start_finish: &Benchmarks.Plug.start_end/0,
+    addcontext: &Benchmarks.Plug.addcontext/0
   },
   time: 10,
   memory_time: 2,
-  parallel: 4,
-  inputs: %{
-    no_sampling: [],
-    #sample_rate_100: [sample_rate: 100]
-  }
+  parallel: 4
 )
