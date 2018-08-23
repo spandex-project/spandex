@@ -155,4 +155,4 @@ There is (currently and temporarily) only one storage strategy, which can be cha
 
 ## Ecto Tracing
 
-I would like to see a separate library called `spandex_ecto` created to house the ecto specific code, but for now if you want it, an example implementation of an ecto logger that sends spandex data can be found in this issue: https://github.com/zachdaniel/spandex/issues/55. If anyone would like to make that repo, that would be a very nice contribution.
+Check out [spandex_ecto](https://github.com/spandex-project/spandex_ecto)
