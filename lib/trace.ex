@@ -2,15 +2,24 @@ defmodule Spandex.Trace do
   @moduledoc """
   A representation of an ongoing trace.
 
-  `stack` represents all parent spans, while `spans` represents
-  all completed spans.
-
+  * `baggage`: Key-value metadata about the overall trace (propagated across distributed service)
+  * `id`: The trace ID, which consistently refers to this trace across distributed services
+  * `priority`: The trace sampling priority for this trace (propagated across distributed services)
+  * `spans`: The set of completed spans for this trace from this proces
+  * `stack`: The stack of active parent spans
   """
-  defstruct [:stack, :spans, :id, :start]
+  defstruct baggage: [],
+            id: nil,
+            priority: 1,
+            spans: [],
+            stack: []
 
+  @typedoc @moduledoc
   @type t :: %__MODULE__{
-          stack: [Spandex.Span.t()],
+          baggage: Keyword.t(),
+          id: Spandex.id(),
+          priority: integer(),
           spans: [Spandex.Span.t()],
-          id: Spandex.id()
+          stack: [Spandex.Span.t()]
         }
 end

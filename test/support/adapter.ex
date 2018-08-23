@@ -3,6 +3,7 @@ defmodule Spandex.TestAdapter do
   @behaviour Spandex.Adapter
 
   require Logger
+  alias Spandex.SpanContext
 
   @max_id 9_223_372_036_854_775_807
 
@@ -26,15 +27,18 @@ defmodule Spandex.TestAdapter do
   """
   @impl Spandex.Adapter
   @spec distributed_context(conn :: Plug.Conn.t(), Keyword.t()) ::
-          {:ok, %{trace_id: binary, parent_id: binary}} | {:error, :no_trace_context}
+          {:ok, SpanContext.t()}
+          | {:error, :no_distributed_trace}
   def distributed_context(%Plug.Conn{} = conn, _opts) do
     trace_id = get_first_header(conn, "x-test-trace-id")
     parent_id = get_first_header(conn, "x-test-parent-id")
+    # We default the priority to 1 so that we capture all traces by default until we implement trace sampling
+    priority = get_first_header(conn, "x-test-sampling-priority") || 1
 
     if is_nil(trace_id) || is_nil(parent_id) do
       {:error, :no_distributed_trace}
     else
-      {:ok, %{trace_id: trace_id, parent_id: parent_id}}
+      {:ok, %SpanContext{trace_id: trace_id, parent_id: parent_id, priority: priority}}
     end
   end
 
