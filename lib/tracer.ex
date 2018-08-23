@@ -16,7 +16,7 @@ defmodule Spandex.Tracer do
 
   @type tagged_tuple(arg) :: {:ok, arg} | {:error, term}
   @type span_name() :: String.t()
-  @type opts :: Keyword.t()
+  @type opts :: Keyword.t() | :disabled
 
   @callback configure(opts) :: :ok
   @callback start_trace(span_name, opts) :: tagged_tuple(Trace.t())
@@ -30,8 +30,8 @@ defmodule Spandex.Tracer do
   @callback continue_trace(span_name, trace_id :: term, span_id :: term, opts) ::
               tagged_tuple(Trace.t())
   @callback continue_trace_from_span(span_name, span :: term, opts) :: tagged_tuple(Trace.t())
-  @callback current_trace_id(opts) :: nil | term
-  @callback current_span_id(opts) :: nil | term
+  @callback current_trace_id(opts) :: nil | Spandex.id()
+  @callback current_span_id(opts) :: nil | Spandex.id()
   @callback current_span(opts) :: nil | Span.t()
   @callback distributed_context(Plug.Conn.t(), opts) :: tagged_tuple(map)
   @macrocallback span(span_name, opts, do: Macro.t()) :: Macro.t()
@@ -73,7 +73,7 @@ defmodule Spandex.Tracer do
 
   @all_tracer_opts @tracer_opts
                    |> Optimal.merge(
-                     Spandex.Span.span_opts(),
+                     Span.span_opts(),
                      annotate: "Span Creation",
                      add_required?: false
                    )
@@ -96,8 +96,6 @@ defmodule Spandex.Tracer do
       @otp_app unquote(opts)[:otp_app] || raise("Must provide `otp_app` to `use Spandex.Tracer`")
 
       @behaviour Spandex.Tracer
-
-      alias Spandex.Tracer
 
       @opts Spandex.Tracer.tracer_opts()
 
