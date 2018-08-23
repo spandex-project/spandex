@@ -115,16 +115,16 @@ defmodule Spandex.Tracer do
           opts = unquote(opts)
 
           name = unquote(name)
-          _ = unquote(__MODULE__).start_trace(name, opts)
+          unquote(__MODULE__).start_trace(name, opts)
           span_id = unquote(__MODULE__).current_span_id()
-          _ = Logger.metadata(span_id: span_id)
+          Logger.metadata(span_id: span_id)
 
           try do
             unquote(body)
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
+              unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_trace()
@@ -137,16 +137,16 @@ defmodule Spandex.Tracer do
         quote do
           opts = unquote(opts)
           name = unquote(name)
-          _ = unquote(__MODULE__).start_span(name, opts)
+          unquote(__MODULE__).start_span(name, opts)
           span_id = unquote(__MODULE__).current_span_id()
-          _ = Logger.metadata(span_id: span_id)
+          Logger.metadata(span_id: span_id)
 
           try do
             unquote(body)
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
+              unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_span()
@@ -229,7 +229,7 @@ defmodule Spandex.Tracer do
         |> Kernel.||([])
         |> Keyword.merge(opts || [])
         |> Optimal.validate!(@opts)
-        |> Keyword.put(:tracer, __MODULE__)
+        |> Keyword.put(:trace_key, __MODULE__)
       end
 
       defp config(opts, otp_app) do
@@ -255,7 +255,7 @@ defmodule Spandex.Tracer do
 
           opts
           |> Optimal.validate!(schema)
-          |> Keyword.put(:tracer, __MODULE__)
+          |> Keyword.put(:trace_key, __MODULE__)
           |> Keyword.put(:strategy, env[:strategy] || Spandex.Strategy.Pdict)
         end
       end

@@ -28,7 +28,7 @@ defmodule Spandex.Plug.AddContextTest do
           tracer_opts: []
         )
 
-      :ok = Tracer.finish_trace()
+      {:ok, _} = Tracer.finish_trace()
 
       %{resource: resource, http: http} = Spandex.Test.Util.find_span("request")
 
@@ -53,7 +53,7 @@ defmodule Spandex.Plug.AddContextTest do
       assert Keyword.fetch!(Logger.metadata(), :trace_id) == tid
       assert Keyword.fetch!(Logger.metadata(), :span_id) == expected_span.id
 
-      :ok = Tracer.finish_trace()
+      {:ok, _} = Tracer.finish_trace()
 
       %{trace_id: trace_id, type: type, http: http, resource: resource} = Spandex.Test.Util.find_span("request")
 

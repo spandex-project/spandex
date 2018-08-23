@@ -103,24 +103,24 @@ defmodule ManuallyTraced do
 
   # Does not handle exceptions for you.
   def trace_me() do
-    _ = Tracer.start_trace("my_trace") #also opens a span
-    _ = Tracer.update_span(service: :my_app, type: :db)
+    Tracer.start_trace("my_trace") #also opens a span
+    Tracer.update_span(service: :my_app, type: :db)
 
     result = span_me()
 
-    _ = Tracer.finish_trace()
+    Tracer.finish_trace()
 
     result
   end
 
   # Does not handle exceptions for you.
   def span_me() do
-    _ = Tracer.start_span("this_span")
-    _ = Tracer.update_span(service: :my_app, type: :web)
+    Tracer.start_span("this_span")
+    Tracer.update_span(service: :my_app, type: :web)
 
     result = span_me_also()
 
-    _ = Tracer.finish_span()
+    Tracer.finish_span()
   end
 
   # Handles exception at the span level. Trace still must be reported.

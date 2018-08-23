@@ -6,7 +6,8 @@ defmodule Spandex.Strategy do
 
   alias Spandex.Trace
 
-  @callback get_trace(tracer) :: Trace.t() | nil
+  @callback delete_trace(tracer) :: {:ok, Trace.t()} | {:error, term}
+  @callback get_trace(tracer) :: {:ok, Trace.t()} | {:error, term}
   @callback put_trace(tracer, Trace.t()) :: {:ok, Trace.t()} | {:error, term}
-  @callback delete_trace(tracer) :: :ok | {:error, term}
+  @callback trace_active?(tracer) :: boolean
 end

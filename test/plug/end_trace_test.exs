@@ -24,7 +24,7 @@ defmodule Spandex.Plug.EndTraceTest do
 
       assert Tracer.current_trace_id() == tid
 
-      :ok = Tracer.finish_trace()
+      {:ok, _} = Tracer.finish_trace()
     end
 
     test "updates top span and finish span, when we trace request for 200", %{
