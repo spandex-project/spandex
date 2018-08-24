@@ -25,10 +25,8 @@ defmodule Spandex.Tracer do
   @callback update_top_span(opts) :: tagged_tuple(Span.t())
   @callback finish_trace(opts) :: tagged_tuple(Trace.t())
   @callback finish_span(opts) :: tagged_tuple(Span.t())
-  @callback span_error(error :: Exception.t(), stacktrace :: [term], opts) ::
-              tagged_tuple(Span.t())
-  @callback continue_trace(span_name, trace_id :: term, span_id :: term, opts) ::
-              tagged_tuple(Trace.t())
+  @callback span_error(error :: Exception.t(), stacktrace :: [term], opts) :: tagged_tuple(Span.t())
+  @callback continue_trace(span_name, trace_id :: term, span_id :: term, opts) :: tagged_tuple(Trace.t())
   @callback continue_trace_from_span(span_name, span :: term, opts) :: tagged_tuple(Trace.t())
   @callback current_trace_id(opts) :: nil | Spandex.id()
   @callback current_span_id(opts) :: nil | Spandex.id()
@@ -60,14 +58,11 @@ defmodule Spandex.Tracer do
                    tracer: "Don't set manually. This option is passed automatically.",
                    sender:
                      "Once a trace is complete, it is sent using this module. Defaults to the `default_sender/0` of the selected adapter",
-                   service:
-                     "The default service name to use for spans declared without a service",
+                   service: "The default service name to use for spans declared without a service",
                    disabled?: "Allows for wholesale disabling a tracer",
-                   env:
-                     "A name used to identify the environment name, e.g `prod` or `development`",
+                   env: "A name used to identify the environment name, e.g `prod` or `development`",
                    services: "A mapping of service name to the default span types.",
-                   strategy:
-                     "The storage and tracing strategy. Currently only supports local process dictionary."
+                   strategy: "The storage and tracing strategy. Currently only supports local process dictionary."
                  ]
                )
 

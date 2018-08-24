@@ -24,15 +24,13 @@ defmodule Spandex.Plug.AddContext do
                required: [:tracer],
                describe: [
                  tracer: "The tracing module to be used to start the trace.",
-                 tracer_opts:
-                   "Any opts to be passed to the tracer when starting or continuing the trace.",
+                 tracer_opts: "Any opts to be passed to the tracer when starting or continuing the trace.",
                  allowed_route_replacements:
                    "A list of route parts that may be replaced with their actual value. " <>
                      "If not set or set to nil, then all will be allowed, unless they are disallowed.",
                  disallowed_route_replacements:
                    "A list of route parts that may *not* be replaced with their actual value.",
-                 query_params:
-                   "A list of query params who's value will be included in the resource name."
+                 query_params: "A list of query params who's value will be included in the resource name."
                ]
              )
 

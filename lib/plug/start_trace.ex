@@ -25,11 +25,9 @@ defmodule Spandex.Plug.StartTrace do
                describe: [
                  ignored_methods:
                    "A list of strings representing methods to ignore. A good example would be `[\"OPTIONS\"]`",
-                 ignored_routes:
-                   "A list of strings or regexes. If it is a string, it must match exactly.",
+                 ignored_routes: "A list of strings or regexes. If it is a string, it must match exactly.",
                  tracer: "The tracing module to be used to start the trace.",
-                 tracer_opts:
-                   "Any opts to be passed to the tracer when starting or continuing the trace.",
+                 tracer_opts: "Any opts to be passed to the tracer when starting or continuing the trace.",
                  span_name: "The name to be used for the top level span."
                ]
              )
