@@ -5,7 +5,7 @@ otp_release:
   - 19.0
 script:
   - mix compile --warnings-as-errors
-  - mix test
+  - mix coveralls
 after_script:
   - mix deps.get
   - mix inch.report
