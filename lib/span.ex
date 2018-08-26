@@ -91,14 +91,9 @@ defmodule Spandex.Span do
           {:ok, Span.t()}
           | {:error, [Optimal.error()]}
   def new(opts) do
-    case Optimal.validate(opts, @span_opts) do
-      {:ok, opts} ->
-        span = Map.merge(%Span{}, Enum.into(opts, %{}))
-        {:ok, span}
-
-      {:error, errors} ->
-        {:error, errors}
-    end
+    %Span{}
+    |> Map.merge(Enum.into(opts, %{}))
+    |> update(opts, @span_opts)
   end
 
   @doc """
@@ -136,6 +131,9 @@ defmodule Spandex.Span do
   ]
   ```
   """
+  @spec update(Span.t(), Keyword.t(), Optimal.Schema.t()) ::
+          {:ok, Span.t()}
+          | {:error, [Optimal.error()]}
   def update(span, opts, schema \\ Map.put(@span_opts, :required, [])) do
     opts_without_nils = Enum.reject(opts, fn {_key, value} -> is_nil(value) end)
 

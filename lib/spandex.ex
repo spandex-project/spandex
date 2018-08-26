@@ -10,8 +10,8 @@ defmodule Spandex do
     Tracer
   }
 
-  @typedoc "Used for Span and Trace IDs"
-  @type id :: non_neg_integer()
+  @typedoc "Used for Span and Trace IDs (type defined by adapters)"
+  @type id :: term()
 
   @typedoc "Unix timestamp in nanoseconds"
   @type timestamp :: non_neg_integer()

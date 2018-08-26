@@ -4,7 +4,7 @@ defmodule Spandex.Mixfile do
   def project do
     [
       app: :spandex,
-      version: "2.1.0-dev",
+      version: "2.0.0",
       elixir: "~> 1.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
