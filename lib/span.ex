@@ -197,7 +197,7 @@ defmodule Spandex.Span do
     end)
   end
 
-  @spec validate_and_merge(t(), Keyword.t(), Optimal.schema()) ::
+  @spec validate_and_merge(Span.t(), Keyword.t(), Optimal.schema()) ::
           {:ok, Span.t()}
           | {:error, [Optimal.error()]}
   defp validate_and_merge(span, opts, schema) do

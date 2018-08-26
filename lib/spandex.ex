@@ -45,8 +45,12 @@ defmodule Spandex do
     strategy = opts[:strategy]
 
     case strategy.get_trace(opts[:tracer]) do
-      nil -> {:error, :no_trace_context}
-      trace -> do_start_span(name, trace, opts)
+      nil ->
+        Logger.error("Tried to start a span without an active trace.")
+        {:error, :no_trace_context}
+
+      trace ->
+        do_start_span(name, trace, opts)
     end
   end
 
@@ -54,6 +58,7 @@ defmodule Spandex do
           {:ok, Span.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
+          | {:error, :no_span_context}
           | {:error, [Optimal.error()]}
   def update_span(opts, top? \\ false)
   def update_span(:disabled, _), do: {:error, :disabled}
@@ -62,8 +67,16 @@ defmodule Spandex do
     strategy = opts[:strategy]
 
     case strategy.get_trace(opts[:tracer]) do
-      nil -> {:error, :no_trace_context}
-      trace -> do_update_span(trace, opts, top?)
+      nil ->
+        Logger.error("Tried to update a span without an active trace.")
+        {:error, :no_trace_context}
+
+      %Trace{stack: []} ->
+        Logger.error("Tried to update a span without an active span.")
+        {:error, :no_span_context}
+
+      trace ->
+        do_update_span(trace, opts, top?)
     end
   end
 
@@ -88,6 +101,7 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:tracer]) do
       nil ->
+        Logger.error("Tried to update a span without an active trace.")
         {:error, :no_trace_context}
 
       %Trace{stack: stack, spans: spans} = trace ->
@@ -110,6 +124,7 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:tracer]) do
       nil ->
+        Logger.error("Tried to finish a trace without an active trace.")
         {:error, :no_trace_context}
 
       %Trace{spans: spans, stack: stack} ->
@@ -134,9 +149,11 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:tracer]) do
       nil ->
+        Logger.error("Tried to finish a span without an active trace.")
         {:error, :no_trace_context}
 
       %Trace{stack: []} ->
+        Logger.error("Tried to finish a span without an active span.")
         {:error, :no_span_context}
 
       %Trace{stack: [span | tail], spans: spans} = trace ->
@@ -150,6 +167,7 @@ defmodule Spandex do
           {:ok, Span.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
+          | {:error, :no_span_context}
           | {:error, [Optimal.error()]}
   def span_error(_error, _stacktrace, :disabled), do: {:error, :disabled}
 
@@ -208,6 +226,7 @@ defmodule Spandex do
     opts = Keyword.put(opts, :parent_id, span_id)
 
     if strategy.get_trace(opts[:tracer]) do
+      Logger.error("Tried to continue a trace over top of another trace.")
       {:error, :trace_already_present}
     else
       do_continue_trace(name, trace_id, opts)
@@ -225,6 +244,7 @@ defmodule Spandex do
     strategy = opts[:strategy]
 
     if strategy.get_trace(opts[:tracer]) do
+      Logger.error("Tried to continue a trace over top of another trace.")
       {:error, :trace_already_present}
     else
       do_continue_trace_from_span(name, span, opts)
