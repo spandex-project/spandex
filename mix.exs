@@ -59,6 +59,7 @@ defmodule Spandex.Mixfile do
     [
       {:benchee, "~> 0.13.2", only: [:dev, :test]},
       {:credo, "~> 0.9.2", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:excoveralls, "~> 0.6", only: :test},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
