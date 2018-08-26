@@ -91,9 +91,7 @@ defmodule Spandex.Span do
           {:ok, Span.t()}
           | {:error, [Optimal.error()]}
   def new(opts) do
-    %Span{}
-    |> Map.merge(Enum.into(opts, %{}))
-    |> update(opts, @span_opts)
+    update(nil, opts, @span_opts)
   end
 
   @doc """
@@ -131,7 +129,7 @@ defmodule Spandex.Span do
   ]
   ```
   """
-  @spec update(Span.t(), Keyword.t(), Optimal.Schema.t()) ::
+  @spec update(Span.t() | nil, Keyword.t(), Optimal.Schema.t()) ::
           {:ok, Span.t()}
           | {:error, [Optimal.error()]}
   def update(span, opts, schema \\ Map.put(@span_opts, :required, [])) do
@@ -139,6 +137,7 @@ defmodule Spandex.Span do
 
     starting_opts =
       span
+      |> Kernel.||(%{})
       |> Map.take(schema.opts)
       |> Enum.reject(fn {_key, value} -> is_nil(value) end)
       |> merge_retaining_nested(opts_without_nils)
@@ -197,13 +196,20 @@ defmodule Spandex.Span do
     end)
   end
 
-  @spec validate_and_merge(Span.t(), Keyword.t(), Optimal.schema()) ::
+  @spec validate_and_merge(Span.t() | nil, Keyword.t(), Optimal.schema()) ::
           {:ok, Span.t()}
           | {:error, [Optimal.error()]}
   defp validate_and_merge(span, opts, schema) do
     case Optimal.validate(opts, schema) do
       {:ok, opts} ->
-        {:ok, struct(span, opts)}
+        new_span =
+          if span do
+            struct(span, opts)
+          else
+            struct(Span, opts)
+          end
+
+        {:ok, new_span}
 
       {:error, errors} ->
         {:error, errors}
