@@ -17,8 +17,7 @@ defmodule Spandex.Plug.EndTrace do
                required: [:tracer],
                describe: [
                  tracer: "The tracing module to be used to start the trace.",
-                 tracer_opts:
-                   "Any opts to be passed to the tracer when starting or continuing the trace."
+                 tracer_opts: "Any opts to be passed to the tracer when starting or continuing the trace."
                ]
              )
 

@@ -1,5 +1,6 @@
 defmodule Spandex.Plug.EndTraceTest do
   use ExUnit.Case
+  import ExUnit.CaptureLog
 
   alias Spandex.Plug.EndTrace
   alias Spandex.Plug.Utils
@@ -38,7 +39,12 @@ defmodule Spandex.Plug.EndTraceTest do
 
       assert is_nil(Tracer.current_trace_id())
 
-      {:error, :no_trace_context} = Tracer.finish_trace()
+      log =
+        capture_log(fn ->
+          assert {:error, :no_trace_context} = Tracer.finish_trace()
+        end)
+
+      assert String.contains?(log, "[error] Tried to finish a trace without an active trace.")
 
       %{trace_id: trace_id, http: http, error: error} = Spandex.Test.Util.find_span("request")
 
@@ -59,7 +65,12 @@ defmodule Spandex.Plug.EndTraceTest do
 
       assert is_nil(Tracer.current_trace_id())
 
-      {:error, :no_trace_context} = Tracer.finish_trace()
+      log =
+        capture_log(fn ->
+          assert {:error, :no_trace_context} = Tracer.finish_trace()
+        end)
+
+      assert String.contains?(log, "[error] Tried to finish a trace without an active trace.")
 
       %{trace_id: trace_id, http: http, error: error} = Spandex.Test.Util.find_span("request")
 
