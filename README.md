@@ -1,10 +1,10 @@
 # Spandex
 
-[![Build Status](https://travis-ci.org/zachdaniel/spandex.svg?branch=master)](https://travis-ci.org/zachdaniel/spandex)
-[![Inline docs](http://inch-ci.org/github/zachdaniel/spandex.svg)](http://inch-ci.org/github/zachdaniel/spandex)
-[![Coverage Status](https://coveralls.io/repos/github/zachdaniel/spandex/badge.svg)](https://coveralls.io/github/zachdaniel/spandex)
+[![Build Status](https://travis-ci.org/spandex-project/spandex.svg?branch=master)](https://travis-ci.org/spandex-project/spandex)
+[![Inline docs](http://inch-ci.org/github/spandex-project/spandex.svg)](http://inch-ci.org/github/spandex-project/spandex)
+[![Coverage Status](https://coveralls.io/repos/github/spandex-project/spandex/badge.svg)](https://coveralls.io/github/spandex-project/spandex)
 [![Hex pm](http://img.shields.io/hexpm/v/spandex.svg?style=flat)](https://hex.pm/packages/spandex)
-[![Ebert](https://ebertapp.io/github/zachdaniel/spandex.svg)](https://ebertapp.io/github/zachdaniel/spandex)
+[![Ebert](https://ebertapp.io/github/spandex-project/spandex.svg)](https://ebertapp.io/github/spandex-project/spandex)
 
 View the [documentation](https://hexdocs.pm/spandex)
 
@@ -19,7 +19,7 @@ This is datadog specific since thats the only adapter.
 
 ## Adapters
 
-* [Datadog](https://github.com/zachdaniel/spandex_datadog)
+* [Datadog](https://github.com/spandex-project/spandex_datadog)
 * Thats it so far! If you want another adapter it should be relatively easy to write! This library is in charge of handling the state management of spans, and the adapter is just in charge of generating certain values and ultimately sending the values to the service.
 
 ## Attention
