@@ -7,21 +7,30 @@ defmodule Spandex.Strategy.Pdict do
   @behaviour Spandex.Strategy
 
   @impl Spandex.Strategy
-  def get_trace(tracer) do
-    Process.get({:spandex_trace, tracer})
+  def trace_active?(trace_key) do
+    Process.get({:spandex_trace, trace_key})
   end
 
   @impl Spandex.Strategy
-  def put_trace(tracer, trace) do
-    Process.put({:spandex_trace, tracer}, trace)
+  def get_trace(trace_key) do
+    trace = Process.get({:spandex_trace, trace_key})
+
+    if trace do
+      {:ok, trace}
+    else
+      {:error, :no_trace_context}
+    end
+  end
+
+  @impl Spandex.Strategy
+  def put_trace(trace_key, trace) do
+    Process.put({:spandex_trace, trace_key}, trace)
 
     {:ok, trace}
   end
 
   @impl Spandex.Strategy
-  def delete_trace(tracer) do
-    Process.delete({:spandex_trace, tracer})
-
-    :ok
+  def delete_trace(trace_key) do
+    {:ok, Process.delete({:spandex_trace, trace_key})}
   end
 end

@@ -92,7 +92,9 @@ defmodule Spandex.Test.SpandexTest do
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
+
       assert {:error, validation_errors} = Spandex.start_span("span_name", @base_opts ++ [type: "not an atom"])
+
       assert {:type, "must be of type :atom"} in validation_errors
     end
   end
@@ -148,7 +150,9 @@ defmodule Spandex.Test.SpandexTest do
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
+
       assert {:error, validation_errors} = Spandex.update_span(@base_opts ++ [type: "not an atom"])
+
       assert {:type, "must be of type :atom"} in validation_errors
     end
   end
@@ -222,7 +226,9 @@ defmodule Spandex.Test.SpandexTest do
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
+
       assert {:error, validation_errors} = Spandex.update_top_span(@base_opts ++ [type: "not an atom"])
+
       assert {:type, "must be of type :atom"} in validation_errors
     end
   end
@@ -239,6 +245,7 @@ defmodule Spandex.Test.SpandexTest do
       assert %Span{id: ^span_id, service: :updated_service} = Spandex.current_span(@base_opts)
 
       Spandex.finish_span(@base_opts)
+
       assert %Span{id: ^root_span_id, service: :updated_service} = Spandex.current_span(@base_opts)
     end
 
@@ -262,7 +269,9 @@ defmodule Spandex.Test.SpandexTest do
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
+
       assert {:error, validation_errors} = Spandex.update_all_spans(@base_opts ++ [type: "not an atom"])
+
       assert {:type, "must be of type :atom"} in validation_errors
     end
   end
@@ -274,7 +283,7 @@ defmodule Spandex.Test.SpandexTest do
       assert %Span{id: root_span_id} = Spandex.current_span(@base_opts)
       assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", opts)
 
-      assert :ok = Spandex.finish_trace(@base_opts)
+      assert {:ok, _} = Spandex.finish_trace(@base_opts)
       spans = Util.sent_spans()
       assert length(spans) == 2
       assert Enum.any?(spans, fn span -> span.id == root_span_id end)
@@ -290,7 +299,7 @@ defmodule Spandex.Test.SpandexTest do
       assert %Span{id: root_span_id} = Spandex.current_span(@base_opts)
       assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", opts)
 
-      assert :ok == Spandex.finish_trace(@base_opts ++ [sender: PdictSender])
+      assert {:ok, _} = Spandex.finish_trace(@base_opts ++ [sender: PdictSender])
       spans = Process.get(:spans)
       assert length(spans) == 2
       assert Enum.any?(spans, fn span -> span.id == root_span_id end)
@@ -306,7 +315,7 @@ defmodule Spandex.Test.SpandexTest do
       assert %Span{id: root_span_id} = Spandex.current_span(@base_opts)
       assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", opts)
 
-      assert :ok = Spandex.finish_trace(@base_opts)
+      assert {:ok, _} = Spandex.finish_trace(@base_opts)
       spans = Util.sent_spans()
       assert length(spans) == 2
       assert Enum.all?(spans, fn span -> span.completion_time != nil end)
@@ -316,13 +325,17 @@ defmodule Spandex.Test.SpandexTest do
       now = :os.system_time(:nano_seconds)
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
+
       assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", opts ++ [start: now - 10])
+
       assert {:ok, %Span{id: ^span_id}} = Spandex.update_span(@base_opts ++ [completion_time: now - 9])
+
       assert {:ok, %Span{id: ^span_id}} = Spandex.finish_span(@base_opts)
 
-      assert :ok = Spandex.finish_trace(@base_opts)
+      assert {:ok, _} = Spandex.finish_trace(@base_opts)
       spans = Util.sent_spans()
       assert length(spans) == 2
+
       assert Enum.any?(spans, fn span -> span.id == span_id && span.completion_time == now - 9 end)
     end
 
@@ -344,7 +357,9 @@ defmodule Spandex.Test.SpandexTest do
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
+
       assert {:error, validation_errors} = Spandex.finish_trace(@base_opts ++ [type: "not an atom"])
+
       assert {:type, "must be of type :atom"} in validation_errors
     end
   end
@@ -411,7 +426,9 @@ defmodule Spandex.Test.SpandexTest do
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
+
       assert {:error, validation_errors} = Spandex.finish_span(@base_opts ++ [type: "not an atom"])
+
       assert {:type, "must be of type :atom"} in validation_errors
     end
   end
@@ -461,7 +478,11 @@ defmodule Spandex.Test.SpandexTest do
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
 
       assert {:error, validation_errors} =
-               Spandex.span_error(@runtime_error, @fake_stacktrace, @base_opts ++ [type: "not an atom"])
+               Spandex.span_error(
+                 @runtime_error,
+                 @fake_stacktrace,
+                 @base_opts ++ [type: "not an atom"]
+               )
 
       assert {:type, "must be of type :atom"} in validation_errors
     end
@@ -565,7 +586,9 @@ defmodule Spandex.Test.SpandexTest do
   describe "Spandex.continue_trace_from_span/3" do
     test "returns a new trace based on a specified name and existing span" do
       existing_span = %Span{id: 456, trace_id: 123, name: "existing"}
+
       assert {:ok, %Trace{id: trace_id}} = Spandex.continue_trace_from_span("root_span", existing_span, @base_opts)
+
       assert trace_id != 123
       assert %Span{parent_id: 456, name: "root_span"} = Spandex.current_span(@base_opts)
     end
@@ -586,6 +609,7 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if tracing is disabled" do
       existing_span = %Span{id: 456, trace_id: 123, name: "existing"}
+
       assert {:error, :disabled} == Spandex.continue_trace_from_span("root_span", existing_span, :disabled)
     end
 
@@ -593,7 +617,11 @@ defmodule Spandex.Test.SpandexTest do
       existing_span = %Span{id: 456, trace_id: 123, name: "existing"}
 
       assert {:error, validation_errors} =
-               Spandex.continue_trace_from_span("span_name", existing_span, @base_opts ++ [type: "not an atom"])
+               Spandex.continue_trace_from_span(
+                 "span_name",
+                 existing_span,
+                 @base_opts ++ [type: "not an atom"]
+               )
 
       assert {:type, "must be of type :atom"} in validation_errors
     end

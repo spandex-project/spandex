@@ -44,7 +44,7 @@ defmodule Spandex.Tracer do
                    services: {:keyword, :atom},
                    strategy: :atom,
                    sender: :atom,
-                   tracer: :atom
+                   trace_key: :atom
                  ],
                  required: [:adapter, :service],
                  defaults: [
@@ -55,7 +55,7 @@ defmodule Spandex.Tracer do
                  ],
                  describe: [
                    adapter: "The third party adapter to use",
-                   tracer: "Don't set manually. This option is passed automatically.",
+                   trace_key: "Don't set manually. This option is passed automatically.",
                    sender:
                      "Once a trace is complete, it is sent using this module. Defaults to the `default_sender/0` of the selected adapter",
                    service: "The default service name to use for spans declared without a service",
@@ -115,16 +115,16 @@ defmodule Spandex.Tracer do
           opts = unquote(opts)
 
           name = unquote(name)
-          _ = unquote(__MODULE__).start_trace(name, opts)
+          unquote(__MODULE__).start_trace(name, opts)
           span_id = unquote(__MODULE__).current_span_id()
-          _ = Logger.metadata(span_id: span_id)
+          Logger.metadata(span_id: span_id)
 
           try do
             unquote(body)
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
+              unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_trace()
@@ -137,16 +137,16 @@ defmodule Spandex.Tracer do
         quote do
           opts = unquote(opts)
           name = unquote(name)
-          _ = unquote(__MODULE__).start_span(name, opts)
+          unquote(__MODULE__).start_span(name, opts)
           span_id = unquote(__MODULE__).current_span_id()
-          _ = Logger.metadata(span_id: span_id)
+          Logger.metadata(span_id: span_id)
 
           try do
             unquote(body)
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
+              unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_span()
@@ -229,7 +229,7 @@ defmodule Spandex.Tracer do
         |> Kernel.||([])
         |> Keyword.merge(opts || [])
         |> Optimal.validate!(@opts)
-        |> Keyword.put(:tracer, __MODULE__)
+        |> Keyword.put(:trace_key, __MODULE__)
       end
 
       defp config(opts, otp_app) do
@@ -255,7 +255,7 @@ defmodule Spandex.Tracer do
 
           opts
           |> Optimal.validate!(schema)
-          |> Keyword.put(:tracer, __MODULE__)
+          |> Keyword.put(:trace_key, __MODULE__)
           |> Keyword.put(:strategy, env[:strategy] || Spandex.Strategy.Pdict)
         end
       end
