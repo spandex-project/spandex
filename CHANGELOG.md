@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - No unreleased changes currently.
 
+## [2.1.0]
+It is recommended to reread the README, to see the upgrade guide and understand the changes.
+
+### Added
+- Massive changes, including separating adapters into their own repositories
+
+### Changed
+- Many interface changes, specifically around return values
+
+### Removed
+- Adapters now exist in their own repositories
+
 ## [1.6.1] - 2018-06-04
 ### Added
 - `private` key, when updating spans, for non-inheriting meta
