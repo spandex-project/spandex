@@ -12,7 +12,9 @@ defmodule Spandex.Test.Util do
   end
 
   def find_span(fun) when is_function(fun) do
-    Enum.find(sent_spans(), fun)
+    sent_spans()
+    |> elem(0)
+    |> Enum.find(fun)
   end
 
   def find_span(name, index) when is_bitstring(name) do
@@ -21,15 +23,16 @@ defmodule Spandex.Test.Util do
 
   def find_span(fun, index) when is_function(fun) do
     sent_spans()
+    |> elem(0)
     |> Enum.filter(fun)
     |> Enum.at(index)
   end
 
   def sent_spans() do
     receive do
-      {:sent_spans, spans} ->
-        send(self(), {:sent_spans, spans})
-        spans
+      {:sent_spans, spans, opts} ->
+        send(self(), {:sent_spans, spans, opts})
+        {spans, opts}
     after
       5000 ->
         raise "No spans sent"

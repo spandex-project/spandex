@@ -11,8 +11,9 @@ defmodule Spandex.Test.SpandexTest do
   }
 
   defmodule PdictSender do
-    def send_spans(spans) do
-      Process.put(:spans, spans)
+    def send_spans(spans, opts \\ []) do
+      span_context = Keyword.get(opts, :span_context)
+      Process.put(:spans, {spans, span_context})
     end
   end
 
@@ -285,7 +286,7 @@ defmodule Spandex.Test.SpandexTest do
       assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", opts)
 
       assert {:ok, _} = Spandex.finish_trace(@base_opts)
-      spans = Util.sent_spans()
+      {spans, _span_context} = Util.sent_spans()
       assert length(spans) == 2
       assert Enum.any?(spans, fn span -> span.id == root_span_id end)
       assert Enum.any?(spans, fn span -> span.id == span_id end)
@@ -301,7 +302,8 @@ defmodule Spandex.Test.SpandexTest do
       assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", opts)
 
       assert {:ok, _} = Spandex.finish_trace(@base_opts ++ [sender: PdictSender])
-      spans = Process.get(:spans)
+      {spans, span_context} = Process.get(:spans)
+      assert %SpanContext{} = span_context
       assert length(spans) == 2
       assert Enum.any?(spans, fn span -> span.id == root_span_id end)
       assert Enum.any?(spans, fn span -> span.id == span_id end)
@@ -317,7 +319,7 @@ defmodule Spandex.Test.SpandexTest do
       assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", opts)
 
       assert {:ok, _} = Spandex.finish_trace(@base_opts)
-      spans = Util.sent_spans()
+      {spans, _span_context} = Util.sent_spans()
       assert length(spans) == 2
       assert Enum.all?(spans, fn span -> span.completion_time != nil end)
     end
@@ -334,7 +336,7 @@ defmodule Spandex.Test.SpandexTest do
       assert {:ok, %Span{id: ^span_id}} = Spandex.finish_span(@base_opts)
 
       assert {:ok, _} = Spandex.finish_trace(@base_opts)
-      spans = Util.sent_spans()
+      {spans, _span_context} = Util.sent_spans()
       assert length(spans) == 2
 
       assert Enum.any?(spans, fn span -> span.id == span_id && span.completion_time == now - 9 end)
