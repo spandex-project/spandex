@@ -44,7 +44,7 @@ defmodule Spandex.Tracer do
                    services: {:keyword, :atom},
                    strategy: :atom,
                    sender: :atom,
-                   tracer: :atom
+                   trace_key: :atom
                  ],
                  required: [:adapter, :service],
                  defaults: [
@@ -55,7 +55,7 @@ defmodule Spandex.Tracer do
                  ],
                  describe: [
                    adapter: "The third party adapter to use",
-                   tracer: "Don't set manually. This option is passed automatically.",
+                   trace_key: "Don't set manually. This option is passed automatically.",
                    sender:
                      "Once a trace is complete, it is sent using this module. Defaults to the `default_sender/0` of the selected adapter",
                    service: "The default service name to use for spans declared without a service",
