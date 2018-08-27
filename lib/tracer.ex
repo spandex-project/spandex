@@ -102,7 +102,7 @@ defmodule Spandex.Tracer do
       def configure(opts) do
         case config(opts, @otp_app) do
           :disabled ->
-            :ok
+            Application.put_env(@otp_app, __MODULE__, merge_config(opts, @otp_app))
 
           config ->
             Application.put_env(@otp_app, __MODULE__, config)
@@ -223,14 +223,17 @@ defmodule Spandex.Tracer do
         Spandex.distributed_context(conn, config(opts, @otp_app))
       end
 
+      defp merge_config(opts, otp_app) do
+        otp_app
+        |> Application.get_env(__MODULE__)
+        |> Kernel.||([])
+        |> Keyword.merge(opts || [])
+        |> Optimal.validate!(@opts)
+        |> Keyword.put(:tracer, __MODULE__)
+      end
+
       defp config(opts, otp_app) do
-        config =
-          otp_app
-          |> Application.get_env(__MODULE__)
-          |> Kernel.||([])
-          |> Keyword.merge(opts || [])
-          |> Optimal.validate!(@opts)
-          |> Keyword.put(:tracer, __MODULE__)
+        config = merge_config(opts, otp_app)
 
         if config[:disabled?] do
           :disabled
@@ -242,7 +245,7 @@ defmodule Spandex.Tracer do
       defp validate_update_config(opts, otp_app) do
         env = Application.get_env(otp_app, __MODULE__)
 
-        if env[:disabled] do
+        if env[:disabled?] do
           :disabled
         else
           schema = %{@opts | defaults: [], required: []}
