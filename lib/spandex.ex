@@ -47,7 +47,6 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:error, :no_trace_context} = error ->
-        Logger.error("Tried to start a span without an active trace.")
         error
 
       {:error, _} = error ->
@@ -72,11 +71,9 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:error, :no_trace_context} = error ->
-        Logger.error("Tried to update a span without an active trace.")
         error
 
       {:ok, %Trace{stack: []}} ->
-        Logger.error("Tried to update a span without an active span.")
         {:error, :no_span_context}
 
       {:ok, trace} ->
@@ -108,7 +105,6 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:error, :no_trace_context} = error ->
-        Logger.error("Tried to update a span without an active trace.")
         error
 
       {:ok, %Trace{stack: stack, spans: spans} = trace} ->
@@ -164,7 +160,6 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:error, :no_trace_context} = error ->
-        Logger.error("Tried to finish a span without an active trace.")
         error
 
       {:ok, %Trace{stack: []}} ->

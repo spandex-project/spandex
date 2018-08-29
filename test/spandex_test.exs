@@ -71,13 +71,7 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if there is not a trace in progress" do
       opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.start_span("orphan_span", opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to start a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.start_span("orphan_span", opts)
     end
 
     test "returns an error if tracing is disabled" do
@@ -119,14 +113,7 @@ defmodule Spandex.Test.SpandexTest do
     end
 
     test "returns an error if there is not a trace in progress" do
-      opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.update_span(opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.update_span(@base_opts ++ @span_opts)
     end
 
     test "returns an error if there is not a span in progress" do
@@ -134,13 +121,7 @@ defmodule Spandex.Test.SpandexTest do
       assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
       assert %Span{id: root_span_id} = Spandex.current_span(@base_opts)
       assert {:ok, %Span{id: ^root_span_id}} = Spandex.finish_span(@base_opts)
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_span_context} = Spandex.update_span(opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active span.")
+      assert {:error, :no_span_context} = Spandex.update_span(opts)
     end
 
     test "returns an error if tracing is disabled" do
@@ -210,13 +191,7 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if there is not a trace in progress" do
       opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.update_top_span(opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.update_top_span(opts)
     end
 
     test "returns an error if tracing is disabled" do
@@ -253,13 +228,7 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if there is not a trace in progress" do
       opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.update_all_spans(opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.update_all_spans(opts)
     end
 
     test "returns an error if tracing is disabled" do
@@ -398,12 +367,7 @@ defmodule Spandex.Test.SpandexTest do
     end
 
     test "returns an error if there is not a trace in progress" do
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.finish_span(@base_opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to finish a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.finish_span(@base_opts)
     end
 
     test "returns an error if there is not a span in progress" do
@@ -448,26 +412,14 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if there is not a trace in progress" do
       opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, opts)
     end
 
     test "returns an error if there is not a span in progress" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
       assert {:ok, %Span{}} = Spandex.finish_span(@base_opts)
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_span_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, @base_opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active span.")
+      assert {:error, :no_span_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, @base_opts)
     end
 
     test "returns an error if tracing is disabled" do
