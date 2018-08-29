@@ -6,6 +6,7 @@ defmodule Spandex.Plug.StartTrace do
   @behaviour Plug
 
   alias Spandex.Plug.Utils
+  alias Spandex.SpanContext
 
   @init_opts Optimal.schema(
                opts: [
@@ -55,14 +56,12 @@ defmodule Spandex.Plug.StartTrace do
     tracer_opts = opts[:tracer_opts]
 
     case tracer.distributed_context(conn, tracer_opts) do
-      {:ok, %{trace_id: trace_id, parent_id: parent_id}} ->
-        tracer.continue_trace("request", trace_id, parent_id, tracer_opts)
-
+      {:ok, %SpanContext{} = span_context} ->
+        tracer.continue_trace("request", span_context, tracer_opts)
         Utils.trace(conn, true)
 
       {:error, :no_distributed_trace} ->
         tracer.start_trace(opts[:span_name], tracer_opts)
-
         Utils.trace(conn, true)
 
       _ ->

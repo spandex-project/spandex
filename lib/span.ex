@@ -51,9 +51,9 @@ defmodule Spandex.Span do
                  env: :string,
                  error: :keyword,
                  http: :keyword,
-                 id: :integer,
+                 id: :any,
                  name: :string,
-                 parent_id: :integer,
+                 parent_id: :any,
                  private: :keyword,
                  resource: [:atom, :string],
                  service: :atom,
@@ -61,7 +61,7 @@ defmodule Spandex.Span do
                  sql_query: :keyword,
                  start: :integer,
                  tags: :keyword,
-                 trace_id: :integer,
+                 trace_id: :any,
                  type: :atom
                ],
                defaults: [

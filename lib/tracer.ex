@@ -11,10 +11,13 @@ defmodule Spandex.Tracer do
   ```
   """
 
-  alias Spandex.Trace
-  alias Spandex.Span
+  alias Spandex.{
+    Span,
+    SpanContext,
+    Trace
+  }
 
-  @type tagged_tuple(arg) :: {:ok, arg} | {:error, term}
+  @type tagged_tuple(arg) :: {:ok, arg} | {:error, term()}
   @type span_name() :: String.t()
   @type opts :: Keyword.t() | :disabled
 
@@ -26,7 +29,7 @@ defmodule Spandex.Tracer do
   @callback finish_trace(opts) :: tagged_tuple(Trace.t())
   @callback finish_span(opts) :: tagged_tuple(Span.t())
   @callback span_error(error :: Exception.t(), stacktrace :: [term], opts) :: tagged_tuple(Span.t())
-  @callback continue_trace(span_name, trace_id :: term, span_id :: term, opts) :: tagged_tuple(Trace.t())
+  @callback continue_trace(span_name :: String.t(), trace_context :: SpanContext.t(), opts) :: tagged_tuple(Trace.t())
   @callback continue_trace_from_span(span_name, span :: term, opts) :: tagged_tuple(Trace.t())
   @callback current_trace_id(opts) :: nil | Spandex.id()
   @callback current_span_id(opts) :: nil | Spandex.id()
@@ -193,8 +196,8 @@ defmodule Spandex.Tracer do
       end
 
       @impl Spandex.Tracer
-      def continue_trace(span_name, trace_id, span_id, opts \\ []) do
-        Spandex.continue_trace(span_name, trace_id, span_id, config(opts, @otp_app))
+      def continue_trace(span_name, span_context, opts \\ []) do
+        Spandex.continue_trace(span_name, span_context, config(opts, @otp_app))
       end
 
       @impl Spandex.Tracer

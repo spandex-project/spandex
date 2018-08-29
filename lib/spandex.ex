@@ -6,6 +6,7 @@ defmodule Spandex do
 
   alias Spandex.{
     Span,
+    SpanContext,
     Trace,
     Tracer
   }
@@ -46,7 +47,6 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:error, :no_trace_context} = error ->
-        Logger.error("Tried to start a span without an active trace.")
         error
 
       {:error, _} = error ->
@@ -71,11 +71,9 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:error, :no_trace_context} = error ->
-        Logger.error("Tried to update a span without an active trace.")
         error
 
       {:ok, %Trace{stack: []}} ->
-        Logger.error("Tried to update a span without an active span.")
         {:error, :no_span_context}
 
       {:ok, trace} ->
@@ -107,7 +105,6 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:error, :no_trace_context} = error ->
-        Logger.error("Tried to update a span without an active trace.")
         error
 
       {:ok, %Trace{stack: stack, spans: spans} = trace} ->
@@ -136,10 +133,11 @@ defmodule Spandex do
         Logger.error("Tried to finish a trace without an active trace.")
         error
 
-      {:ok, %Trace{spans: spans, stack: stack}} ->
+      {:ok, %Trace{spans: spans, stack: stack} = trace} ->
         unfinished_spans = Enum.map(stack, &ensure_completion_time_set(&1, adapter))
         sender = opts[:sender] || adapter.default_sender()
-        sender.send_spans(spans ++ unfinished_spans)
+        # TODO: We need to define a behaviour for the Sender API.
+        sender.send_trace(%Trace{trace | spans: spans ++ unfinished_spans, stack: []})
         strategy.delete_trace(opts[:trace_key])
 
       {:error, _} = error ->
@@ -161,7 +159,6 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:error, :no_trace_context} = error ->
-        Logger.error("Tried to finish a span without an active trace.")
         error
 
       {:ok, %Trace{stack: []}} ->
@@ -244,23 +241,34 @@ defmodule Spandex do
     end
   end
 
-  @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Keyword.t()) ::
+  @spec continue_trace(String.t(), SpanContext.t(), Keyword.t()) ::
           {:ok, %Trace{}}
           | {:error, :disabled}
           | {:error, :trace_already_present}
           | {:error, [Optimal.error()]}
-  def continue_trace(_, _, _, :disabled), do: {:error, :disabled}
+  def continue_trace(_, _, :disabled), do: {:error, :disabled}
 
-  def continue_trace(name, trace_id, span_id, opts) do
+  def continue_trace(name, %SpanContext{} = span_context, opts) do
     strategy = opts[:strategy]
-    opts = Keyword.put(opts, :parent_id, span_id)
 
     if strategy.trace_active?(opts[:trace_key]) do
       Logger.error("Tried to continue a trace over top of another trace.")
       {:error, :trace_already_present}
     else
-      do_continue_trace(name, trace_id, opts)
+      do_continue_trace(name, span_context, opts)
     end
+  end
+
+  @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Keyword.t()) ::
+          {:ok, %Trace{}}
+          | {:error, :disabled}
+          | {:error, :trace_already_present}
+          | {:error, [Optimal.error()]}
+  @deprecated "Use continue_trace/3 instead"
+  def continue_trace(_, _, _, :disabled), do: {:error, :disabled}
+
+  def continue_trace(name, trace_id, span_id, opts) do
+    continue_trace(name, %SpanContext{trace_id: trace_id, parent_id: span_id}, opts)
   end
 
   @spec continue_trace_from_span(String.t(), Span.t(), Tracer.opts()) ::
@@ -294,12 +302,19 @@ defmodule Spandex do
 
   # Private Helpers
 
-  defp do_continue_trace(name, trace_id, opts) do
+  defp do_continue_trace(name, span_context, opts) do
     strategy = opts[:strategy]
     adapter = opts[:adapter]
 
-    with {:ok, top_span} <- span(name, opts, trace_id, adapter) do
-      trace = %Trace{id: trace_id, stack: [top_span], spans: []}
+    with {:ok, top_span} <- span(name, opts, span_context, adapter) do
+      trace = %Trace{
+        id: span_context.trace_id,
+        priority: span_context.priority,
+        baggage: span_context.baggage,
+        stack: [top_span],
+        spans: []
+      }
+
       strategy.put_trace(opts[:trace_key], trace)
     end
   end
@@ -328,8 +343,9 @@ defmodule Spandex do
   defp do_start_span(name, %Trace{stack: [], id: trace_id} = trace, opts) do
     strategy = opts[:strategy]
     adapter = opts[:adapter]
+    span_context = %SpanContext{trace_id: trace_id}
 
-    with {:ok, span} <- span(name, opts, trace_id, adapter),
+    with {:ok, span} <- span(name, opts, span_context, adapter),
          {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: [span]}) do
       Logger.metadata(span_id: span.id)
       {:ok, span}
@@ -340,8 +356,9 @@ defmodule Spandex do
     strategy = opts[:strategy]
     adapter = opts[:adapter]
     trace_id = adapter.trace_id()
+    span_context = %SpanContext{trace_id: trace_id}
 
-    with {:ok, span} <- span(name, opts, trace_id, adapter) do
+    with {:ok, span} <- span(name, opts, span_context, adapter) do
       Logger.metadata(trace_id: trace_id, span_id: span.id)
       trace = %Trace{spans: [], stack: [span], id: trace_id}
       strategy.put_trace(opts[:trace_key], trace)
@@ -373,10 +390,11 @@ defmodule Spandex do
 
   defp ensure_completion_time_set(%Span{} = span, _adapter), do: span
 
-  defp span(name, opts, trace_id, adapter) do
+  defp span(name, opts, span_context, adapter) do
     opts
     |> Keyword.put_new(:name, name)
-    |> Keyword.put(:trace_id, trace_id)
+    |> Keyword.put(:trace_id, span_context.trace_id)
+    |> Keyword.put(:parent_id, span_context.parent_id)
     |> Keyword.put(:start, adapter.now())
     |> Keyword.put(:id, adapter.span_id())
     |> Span.new()

@@ -25,13 +25,13 @@ defmodule Spandex.Test.Util do
     |> Enum.at(index)
   end
 
-  def sent_spans() do
+  def sent_spans(timeout \\ 500) do
     receive do
-      {:sent_spans, spans} ->
-        send(self(), {:sent_spans, spans})
-        spans
+      {:sent_trace, trace} ->
+        send(self(), {:sent_trace, trace})
+        trace.spans
     after
-      5000 ->
+      timeout ->
         raise "No spans sent"
     end
   end

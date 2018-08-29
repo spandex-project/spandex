@@ -6,12 +6,13 @@ defmodule Spandex.Test.SpandexTest do
 
   alias Spandex.{
     Span,
+    SpanContext,
     Trace
   }
 
   defmodule PdictSender do
-    def send_spans(spans) do
-      Process.put(:spans, spans)
+    def send_trace(trace, _opts \\ []) do
+      Process.put(:trace, trace)
     end
   end
 
@@ -69,13 +70,7 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if there is not a trace in progress" do
       opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.start_span("orphan_span", opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to start a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.start_span("orphan_span", opts)
     end
 
     test "returns an error if tracing is disabled" do
@@ -117,14 +112,7 @@ defmodule Spandex.Test.SpandexTest do
     end
 
     test "returns an error if there is not a trace in progress" do
-      opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.update_span(opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.update_span(@base_opts ++ @span_opts)
     end
 
     test "returns an error if there is not a span in progress" do
@@ -132,13 +120,7 @@ defmodule Spandex.Test.SpandexTest do
       assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
       assert %Span{id: root_span_id} = Spandex.current_span(@base_opts)
       assert {:ok, %Span{id: ^root_span_id}} = Spandex.finish_span(@base_opts)
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_span_context} = Spandex.update_span(opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active span.")
+      assert {:error, :no_span_context} = Spandex.update_span(opts)
     end
 
     test "returns an error if tracing is disabled" do
@@ -208,13 +190,7 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if there is not a trace in progress" do
       opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.update_top_span(opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.update_top_span(opts)
     end
 
     test "returns an error if tracing is disabled" do
@@ -251,13 +227,7 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if there is not a trace in progress" do
       opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.update_all_spans(opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.update_all_spans(opts)
     end
 
     test "returns an error if tracing is disabled" do
@@ -300,7 +270,7 @@ defmodule Spandex.Test.SpandexTest do
       assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", opts)
 
       assert {:ok, _} = Spandex.finish_trace(@base_opts ++ [sender: PdictSender])
-      spans = Process.get(:spans)
+      %Trace{spans: spans} = Process.get(:trace)
       assert length(spans) == 2
       assert Enum.any?(spans, fn span -> span.id == root_span_id end)
       assert Enum.any?(spans, fn span -> span.id == span_id end)
@@ -395,12 +365,7 @@ defmodule Spandex.Test.SpandexTest do
     end
 
     test "returns an error if there is not a trace in progress" do
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.finish_span(@base_opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to finish a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.finish_span(@base_opts)
     end
 
     test "returns an error if there is not a span in progress" do
@@ -445,26 +410,14 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if there is not a trace in progress" do
       opts = @base_opts ++ @span_opts
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_trace_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active trace.")
+      assert {:error, :no_trace_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, opts)
     end
 
     test "returns an error if there is not a span in progress" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
       assert {:ok, %Span{}} = Spandex.finish_span(@base_opts)
-
-      log =
-        capture_log(fn ->
-          assert {:error, :no_span_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, @base_opts)
-        end)
-
-      assert String.contains?(log, "[error] Tried to update a span without an active span.")
+      assert {:error, :no_span_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, @base_opts)
     end
 
     test "returns an error if tracing is disabled" do
@@ -552,7 +505,42 @@ defmodule Spandex.Test.SpandexTest do
     end
   end
 
-  describe "Spandex.continue_trace/4" do
+  describe "Spandex.continue_trace/3" do
+    test "starts a new child span in an existing trace based on a specified name, trace ID and parent span ID" do
+      opts = @base_opts ++ @span_opts
+      span_context = %SpanContext{trace_id: 123, parent_id: 456}
+      assert {:ok, %Trace{id: 123}} = Spandex.continue_trace("root_span", span_context, opts)
+      assert %Span{parent_id: 456, name: "root_span"} = Spandex.current_span(@base_opts)
+    end
+
+    test "returns an error if there is already a trace in progress" do
+      opts = @base_opts ++ @span_opts
+      assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
+
+      log =
+        capture_log(fn ->
+          span_context = %SpanContext{trace_id: 123, parent_id: 456}
+          assert {:error, :trace_already_present} = Spandex.continue_trace("span_name", span_context, opts)
+        end)
+
+      assert String.contains?(log, "[error] Tried to continue a trace over top of another trace.")
+    end
+
+    test "returns an error if tracing is disabled" do
+      span_context = %SpanContext{trace_id: 123, parent_id: 456}
+      assert {:error, :disabled} == Spandex.continue_trace("span_name", span_context, :disabled)
+    end
+
+    test "returns an error if invalid options are specified" do
+      opts = @base_opts ++ [type: "not an atom"]
+      span_context = %SpanContext{trace_id: 123, parent_id: 456}
+      assert {:error, validation_errors} = Spandex.continue_trace("span_name", span_context, opts)
+
+      assert {:type, "must be of type :atom"} in validation_errors
+    end
+  end
+
+  describe "Spandex.continue_trace/4 (DEPRECATED)" do
     test "starts a new child span in an existing trace based on a specified name, trace ID and parent span ID" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: 123}} = Spandex.continue_trace("root_span", 123, 456, opts)
