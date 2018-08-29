@@ -133,12 +133,11 @@ defmodule Spandex do
         Logger.error("Tried to finish a trace without an active trace.")
         error
 
-      {:ok, %Trace{id: trace_id, spans: spans, stack: stack, priority: priority, baggage: baggage}} ->
+      {:ok, %Trace{spans: spans, stack: stack} = trace} ->
         unfinished_spans = Enum.map(stack, &ensure_completion_time_set(&1, adapter))
         sender = opts[:sender] || adapter.default_sender()
-        span_context = %SpanContext{trace_id: trace_id, priority: priority, baggage: baggage}
         # TODO: We need to define a behaviour for the Sender API.
-        sender.send_spans(spans ++ unfinished_spans, span_context: span_context)
+        sender.send_trace(%Trace{trace | spans: spans ++ unfinished_spans, stack: []})
         strategy.delete_trace(opts[:trace_key])
 
       {:error, _} = error ->
