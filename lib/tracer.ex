@@ -49,7 +49,6 @@ defmodule Spandex.Tracer do
                  required: [:adapter, :service],
                  defaults: [
                    disabled?: false,
-                   env: "unknown",
                    services: [],
                    strategy: Spandex.Strategy.Pdict
                  ],

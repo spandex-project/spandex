@@ -70,7 +70,6 @@ defmodule Spandex.Span do
                  tags: []
                ],
                required: [
-                 :env,
                  :id,
                  :name,
                  :service,
