@@ -196,8 +196,19 @@ defmodule Spandex.Tracer do
       end
 
       @impl Spandex.Tracer
-      def continue_trace(span_name, span_context, opts \\ []) do
+      def continue_trace(span_name, span_context, opts \\ [])
+      def continue_trace(span_name, %SpanContext{} = span_context, opts) do
         Spandex.continue_trace(span_name, span_context, config(opts, @otp_app))
+      end
+
+      # This is just to get around the ambiguous defaults until we fully remove this API
+      def continue_trace(span_name, trace_id, span_id) do
+        continue_trace(span_name, trace_id, span_id, [])
+      end
+
+      @deprecated "please use continue_trace/3 instead."
+      def continue_trace(span_name, trace_id, span_id, opts) do
+        continue_trace(span_name, %SpanContext{trace_id: trace_id, parent_id: span_id}, opts)
       end
 
       @impl Spandex.Tracer
