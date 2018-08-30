@@ -4,7 +4,7 @@ defmodule Spandex.Mixfile do
   def project do
     [
       app: :spandex,
-      version: "2.1.0",
+      version: "2.2.0",
       elixir: "~> 1.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
@@ -36,7 +36,7 @@ defmodule Spandex.Mixfile do
     # These are the default files included in the package
     [
       name: :spandex,
-      maintainers: ["Zachary Daniel", "Andrew Summers"],
+      maintainers: ["Zachary Daniel", "Andrew Summers", "Greg Mefford"],
       licenses: ["MIT License"],
       links: %{"GitHub" => "https://github.com/zachdaniel/spandex"}
     ]
