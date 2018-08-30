@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - No unreleased changes currently.
 
+## [2.2.0]
+
+### Added
+- The `Spandex.Trace` struct now includes `priority` and `baggage` fields, to
+  support priority sampling of distributed traces and trace-level baggage,
+  respectively. More details about these concepts can be found in the
+  OpenTracing documentation.  An updated version of the `spandex_datadog`
+  library will enable support for this feature in terms of the
+  `Spandex.Adapter` and `Sender` APIs.
+
+### Changed
+- It is no longer required that you specify the `env` option. If not specified,
+  it will default to `nil`. This is useful, for example, for allowing the
+  Datadog trace collector configured default to be used.
+- The `Spandex.Adapter.distributed_context/2` callback now expects a
+  `SpanContext` struct to be returned, rather than a `Map`.
+- Similarly, the `Spandex.continue_trace` function now expects a `SpanContext`
+  struct rather than a separate `trace_id` and `span_id`.
+- The sender API now calls the `send_trace` function, passing in a
+  `Spandex.Trace` struct, rather than passing a list of `Spandex.Span` structs.
+  This means that you need to update the `spandex_datadog` to a compatible
+  version.
+
+### Deprecated
+- `Spandex.continue_trace/4` is deprecated in favor of
+  `Spandex.continue_trace/3`
+- Similarly, `Tracer.continue_trace/4` is deprecated in favor of
+  `Tracer.continue_trace/3`
+
 ## [2.1.0]
 It is recommended to reread the README, to see the upgrade guide and understand the changes.
 
