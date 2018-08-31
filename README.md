@@ -64,7 +64,7 @@ config :my_app, MyApp.Tracer,
 Or at runtime, by calling `configure/1` (usually in your application's startup)
 
 ```elixir
-MyApp.Tracer.configure(disabled?: Mix.env() == :test)
+MyApp.Tracer.configure(disabled?: System.get_env("TRACE") != "true")
 ```
 
 For more information on Tracer configuration, view the docs for
