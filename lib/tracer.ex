@@ -251,8 +251,14 @@ defmodule Spandex.Tracer do
 
       @impl Spandex.Tracer
       def inject_context(headers, opts \\ []) do
-        span_context = current_context(opts)
-        Spandex.inject_context(headers, span_context, config(opts, @otp_app))
+        opts
+        |> current_context()
+        |> case do
+          {:ok, span_context} ->
+            Spandex.inject_context(headers, span_context, config(opts, @otp_app))
+
+          _ -> headers
+        end
       end
 
       defp merge_config(opts, otp_app) do
