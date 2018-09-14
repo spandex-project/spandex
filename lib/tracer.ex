@@ -34,7 +34,14 @@ defmodule Spandex.Tracer do
   @callback current_trace_id(opts) :: nil | Spandex.id()
   @callback current_span_id(opts) :: nil | Spandex.id()
   @callback current_span(opts) :: nil | Span.t()
+  @callback current_context(opts) ::
+              {:ok, SpanContext.t()}
+              | {:error, :disabled}
+              | {:error, :no_span_context}
+              | {:error, :no_trace_context}
+              | {:error, [Optimal.error()]}
   @callback distributed_context(Plug.Conn.t(), opts) :: tagged_tuple(map)
+  @callback inject_context(Spandex.headers(), SpanContext.t(), opts) :: Spandex.headers()
   @macrocallback span(span_name, opts, do: Macro.t()) :: Macro.t()
   @macrocallback trace(span_name, opts, do: Macro.t()) :: Macro.t()
 
@@ -197,6 +204,7 @@ defmodule Spandex.Tracer do
 
       @impl Spandex.Tracer
       def continue_trace(span_name, span_context, opts \\ [])
+
       def continue_trace(span_name, %SpanContext{} = span_context, opts) do
         Spandex.continue_trace(span_name, span_context, config(opts, @otp_app))
       end
@@ -232,8 +240,18 @@ defmodule Spandex.Tracer do
       end
 
       @impl Spandex.Tracer
+      def current_context(opts \\ []) do
+        Spandex.current_context(config(opts, @otp_app))
+      end
+
+      @impl Spandex.Tracer
       def distributed_context(conn, opts \\ []) do
         Spandex.distributed_context(conn, config(opts, @otp_app))
+      end
+
+      @impl Spandex.Tracer
+      def inject_context(headers, %SpanContext{} = span_context, opts \\ []) do
+        Spandex.inject_context(headers, span_context, config(opts, @otp_app))
       end
 
       defp merge_config(opts, otp_app) do

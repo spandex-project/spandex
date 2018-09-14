@@ -5,9 +5,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- No unreleased changes currently.
+
+[NEXT]: https://github.com/spandex-project/spandex/compare/vNEXT...v2.2.0
+
+### Added
+
+- `Spandex.current_context/1` and `Spandex.Tracer.current_context/1` functions,
+  which get a `Spandex.SpanContext` struct based on the current context.
+
+- `Spandex.inject_context/3` and `Spandex.Tracer.inject_context/3` functions,
+  which inject the current distributed tracing context into a list of HTTP
+  headers.
+
+### Changed
+
+- The `Spandex.Adapter` behaviour now requires an `inject_context/3` callback,
+  which encodes a `Spandex.SpanContext` as HTTP headers for distributed
+  tracing.
 
 ## [2.2.0]
+
+[2.2.0]: https://github.com/spandex-project/spandex/compare/v2.2.0...v2.1.0
 
 ### Added
 - The `Spandex.Trace` struct now includes `priority` and `baggage` fields, to
@@ -39,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.0]
 It is recommended to reread the README, to see the upgrade guide and understand the changes.
 
+[2.1.0]: https://github.com/spandex-project/spandex/compare/v2.1.0...v1.6.1
+
 ### Added
 - Massive changes, including separating adapters into their own repositories
 
@@ -49,10 +69,16 @@ It is recommended to reread the README, to see the upgrade guide and understand 
 - Adapters now exist in their own repositories
 
 ## [1.6.1] - 2018-06-04
+
+[1.6.1]: https://github.com/spandex-project/spandex/compare/v1.6.1...v1.6.0
+
 ### Added
 - `private` key, when updating spans, for non-inheriting meta
 
 ## [1.6.0] - 2018-06-04
+
+[1.6.0]: https://github.com/spandex-project/spandex/compare/v1.6.0...v1.5.0
+
 ### Added
 - Storage strategy behaviour
 
