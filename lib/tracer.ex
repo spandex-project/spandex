@@ -41,7 +41,7 @@ defmodule Spandex.Tracer do
               | {:error, :no_trace_context}
               | {:error, [Optimal.error()]}
   @callback distributed_context(Plug.Conn.t(), opts) :: tagged_tuple(map)
-  @callback inject_context(Spandex.headers(), SpanContext.t(), opts) :: Spandex.headers()
+  @callback inject_context(Spandex.headers(), opts) :: Spandex.headers()
   @macrocallback span(span_name, opts, do: Macro.t()) :: Macro.t()
   @macrocallback trace(span_name, opts, do: Macro.t()) :: Macro.t()
 
@@ -250,7 +250,8 @@ defmodule Spandex.Tracer do
       end
 
       @impl Spandex.Tracer
-      def inject_context(headers, %SpanContext{} = span_context, opts \\ []) do
+      def inject_context(headers, opts \\ []) do
+        span_context = current_context(opts)
         Spandex.inject_context(headers, span_context, config(opts, @otp_app))
       end
 
