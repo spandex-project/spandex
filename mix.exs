@@ -4,7 +4,7 @@ defmodule Spandex.Mixfile do
   def project do
     [
       app: :spandex,
-      version: "2.2.0",
+      version: "2.3.0",
       elixir: "~> 1.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
@@ -13,7 +13,7 @@ defmodule Spandex.Mixfile do
       package: package(),
       name: "Spandex",
       docs: docs(),
-      source_url: "https://github.com/zachdaniel/spandex",
+      source_url: "https://github.com/spandex-project/spandex",
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         "coveralls.travis": :test,
@@ -38,7 +38,7 @@ defmodule Spandex.Mixfile do
       name: :spandex,
       maintainers: ["Zachary Daniel", "Andrew Summers", "Greg Mefford"],
       licenses: ["MIT License"],
-      links: %{"GitHub" => "https://github.com/zachdaniel/spandex"}
+      links: %{"GitHub" => "https://github.com/spandex-project/spandex"}
     ]
   end
 

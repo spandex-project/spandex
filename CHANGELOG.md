@@ -6,18 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-[NEXT]: https://github.com/spandex-project/spandex/compare/vNEXT...v2.2.0
+[NEXT]: https://github.com/spandex-project/spandex/compare/vNEXT...v2.3.0
+
+## [2.3.0]
+
+[2.3.0]: https://github.com/spandex-project/spandex/compare/v2.3.0...v2.2.0
 
 ### Added
-
 - `Spandex.current_context/1` and `Spandex.Tracer.current_context/1` functions,
   which get a `Spandex.SpanContext` struct based on the current context.
-
 - `Spandex.inject_context/3` and `Spandex.Tracer.inject_context/2` functions,
   which inject a distributed tracing context into a list of HTTP headers.
 
 ### Changed
-
 - The `Spandex.Adapter` behaviour now requires an `inject_context/3` callback,
   which encodes a `Spandex.SpanContext` as HTTP headers for distributed
   tracing.

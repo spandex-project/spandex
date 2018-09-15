@@ -37,7 +37,7 @@ would be greatly appreciated.
 
 ```elixir
 def deps do
-  [{:spandex, "~> 2.2.0"}]
+  [{:spandex, "~> 2.3.0"}]
 end
 ```
 
@@ -204,3 +204,7 @@ separately.
 ## Ecto Tracing
 
 Check out [spandex_ecto](https://github.com/spandex-project/spandex_ecto).
+
+## Phoenix Tracing
+
+Check out [spandex_phoenix](https://github.com/spandex-project/spandex_phoenix).
