@@ -6,6 +6,7 @@ defmodule Spandex.Adapter do
   @callback distributed_context(Plug.Conn.t(), Keyword.t()) ::
               {:ok, Spandex.SpanContext.t()}
               | {:error, atom()}
+  @callback inject_context(Spandex.headers(), Spandex.SpanContext.t(), Keyword.t()) :: Spandex.headers()
   @callback trace_id() :: Spandex.id()
   @callback span_id() :: Spandex.id()
   @callback now() :: Spandex.timestamp()

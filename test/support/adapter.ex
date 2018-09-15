@@ -42,6 +42,26 @@ defmodule Spandex.TestAdapter do
     end
   end
 
+  @doc """
+  Injects test HTTP headers to represent the specified SpanContext
+  """
+  @impl Spandex.Adapter
+  @spec inject_context(Spandex.headers(), SpanContext.t(), Tracer.opts()) :: Spandex.headers()
+  def inject_context(headers, %SpanContext{} = span_context, _opts) when is_list(headers) do
+    span_context
+    |> tracing_headers()
+    |> Kernel.++(headers)
+  end
+
+  def inject_context(headers, %SpanContext{} = span_context, _opts) when is_map(headers) do
+    span_context
+    |> tracing_headers()
+    |> Enum.into(%{})
+    |> Map.merge(headers)
+  end
+
+  # Private Helpers
+
   @spec get_first_header(conn :: Plug.Conn.t(), header_name :: binary) :: binary | nil
   defp get_first_header(conn, header_name) do
     conn
@@ -58,4 +78,12 @@ defmodule Spandex.TestAdapter do
   end
 
   defp parse_header(_header), do: nil
+
+  defp tracing_headers(%SpanContext{trace_id: trace_id, parent_id: parent_id, priority: priority}) do
+    [
+      {"x-test-trace-id", to_string(trace_id)},
+      {"x-test-parent-id", to_string(parent_id)},
+      {"x-test-sampling-priority", to_string(priority)}
+    ]
+  end
 end

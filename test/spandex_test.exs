@@ -465,14 +465,14 @@ defmodule Spandex.Test.SpandexTest do
       assert span_id == Spandex.current_span_id(@base_opts)
     end
 
-    test "returns nil if no trace is active" do
+    test "returns nil if no span is active" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
       assert {:ok, %Span{}} = Spandex.finish_span(@base_opts)
       assert nil == Spandex.current_span_id(@base_opts)
     end
 
-    test "returns nil if no span is active" do
+    test "returns nil if no trace is active" do
       assert nil == Spandex.current_span_id(@base_opts)
     end
 
@@ -502,6 +502,30 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns nil if tracing is disabled" do
       assert nil == Spandex.current_span(:disabled)
+    end
+  end
+
+  describe "Spandex.current_context/1" do
+    test "returns the active SpanContext if a span is active" do
+      opts = @base_opts ++ @span_opts
+      assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
+      assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", @base_opts)
+      assert {:ok, %SpanContext{trace_id: ^trace_id, parent_id: ^span_id}} = Spandex.current_context(@base_opts)
+    end
+
+    test "returns an error if no span is active" do
+      opts = @base_opts ++ @span_opts
+      assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
+      assert {:ok, %Span{}} = Spandex.finish_span(@base_opts)
+      assert {:error, :no_span_context} == Spandex.current_context(@base_opts)
+    end
+
+    test "returns an error if no trace is active" do
+      assert {:error, :no_trace_context} == Spandex.current_context(@base_opts)
+    end
+
+    test "returns an error if tracing is disabled" do
+      assert {:error, :disabled} == Spandex.current_context(:disabled)
     end
   end
 
@@ -622,8 +646,10 @@ defmodule Spandex.Test.SpandexTest do
         |> Plug.Test.conn("/")
         |> Plug.Conn.put_req_header("x-test-trace-id", "1234")
         |> Plug.Conn.put_req_header("x-test-parent-id", "5678")
+        |> Plug.Conn.put_req_header("x-test-sampling-priority", "10")
 
-      assert {:ok, %{trace_id: 1234, parent_id: 5678}} = Spandex.distributed_context(conn, @base_opts)
+      assert {:ok, %SpanContext{} = span_context} = Spandex.distributed_context(conn, @base_opts)
+      assert %SpanContext{trace_id: 1234, parent_id: 5678, priority: 10} = span_context
     end
 
     test "returns an error if distributed tracing headers are not present" do
@@ -634,6 +660,23 @@ defmodule Spandex.Test.SpandexTest do
     test "returns an error if tracing is disabled" do
       conn = Plug.Test.conn(:get, "/")
       assert {:error, :disabled} == Spandex.distributed_context(conn, :disabled)
+    end
+  end
+
+  describe "Spandex.inject_context/3" do
+    test "Prepends distributed tracing headers to an existing list of headers" do
+      span_context = %SpanContext{trace_id: 123, parent_id: 456, priority: 10}
+      headers = [{"header1", "value1"}, {"header2", "value2"}]
+
+      result = Spandex.inject_context(headers, span_context, @base_opts)
+
+      assert result == [
+               {"x-test-trace-id", "123"},
+               {"x-test-parent-id", "456"},
+               {"x-test-sampling-priority", "10"},
+               {"header1", "value1"},
+               {"header2", "value2"}
+             ]
     end
   end
 end

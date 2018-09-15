@@ -11,6 +11,8 @@ defmodule Spandex do
     Tracer
   }
 
+  @type headers :: [{atom, binary}] | [{binary, binary}] | %{binary => binary}
+
   @typedoc "Used for Span and Trace IDs (type defined by adapters)"
   @type id :: term()
 
@@ -241,8 +243,31 @@ defmodule Spandex do
     end
   end
 
+  @spec current_context(Tracer.opts()) ::
+          {:ok, SpanContext.t()}
+          | {:error, :disabled}
+          | {:error, :no_span_context}
+          | {:error, :no_trace_context}
+          | {:error, [Optimal.error()]}
+  def current_context(:disabled), do: {:error, :disabled}
+
+  def current_context(opts) do
+    strategy = opts[:strategy]
+
+    case strategy.get_trace(opts[:trace_key]) do
+      {:ok, %Trace{id: trace_id, priority: priority, baggage: baggage, stack: [%Span{id: span_id} | _]}} ->
+        {:ok, %SpanContext{trace_id: trace_id, priority: priority, baggage: baggage, parent_id: span_id}}
+
+      {:ok, %Trace{stack: []}} ->
+        {:error, :no_span_context}
+
+      {:error, _} ->
+        {:error, :no_trace_context}
+    end
+  end
+
   @spec continue_trace(String.t(), SpanContext.t(), Keyword.t()) ::
-          {:ok, %Trace{}}
+          {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
           | {:error, [Optimal.error()]}
@@ -260,7 +285,7 @@ defmodule Spandex do
   end
 
   @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Keyword.t()) ::
-          {:ok, %Trace{}}
+          {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
           | {:error, [Optimal.error()]}
@@ -272,7 +297,7 @@ defmodule Spandex do
   end
 
   @spec continue_trace_from_span(String.t(), Span.t(), Tracer.opts()) ::
-          {:ok, %Trace{}}
+          {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
           | {:error, [Optimal.error()]}
@@ -290,14 +315,20 @@ defmodule Spandex do
   end
 
   @spec distributed_context(Plug.Conn.t(), Tracer.opts()) ::
-          {:ok, map()}
-          | {:error, atom()}
+          {:ok, SpanContext.t()}
+          | {:error, :disabled}
           | {:error, [Optimal.error()]}
   def distributed_context(_, :disabled), do: {:error, :disabled}
 
   def distributed_context(conn, opts) do
     adapter = opts[:adapter]
     adapter.distributed_context(conn, opts)
+  end
+
+  @spec inject_context(headers(), SpanContext.t(), Tracer.opts()) :: headers()
+  def inject_context(headers, %SpanContext{} = span_context, opts) do
+    adapter = opts[:adapter]
+    adapter.inject_context(headers, span_context, opts)
   end
 
   # Private Helpers
