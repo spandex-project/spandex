@@ -1,5 +1,6 @@
 ![Spandex](https://github.com/spandex-project/spandex/blob/master/static/spandex.png?raw=true)
 =========
+
 [![Build Status](https://travis-ci.org/spandex-project/spandex.svg?branch=master)](https://travis-ci.org/spandex-project/spandex)
 [![Inline docs](http://inch-ci.org/github/spandex-project/spandex.svg)](http://inch-ci.org/github/spandex-project/spandex)
 [![Coverage Status](https://coveralls.io/repos/github/spandex-project/spandex/badge.svg)](https://coveralls.io/github/spandex-project/spandex)
