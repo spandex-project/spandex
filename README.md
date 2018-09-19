@@ -1,4 +1,4 @@
-![Spandex](https://github.com/spandex-project/spandex/static/spandex.png)
+![Spandex](https://github.com/spandex-project/spandex/blob/master/static/spandex.png?raw=true)
 =========
 [![Build Status](https://travis-ci.org/spandex-project/spandex.svg?branch=master)](https://travis-ci.org/spandex-project/spandex)
 [![Inline docs](http://inch-ci.org/github/spandex-project/spandex.svg)](http://inch-ci.org/github/spandex-project/spandex)
