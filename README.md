@@ -172,10 +172,6 @@ Spandex.update_span(
 )
 ```
 
-Spandex used to ship with function decorators, but those decorators had a habit
-of causing weird compilation issues for certain users, and could be easily
-implemented by any user of the library.
-
 ## Asynchronous Processes
 
 The current `trace_id` and `span_id` can be retrieved and later used (for
@@ -201,6 +197,64 @@ trace, meaning that it is *not* safe to use across processes or concurrently.
 Each process should have its own store for its own generated spans. This should
 be fine because you can send multiple batches of spans for the same trace
 separately.
+
+## Decorators (Beta)
+
+:warning: This is an experimental feature. In the past, we have [deprecated](https://github.com/dnlserrano/spandex/commit/32cf69891d1440cbbcb24b27578cb99a0591cc52) support for decorators. We are now trying to bring them back as part of Spandex's core. Please, report any issues you may find with it.
+
+Configure the Spandex decorator with your tracer:
+
+```elixir
+config :spandex, :decorators, tracer: MyApp.Tracer
+```
+
+Span function decorators take an optional argument which is the attributes to update the span with.
+
+IMPORTANT If you define multiple clauses for a function, you'll have to decorate all of the ones you want to span.
+
+```elixir
+defmodule TracedModule do
+  use Spandex.TraceDecorator
+
+  @decorate trace(service: :my_app, type: :web)
+  def trace_me() do
+    span_1()
+  end
+
+  @decorate span()
+  def span_1() do
+    inner_span_1()
+  end
+
+  @decorate span()
+  def inner_span_1() do
+    _ = ThirdPartyApi.different_service_call()
+    inner_span_2()
+  end
+
+  @decorate span()
+  def inner_span_2() do
+    "this produces the span stack you would expect"
+  end
+
+  # Multiple Clauses
+  @decorate span()
+  def divide(n, 0), do: {:error, :divide_by_zero}
+  @decorate span()
+  def divide(n, m), do: n / m
+end
+
+defmodule ThirdPartyApi do
+  use Spandex.TraceDecorator
+
+  @decorate span(service: :third_party, type: :cache)
+  def different_service_call() do
+
+  end
+end
+```
+
+Note: Decorators don't magically do everything. It often makes a lot of sense to use `Tracer.update_span` from within the function to add details that are only available inside the function.
 
 ## Ecto Tracing
 
