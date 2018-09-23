@@ -6,6 +6,8 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:trace_id, :span_id]
 
+config :spandex, :decorators, tracer: Spandex.Test.Support.Tracer
+
 config :spandex, Spandex.Test.Support.Tracer,
   service: :spandex_test,
   adapter: Spandex.TestAdapter,
