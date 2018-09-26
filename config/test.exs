@@ -17,3 +17,13 @@ config :spandex, Spandex.Test.Support.Tracer,
   services: [
     spandex_test: :db
   ]
+
+config :decorator, Spandex.Test.Support.OtherTracer,
+  service: :spandex_test,
+  adapter: Spandex.TestAdapter,
+  sender: Spandex.TestSender,
+  env: "test",
+  resource: "default",
+  services: [
+    spandex_test: :db
+  ]

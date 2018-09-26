@@ -65,7 +65,7 @@ defmodule Spandex.Mixfile do
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
       {:optimal, "~> 0.3.3"},
       {:plug, ">= 1.0.0"},
-      {:decorator, "~> 1.2.3"}
+      {:decorator, "~> 1.2", optional: true}
     ]
   end
 end

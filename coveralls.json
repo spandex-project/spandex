@@ -1,5 +1,5 @@
 {
   "skip_files": [
-    "lib/trace_decorator.ex"
+    "lib/decorators.ex"
   ]
 }

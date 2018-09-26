@@ -1,10 +1,10 @@
 defmodule Spandex.Test.Support.Decorated do
   @moduledoc """
-  Simple module to test span and trace decorators (`Spandex.TraceDecorator`)
+  Simple module to test span and trace decorators (`Spandex.Decorators`)
   """
 
-  use Spandex.TraceDecorator
-  alias Spandex.Test.Support.Tracer
+  use Spandex.Decorators
+  alias Spandex.Test.Support.OtherTracer
 
   @decorate trace(name: "decorated_trace")
   def test_trace, do: :trace
@@ -17,4 +17,7 @@ defmodule Spandex.Test.Support.Decorated do
 
   @decorate span()
   def test_nameless_span, do: :nameless_span
+
+  @decorate span(tracer: OtherTracer)
+  def test_other_tracer, do: :other_tracer
 end

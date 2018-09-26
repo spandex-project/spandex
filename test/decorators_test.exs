@@ -1,7 +1,8 @@
-defmodule Spandex.TraceDecoratorTest do
+defmodule Spandex.DecoratorsTest do
   use ExUnit.Case, async: true
 
   alias Spandex.Test.Support.Decorated
+  alias Spandex.Test.Support.OtherTracer
   alias Spandex.Test.Support.Tracer
   alias Spandex.Test.Util
 
@@ -31,5 +32,13 @@ defmodule Spandex.TraceDecoratorTest do
     Tracer.finish_trace()
 
     assert Util.find_span("Elixir.Spandex.Test.Support.Decorated.test_nameless_span/0") != nil
+  end
+
+  test "uses another tracer when overriding it via the tracer option" do
+    OtherTracer.start_trace("my_trace")
+    Decorated.test_other_tracer()
+    OtherTracer.finish_trace()
+
+    assert Util.find_span("Elixir.Spandex.Test.Support.Decorated.test_other_tracer/0") != nil
   end
 end
