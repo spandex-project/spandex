@@ -33,22 +33,20 @@ if Code.ensure_loaded?(Decorator.Define) do
     end
 
     def trace(attributes, body, context) do
-      quote do
-        decorator = unquote(__MODULE__)
-        attributes = unquote(attributes)
-        tracer = attributes[:tracer] || decorator.tracer()
+      name =
+        __MODULE__.span_name(
+          attributes,
+          context.module,
+          context.name,
+          context.arity
+        )
 
+      quote do
+        attributes = unquote(attributes)
+        tracer = attributes[:tracer] || unquote(__MODULE__).tracer()
         attributes = Keyword.delete(attributes, :tracer)
 
-        name =
-          decorator.span_name(
-            attributes,
-            unquote(context.module),
-            unquote(context.name),
-            unquote(context.arity)
-          )
-
-        _ = tracer.start_trace(name, attributes)
+        _ = tracer.start_trace(unquote(name), attributes)
 
         try do
           unquote(body)
@@ -69,22 +67,20 @@ if Code.ensure_loaded?(Decorator.Define) do
     end
 
     def span(attributes, body, context) do
-      quote do
-        decorator = unquote(__MODULE__)
-        attributes = unquote(attributes)
-        tracer = attributes[:tracer] || decorator.tracer()
+      name =
+        __MODULE__.span_name(
+          attributes,
+          context.module,
+          context.name,
+          context.arity
+        )
 
+      quote do
+        attributes = unquote(attributes)
+        tracer = attributes[:tracer] || unquote(__MODULE__).tracer()
         attributes = Keyword.delete(attributes, :tracer)
 
-        name =
-          decorator.span_name(
-            attributes,
-            unquote(context.module),
-            unquote(context.name),
-            unquote(context.arity)
-          )
-
-        _ = tracer.start_span(name, attributes)
+        _ = tracer.start_span(unquote(name), attributes)
 
         try do
           unquote(body)
