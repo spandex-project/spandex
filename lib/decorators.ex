@@ -24,7 +24,7 @@ if Code.ensure_loaded?(Decorator.Define) do
     """
 
     @tracer Application.get_env(:spandex, :decorators)[:tracer]
-    def tracer, do: @tracer
+    def __tracer__(), do: @tracer
 
     use Decorator.Define, span: 0, span: 1, trace: 0, trace: 1
 
@@ -41,23 +41,14 @@ if Code.ensure_loaded?(Decorator.Define) do
           context.arity
         )
 
+      tracer = attributes[:tracer] || unquote(__MODULE__).__tracer__()
+      attributes = Keyword.delete(attributes, :tracer)
+
       quote do
-        attributes = unquote(attributes)
-        tracer = attributes[:tracer] || unquote(__MODULE__).tracer()
-        attributes = Keyword.delete(attributes, :tracer)
+        require unquote(tracer)
 
-        _ = tracer.start_trace(unquote(name), attributes)
-
-        try do
+        unquote(tracer).trace unquote(name), unquote(attributes) do
           unquote(body)
-        rescue
-          exception ->
-            stacktrace = System.stacktrace()
-            _ = tracer.span_error(exception, stacktrace)
-
-            reraise(exception, stacktrace)
-        after
-          _ = tracer.finish_trace()
         end
       end
     end
@@ -75,23 +66,14 @@ if Code.ensure_loaded?(Decorator.Define) do
           context.arity
         )
 
+      tracer = attributes[:tracer] || unquote(__MODULE__).__tracer__()
+      attributes = Keyword.delete(attributes, :tracer)
+
       quote do
-        attributes = unquote(attributes)
-        tracer = attributes[:tracer] || unquote(__MODULE__).tracer()
-        attributes = Keyword.delete(attributes, :tracer)
+        require unquote(tracer)
 
-        _ = tracer.start_span(unquote(name), attributes)
-
-        try do
+        unquote(tracer).span unquote(name), unquote(attributes) do
           unquote(body)
-        rescue
-          exception ->
-            stacktrace = System.stacktrace()
-            _ = tracer.span_error(exception, stacktrace)
-
-            reraise(exception, stacktrace)
-        after
-          _ = tracer.finish_span()
         end
       end
     end
