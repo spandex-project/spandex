@@ -1,6 +1,7 @@
 if Code.ensure_loaded?(Decorator.Define) do
   defmodule Spandex.Decorators do
     @moduledoc """
+    Provides a way of annotating functions to be traced.
 
     Span function decorators take an optional argument which is the attributes to update the span with. One of those attributes can be the `:tracer` in case you want to override the default tracer (e.g., in case you want to use multiple tracers).
 
@@ -24,7 +25,6 @@ if Code.ensure_loaded?(Decorator.Define) do
     """
 
     @tracer Application.get_env(:spandex, :decorators)[:tracer]
-    def __tracer__(), do: @tracer
 
     use Decorator.Define, span: 0, span: 1, trace: 0, trace: 1
 
@@ -41,7 +41,7 @@ if Code.ensure_loaded?(Decorator.Define) do
           context.arity
         )
 
-      tracer = attributes[:tracer] || unquote(__MODULE__).__tracer__()
+      tracer = attributes[:tracer] || @tracer
       attributes = Keyword.delete(attributes, :tracer)
 
       quote do
@@ -66,7 +66,7 @@ if Code.ensure_loaded?(Decorator.Define) do
           context.arity
         )
 
-      tracer = attributes[:tracer] || unquote(__MODULE__).__tracer__()
+      tracer = attributes[:tracer] || @tracer
       attributes = Keyword.delete(attributes, :tracer)
 
       quote do

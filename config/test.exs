@@ -18,7 +18,7 @@ config :spandex, Spandex.Test.Support.Tracer,
     spandex_test: :db
   ]
 
-config :decorator, Spandex.Test.Support.OtherTracer,
+config :spandex, Spandex.Test.Support.OtherTracer,
   service: :spandex_test,
   adapter: Spandex.TestAdapter,
   sender: Spandex.TestSender,
