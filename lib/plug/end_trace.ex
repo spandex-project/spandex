@@ -21,6 +21,11 @@ defmodule Spandex.Plug.EndTrace do
                ]
              )
 
+  @doc """
+  Accepts and validates opts for the plug, and underlying tracer.
+
+  #{Optimal.Doc.document(@init_opts)}
+  """
   @spec init(opts :: Keyword.t()) :: Keyword.t()
   def init(opts) do
     Optimal.validate!(opts, @init_opts)
