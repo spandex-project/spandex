@@ -41,7 +41,7 @@ if Code.ensure_loaded?(Decorator.Define) do
           context.arity
         )
 
-      tracer = attributes[:tracer] || @tracer
+      tracer = Keyword.get(attributes, :tracer, @tracer)
       attributes = Keyword.delete(attributes, :tracer)
 
       quote do
@@ -66,8 +66,12 @@ if Code.ensure_loaded?(Decorator.Define) do
           context.arity
         )
 
-      tracer = attributes[:tracer] || @tracer
-      attributes = Keyword.delete(attributes, :tracer)
+      tracer = Keyword.get(attributes, :tracer, @tracer)
+
+      attributes =
+        attributes
+        |> Keyword.delete(:tracer)
+        |> Keyword.put_new(:resource, name)
 
       quote do
         require unquote(tracer)
