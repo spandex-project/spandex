@@ -38,7 +38,7 @@ would be greatly appreciated.
 
 ```elixir
 def deps do
-  [{:spandex, "~> 2.3.0"}]
+  [{:spandex, "~> 2.4.0"}]
 end
 ```
 
