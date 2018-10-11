@@ -15,7 +15,7 @@ defmodule Spandex.DecoratorsTest do
   test "creates trace named after module name, function name and arity when nameless" do
     Decorated.test_nameless_trace()
 
-    assert Util.find_span("Elixir.Spandex.Test.Support.Decorated.test_nameless_trace/0") != nil
+    assert Util.find_span("Spandex.Test.Support.Decorated.test_nameless_trace/0") != nil
   end
 
   test "creates span when decorating function with span annotation" do
@@ -31,7 +31,7 @@ defmodule Spandex.DecoratorsTest do
     Decorated.test_nameless_span()
     Tracer.finish_trace()
 
-    assert Util.find_span("Elixir.Spandex.Test.Support.Decorated.test_nameless_span/0") != nil
+    assert Util.find_span("Spandex.Test.Support.Decorated.test_nameless_span/0") != nil
   end
 
   test "uses another tracer when overriding it via the tracer option" do
@@ -39,6 +39,6 @@ defmodule Spandex.DecoratorsTest do
     Decorated.test_other_tracer()
     OtherTracer.finish_trace()
 
-    assert Util.find_span("Elixir.Spandex.Test.Support.Decorated.test_other_tracer/0") != nil
+    assert Util.find_span("Spandex.Test.Support.Decorated.test_other_tracer/0") != nil
   end
 end

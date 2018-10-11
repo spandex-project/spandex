@@ -33,14 +33,7 @@ if Code.ensure_loaded?(Decorator.Define) do
     end
 
     def trace(attributes, body, context) do
-      name =
-        __MODULE__.span_name(
-          attributes,
-          context.module,
-          context.name,
-          context.arity
-        )
-
+      name = Keyword.get(attributes, :name, default_name(context))
       tracer = Keyword.get(attributes, :tracer, @tracer)
       attributes = Keyword.delete(attributes, :tracer)
 
@@ -58,14 +51,7 @@ if Code.ensure_loaded?(Decorator.Define) do
     end
 
     def span(attributes, body, context) do
-      name =
-        __MODULE__.span_name(
-          attributes,
-          context.module,
-          context.name,
-          context.arity
-        )
-
+      name = Keyword.get(attributes, :name, default_name(context))
       tracer = Keyword.get(attributes, :tracer, @tracer)
 
       attributes =
@@ -82,8 +68,13 @@ if Code.ensure_loaded?(Decorator.Define) do
       end
     end
 
-    def span_name(attributes, context_module, context_name, context_arity) do
-      attributes[:name] || "#{context_module}.#{context_name}/#{context_arity}"
+    defp default_name(%{module: module, name: function, arity: arity}) do
+      module =
+        module
+        |> Atom.to_string()
+        |> String.trim_leading("Elixir.")
+
+      "#{module}.#{function}/#{arity}"
     end
   end
 end
