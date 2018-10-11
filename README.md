@@ -172,10 +172,6 @@ Spandex.update_span(
 )
 ```
 
-Spandex used to ship with function decorators, but those decorators had a habit
-of causing weird compilation issues for certain users, and could be easily
-implemented by any user of the library.
-
 ## Asynchronous Processes
 
 The current `trace_id` and `span_id` can be retrieved and later used (for
@@ -201,6 +197,74 @@ trace, meaning that it is *not* safe to use across processes or concurrently.
 Each process should have its own store for its own generated spans. This should
 be fine because you can send multiple batches of spans for the same trace
 separately.
+
+## Decorators
+
+Because the  `decorator` library can cause conflicts when it interacts with other dependencies in the same project, we support it as an optional dependency. This allows you to disable it if it causes problems for you, but it also means that you need to explicitly include some version of `decorator` in your application's dependency list:
+
+```elixir
+# mix.exs
+
+defp deps do
+  [
+    {:decorator, "~> 1.2"}
+  ]
+end
+```
+
+Then, configure the Spandex decorator with your default tracer:
+
+```elixir
+config :spandex, :decorators, tracer: MyApp.Tracer
+```
+
+Span function decorators take an optional argument which is the attributes to update the span with. One of those attributes can be the `:tracer` in case you want to override the default tracer (e.g., in case you want to use multiple tracers).
+
+IMPORTANT If you define multiple clauses for a function, you'll have to decorate all of the ones you want to span.
+
+```elixir
+defmodule TracedModule do
+  use Spandex.Decorators
+
+  @decorate trace(service: :my_app, type: :web)
+  def trace_me() do
+    span_1()
+  end
+
+  @decorate span(name: "span_1")
+  def span_1() do
+    inner_span_1()
+  end
+
+  @decorate span()
+  def inner_span_1() do
+    _ = ThirdPartyApi.different_service_call()
+    inner_span_2()
+  end
+
+  @decorate span(tracer: MyApp.OtherTracer)
+  def inner_span_2() do
+    "this produces a span stack to be reported by another tracer"
+  end
+
+  # Multiple Clauses
+  @decorate span()
+  def divide(n, 0), do: {:error, :divide_by_zero}
+  @decorate span()
+  def divide(n, m), do: n / m
+end
+
+defmodule ThirdPartyApi do
+  use Spandex.Decorators
+
+  @decorate span(service: :third_party, type: :cache)
+  def different_service_call() do
+    ...
+  end
+end
+```
+
+Note: Decorators don't magically do everything. It often makes a lot of sense to use `Tracer.update_span` from within your function to add details that are only available inside that same function.
 
 ## Ecto Tracing
 
