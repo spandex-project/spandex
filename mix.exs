@@ -16,11 +16,8 @@ defmodule Spandex.Mixfile do
       source_url: "https://github.com/spandex-project/spandex",
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
-        "coveralls.travis": :test,
+        "coveralls.circle": :test,
         coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test
       ],
       deps: deps()
     ]
@@ -61,7 +58,7 @@ defmodule Spandex.Mixfile do
       {:credo, "~> 0.9.2", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:excoveralls, "~> 0.6", only: :test},
+      {:excoveralls, "~> 0.10", only: :test},
       {:git_ops, "~> 0.3.3", only: :dev},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
       {:optimal, "~> 0.3.3"},
