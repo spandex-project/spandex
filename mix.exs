@@ -60,7 +60,7 @@ defmodule Spandex.Mixfile do
       {:ex_doc, ">= 0.19.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
       {:git_ops, "~> 0.3.3", only: :dev},
-{:inch_ex, github: "rrrene/inch_ex", only: [:dev, :test]},
+      {:inch_ex, github: "rrrene/inch_ex", only: [:dev, :test]},
       {:optimal, "~> 0.3.3"},
       {:plug, ">= 1.0.0"},
       {:decorator, "~> 1.2", optional: true}
