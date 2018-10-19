@@ -17,7 +17,7 @@ defmodule Spandex.Mixfile do
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         "coveralls.circle": :test,
-        coveralls: :test,
+        coveralls: :test
       ],
       deps: deps()
     ]
@@ -57,7 +57,7 @@ defmodule Spandex.Mixfile do
       {:benchee, "~> 0.13.2", only: [:dev, :test]},
       {:credo, "~> 0.9.2", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
-      {:ex_doc, "~> 0.19", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.19.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
       {:git_ops, "~> 0.3.3", only: :dev},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
