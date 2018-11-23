@@ -163,15 +163,6 @@ defmodule Spandex.Span do
     end)
   end
 
-  @spec merge_or_choose(Keyword.t() | nil, Keyword.t() | nil) :: Keyword.t() | nil
-  defp merge_or_choose(left, right) do
-    if left && right do
-      merge_retaining_nested(left, right)
-    else
-      left || right
-    end
-  end
-
   @spec merge_non_nils(Keyword.t(), Keyword.t()) :: Keyword.t()
   defp merge_non_nils(left, right) do
     Keyword.merge(left, right, fn _k, v1, v2 ->
