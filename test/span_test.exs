@@ -16,7 +16,7 @@ defmodule Spandex.Test.SpanTest do
   end
 
   test "child spans do not inherit metadata" do
-    Tracer.trace "trace_name", service: :special_service do
+    Tracer.trace "trace_name" do
       Tracer.update_span(sql_query: [query: "SELECT ..", db: "some_db", rows: "42"])
       Tracer.span("inner_span") do
         :ok
@@ -26,6 +26,31 @@ defmodule Spandex.Test.SpanTest do
     span = Util.find_span("inner_span")
 
     assert(span.http == nil)
+  end
+
+  describe "metadata merging" do
+    test "nested metadata is merged together" do
+      Tracer.trace "trace_name" do
+        Tracer.update_span(sql_query: [query: "SELECT .."])
+        Tracer.update_span(sql_query: [db: "some_db"])
+        Tracer.update_span(sql_query: [rows: "42"])
+      end
+
+      span = Util.find_span("trace_name")
+
+      assert(span.sql_query) == [query: "SELECT ..", db: "some_db", rows: "42"]
+    end
+
+    test "tags are merged as well" do
+      Tracer.trace "trace_name" do
+        Tracer.update_span(tags: [foo: :bar])
+        Tracer.update_span(tags: [bar: :baz])
+      end
+
+      span = Util.find_span("trace_name")
+
+      assert(span.tags) == [foo: :bar, bar: :baz]
+    end
   end
 
   test "finishing a span does not override the completion time" do
