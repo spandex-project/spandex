@@ -153,6 +153,8 @@ defmodule Spandex.Span do
           right = struct_to_keyword(v2)
 
           merge_non_nils(left, right)
+        :private ->
+          raise ArgumentError, ":private is no longer a suppported key for Spandex spans. Use `tags` instead."
 
         :tags ->
           Keyword.merge(v1 || [], v2 || [])
