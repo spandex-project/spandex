@@ -13,7 +13,6 @@ defmodule Spandex.Span do
     :id,
     :name,
     :parent_id,
-    :private,
     :resource,
     :service,
     :services,
@@ -34,7 +33,6 @@ defmodule Spandex.Span do
           id: Spandex.id(),
           name: String.t(),
           parent_id: Spandex.id() | nil,
-          private: Keyword.t(),
           resource: atom() | String.t(),
           service: atom(),
           services: Keyword.t() | nil,
@@ -54,7 +52,6 @@ defmodule Spandex.Span do
                  id: :any,
                  name: :string,
                  parent_id: :any,
-                 private: :keyword,
                  resource: [:atom, :string],
                  service: :atom,
                  services: :keyword,
@@ -65,7 +62,6 @@ defmodule Spandex.Span do
                  type: :atom
                ],
                defaults: [
-                 private: [],
                  services: [],
                  tags: []
                ],
@@ -119,11 +115,6 @@ defmodule Spandex.Span do
       rows: 100,
       db: "my_database",
       query: "SELECT * FROM users;"
-    ],
-    # Private has the same structure as the outer meta structure, but private metadata does not
-    # transfer from parent span to child span.
-    private: [
-      ...
     ]
   ]
   ```
@@ -165,9 +156,6 @@ defmodule Spandex.Span do
 
         :tags ->
           Keyword.merge(v1 || [], v2 || [])
-
-        :private ->
-          merge_or_choose(v1, v2)
 
         _ ->
           v2
@@ -219,7 +207,19 @@ defmodule Spandex.Span do
           {:ok, Span.t()}
           | {:error, [Optimal.error()]}
   def child_of(parent_span, name, id, start, opts) do
-    child = %Span{parent_span | id: id, name: name, start: start, parent_id: parent_span.id}
+    child =
+      %Span{
+        id: id,
+        name: name,
+        start: start,
+        parent_id: parent_span.id,
+        env: parent_span.env,
+        resource: parent_span.resource,
+        service: parent_span.service,
+        type: parent_span.type,
+        trace_id: parent_span.trace_id
+      }
+
     update(child, opts)
   end
 

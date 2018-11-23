@@ -15,6 +15,19 @@ defmodule Spandex.Test.SpanTest do
     assert(span.service == :special_service)
   end
 
+  test "child spans do not inherit metadata" do
+    Tracer.trace "trace_name", service: :special_service do
+      Tracer.update_span(sql_query: [query: "SELECT ..", db: "some_db", rows: "42"])
+      Tracer.span("inner_span") do
+        :ok
+      end
+    end
+
+    span = Util.find_span("inner_span")
+
+    assert(span.http == nil)
+  end
+
   test "finishing a span does not override the completion time" do
     completion_time = :os.system_time(:nano_seconds)
     Tracer.start_trace("my_trace")
