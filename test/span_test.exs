@@ -41,7 +41,7 @@ defmodule Spandex.Test.SpanTest do
       assert(span.sql_query) == [query: "SELECT ..", db: "some_db", rows: "42"]
     end
 
-    test "tags are merged as well" do
+    test "tags are merged together" do
       Tracer.trace "trace_name" do
         Tracer.update_span(tags: [foo: :bar])
         Tracer.update_span(tags: [bar: :baz])
