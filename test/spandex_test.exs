@@ -2,7 +2,10 @@ defmodule Spandex.Test.SpandexTest do
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
 
+  require Spandex.Test.Support.Tracer
+
   alias Spandex.Test.Util
+  alias Spandex.Test.Support.Tracer
 
   alias Spandex.{
     Span,
@@ -454,6 +457,14 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns nil if tracing is disabled" do
       assert nil == Spandex.current_trace_id(:disabled)
+    end
+  end
+  
+  describe "trace_key" do
+    test "when a trace key is configured, that trace key is used for storage" do
+      Tracer.start_trace("foobar", trace_key: :bar)
+
+      assert(%Trace{} = Process.get({:spandex_trace, :bar}))
     end
   end
 
