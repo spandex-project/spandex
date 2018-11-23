@@ -64,7 +64,11 @@ defmodule Spandex.Tracer do
                  ],
                  describe: [
                    adapter: "The third party adapter to use",
-                   trace_key: "Don't set manually. This option is passed automatically.",
+                   trace_key:
+                   """
+                   If you have multiple tracers in your application, and you want them to continue eachother's
+                   traces (common in an umbrella), you want to set this to the same atom for each tracer.
+                   """,
                    sender:
                      "Once a trace is complete, it is sent using this module. Defaults to the `default_sender/0` of the selected adapter",
                    service: "The default service name to use for spans declared without a service",
@@ -267,7 +271,7 @@ defmodule Spandex.Tracer do
         |> Kernel.||([])
         |> Keyword.merge(opts || [])
         |> Optimal.validate!(@opts)
-        |> Keyword.put(:trace_key, __MODULE__)
+        |> Keyword.put_new(:trace_key, __MODULE__)
       end
 
       defp config(opts, otp_app) do
@@ -293,7 +297,7 @@ defmodule Spandex.Tracer do
 
           opts
           |> Optimal.validate!(schema)
-          |> Keyword.put(:trace_key, __MODULE__)
+          |> Keyword.put_new(:trace_key, __MODULE__)
           |> Keyword.put(:strategy, env[:strategy] || Spandex.Strategy.Pdict)
         end
       end
