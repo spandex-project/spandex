@@ -23,7 +23,7 @@ defmodule Spandex do
   Starts a new trace.
 
   Span updates for the first span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid it is
+  invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a second call to `update_span/2` and check the return value.
   """
   @spec start_trace(binary(), Tracer.opts()) ::
@@ -48,7 +48,7 @@ defmodule Spandex do
   Start a new span.
 
   Span updates for that span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid it is
+  invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a second call to `update_span/2` and check the return value.
   """
   @spec start_span(String.t(), Tracer.opts()) ::
@@ -105,11 +105,11 @@ defmodule Spandex do
   end
 
   @doc """
-  Updates the top most parent span.
+  Updates the top-most parent span.
 
   Any spans that have already been started will not inherit any of the updates
   from that span. For instance, if you change `service`, it will not be
-  reflected in already started spans.
+  reflected in already-started spans.
 
   In the case of an invalid update, validation errors are returned.
   """
@@ -123,7 +123,7 @@ defmodule Spandex do
   def update_top_span(opts), do: update_span(opts, true)
 
   @doc """
-  Updates all spans, complete and in progress.
+  Updates all spans, whether complete or in-progress.
 
   In the case of an invalid update for any span, validation errors are returned.
   """
@@ -137,25 +137,18 @@ defmodule Spandex do
   def update_all_spans(opts) do
     strategy = opts[:strategy]
 
-    case strategy.get_trace(opts[:trace_key]) do
-      {:error, :no_trace_context} = error ->
-        error
-
-      {:ok, %Trace{stack: stack, spans: spans} = trace} ->
-        with {:ok, new_spans} <- update_many_spans(spans, opts),
-             {:ok, new_stack} <- update_many_spans(stack, opts) do
-          strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack, spans: new_spans})
-        end
-      {:error, _} = error ->
-        error
+    with {:ok, %Trace{stack: stack, spans: spans} = trace} <- strategy.get_trace(opts[:trace_key]),
+         {:ok, new_spans} <- update_many_spans(spans, opts),
+         {:ok, new_stack} <- update_many_spans(stack, opts) do
+      strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack, spans: new_spans})
     end
   end
 
   @doc """
   Finishes the current trace.
 
-  Span updates for that span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid it is
+  Span updates for the top span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a call to `update_span/2` and check the return value before
   finishing the trace.
   """
@@ -194,7 +187,7 @@ defmodule Spandex do
   Finishes the current span.
 
   Span updates for that span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid it is
+  invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a call to `update_span/2` and check the return value before
   finishing the span.
   """
@@ -255,7 +248,7 @@ defmodule Spandex do
   end
 
   @doc """
-  Returns the id of the currently running trace.
+  Returns the id of the currently-running trace.
   """
   @spec current_trace_id(Tracer.opts()) :: Spandex.id() | nil
   def current_trace_id(:disabled), do: nil
@@ -275,7 +268,7 @@ defmodule Spandex do
   end
 
   @doc """
-  Returns the id of the currently running span.
+  Returns the id of the currently-running span.
   """
   @spec current_span_id(Tracer.opts()) :: Spandex.id() | nil
   def current_span_id(:disabled), do: nil
@@ -288,7 +281,7 @@ defmodule Spandex do
   end
 
   @doc """
-  Returns the `%Span{}` struct for the currently running span
+  Returns the `%Span{}` struct for the currently-running span
   """
   @spec current_span(Tracer.opts()) :: Span.t() | nil
   def current_span(:disabled), do: nil
@@ -312,6 +305,8 @@ defmodule Spandex do
 
   @doc """
   Returns the current `%SpanContext{}` or an error.
+
+  ### DEPRECATION WARNING
 
   Expect changes to this in the future, as this will eventualy be refactored to
   only ever return a `%SpanContext{}`, or at least to always return something
@@ -340,10 +335,10 @@ defmodule Spandex do
   end
 
   @doc """
-  Given a `%SpanContext{}` resumes a trace from a different process or service.
+  Given a `%SpanContext{}`, resumes a trace from a different process or service.
 
-  Span updates for that span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid it is
+  Span updates for the top span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a second call to `update_span/2` and check the return value.
   """
   @spec continue_trace(String.t(), SpanContext.t(), Keyword.t()) ::
@@ -366,8 +361,8 @@ defmodule Spandex do
   @doc """
   Given a trace_id and span_id, resumes a trace from a different process or service.
 
-  Span updates for that span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid it is
+  Span updates for the top span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a second call to `update_span/2` and check the return value.
   """
   @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Keyword.t()) ::
@@ -384,8 +379,8 @@ defmodule Spandex do
   @doc """
   Given a span struct, resumes a trace from a different process or service.
 
-  Span updates for that span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid it is
+  Span updates for the top span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a second call to `update_span/2` and check the return value.
   """
   @spec continue_trace_from_span(String.t(), Span.t(), Tracer.opts()) ::
@@ -524,7 +519,7 @@ defmodule Spandex do
 
     with {:ok, updated} <- Span.update(top_span, opts),
          new_stack <- List.replace_at(stack, -1, updated),
-         {:ok, _} <- strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack}) do
+         {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack}) do
       {:ok, updated}
     end
   end
