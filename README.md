@@ -9,6 +9,17 @@
 
 View the [documentation](https://hexdocs.pm/spandex)
 
+Spandex is a library for tracing your elixir application. Tracing is a
+monitoring tool that allows you get extremely granular information about the
+runtime of your system. Using distributed tracing, you can also get a view of
+how requests make their way through your entire ecosystem of microservices or
+applications. Currently, Spandex only supports integrating with
+[datadog](https://www.datadoghq.com/), but it is built to be agnostic to what
+platform you choose to view your trace data. Eventually it should support open
+zipkin, Stackdriver, and any other trace viewer/aggregation tool you'd like to
+integrate with. We are still under active development, working on moving to a
+more standard/generic implementation of the internals. Contributions welcome!
+
 ## 2.0 Upgrade Guide
 
 This is Datadog-specific since that's currently the only adapter.
@@ -26,13 +37,6 @@ This is Datadog-specific since that's currently the only adapter.
   write! This library is in charge of handling the state management of spans,
   and the adapter is just in charge of generating certain values and ultimately
   sending the values to the service.
-
-## Attention
-
-This library could use some work! I've become unexpectedly busy lately, so I
-haven't had the time I thought I would to work on it. Any contributions, to
-things like sampling, strict mode, different storage strategies and the like
-would be greatly appreciated.
 
 ## Installation
 
