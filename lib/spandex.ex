@@ -110,10 +110,10 @@ defmodule Spandex do
         error
 
       {:ok, %Trace{stack: stack, spans: spans} = trace} ->
-        new_stack = Enum.map(stack, &update_or_keep(&1, opts))
-        new_spans = Enum.map(spans, &update_or_keep(&1, opts))
-        strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack, spans: new_spans})
-
+        with {:ok, new_spans} <- update_many_spans(spans, opts),
+             {:ok, new_stack} <- update_many_spans(stack, opts) do
+          strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack, spans: new_spans})
+        end
       {:error, _} = error ->
         error
     end
@@ -340,6 +340,30 @@ defmodule Spandex do
 
   # Private Helpers
 
+  defp update_many_spans(spans, opts) do
+    spans
+    |> Enum.reduce({:ok, []}, fn
+      span, {:ok, acc} ->
+        case Span.update(span, opts) do
+          {:ok, updated} ->
+            {:ok, [updated | acc]}
+
+          {:error, error} ->
+            {:error, error}
+        end
+
+      _, {:error, error} ->
+        {:error, error}
+    end)
+    |> case do
+      {:ok, list} ->
+        {:ok, Enum.reverse(list)}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
   defp do_continue_trace(name, span_context, opts) do
     strategy = opts[:strategy]
     adapter = opts[:adapter]
@@ -405,20 +429,23 @@ defmodule Spandex do
 
   defp do_update_span(%Trace{stack: stack} = trace, opts, true) do
     strategy = opts[:strategy]
-    new_stack = List.update_at(stack, -1, &update_or_keep(&1, opts))
 
-    with {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack}) do
-      {:ok, Enum.at(new_stack, -1)}
+    top_span = Enum.at(stack, -1)
+
+    with {:ok, updated} <- Span.update(top_span, opts),
+         new_stack <- List.replace_at(stack, -1, updated),
+         {:ok, _} <- strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack}) do
+      {:ok, updated}
     end
   end
 
   defp do_update_span(%Trace{stack: [current_span | other_spans]} = trace, opts, false) do
     strategy = opts[:strategy]
-    updated_span = update_or_keep(current_span, opts)
-    new_stack = [updated_span | other_spans]
 
-    with {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack}) do
-      {:ok, updated_span}
+    with {:ok, updated} <- Span.update(current_span, opts),
+         new_stack <- [updated | other_spans],
+         {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack}) do
+      {:ok, updated}
     end
   end
 

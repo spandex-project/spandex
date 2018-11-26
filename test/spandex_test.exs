@@ -127,8 +127,6 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.update_span(:disabled)
     end
 
-    # TODO: Currently, invalid opts are silently ignored. Should we change that?
-    @tag :skip
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
@@ -197,8 +195,6 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.update_top_span(:disabled)
     end
 
-    # TODO: Currently, invalid opts are silently ignored. Should we change that?
-    @tag :skip
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
@@ -234,8 +230,6 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.update_all_spans(:disabled)
     end
 
-    # TODO: Currently, invalid opts are silently ignored. Should we change that?
-    @tag :skip
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
