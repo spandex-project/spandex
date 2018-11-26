@@ -34,4 +34,26 @@ defmodule Spandex.Test.SpanTest do
 
     assert(span.completion_time != nil)
   end
+
+  test "spans are updated with the opts passed into `finish_trace`" do
+    Tracer.start_trace("my_trace")
+    Tracer.update_span(service: :my_app, type: :web)
+    Tracer.finish_trace(service: :your_app, type: :db)
+
+    span = Util.find_span("my_trace")
+
+    assert(span.service == :your_app)
+    assert(span.type == :db)
+  end
+
+  test "spans are updated with the opts passed into `finish_span`" do
+    Tracer.start_trace("my_trace")
+    Tracer.start_span("my_span")
+    Tracer.finish_span(service: :your_app)
+    Tracer.finish_trace()
+
+    span = Util.find_span("my_span")
+
+    assert(span.service == :your_app)
+  end
 end

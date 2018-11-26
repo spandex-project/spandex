@@ -186,14 +186,14 @@ defmodule Spandex.Tracer do
       @impl Spandex.Tracer
       def finish_trace(opts \\ []) do
         opts
-        |> config(@otp_app)
+        |> validate_update_config(@otp_app)
         |> Spandex.finish_trace()
       end
 
       @impl Spandex.Tracer
       def finish_span(opts \\ []) do
         opts
-        |> config(@otp_app)
+        |> validate_update_config(@otp_app)
         |> Spandex.finish_span()
       end
 
@@ -257,7 +257,8 @@ defmodule Spandex.Tracer do
           {:ok, span_context} ->
             Spandex.inject_context(headers, span_context, config(opts, @otp_app))
 
-          _ -> headers
+          _ ->
+            headers
         end
       end
 
@@ -295,6 +296,7 @@ defmodule Spandex.Tracer do
           |> Optimal.validate!(schema)
           |> Keyword.put(:trace_key, __MODULE__)
           |> Keyword.put(:strategy, env[:strategy] || Spandex.Strategy.Pdict)
+          |> Keyword.put(:adapter, env[:adapter])
         end
       end
     end

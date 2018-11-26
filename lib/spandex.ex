@@ -136,7 +136,11 @@ defmodule Spandex do
         error
 
       {:ok, %Trace{spans: spans, stack: stack} = trace} ->
-        unfinished_spans = Enum.map(stack, &ensure_completion_time_set(&1, adapter))
+        unfinished_spans =
+          stack
+          |> List.update_at(0, &update_or_keep(&1, opts))
+          |> Enum.map(&ensure_completion_time_set(&1, adapter))
+
         sender = opts[:sender] || adapter.default_sender()
         # TODO: We need to define a behaviour for the Sender API.
         sender.send_trace(%Trace{trace | spans: spans ++ unfinished_spans, stack: []})
@@ -168,7 +172,10 @@ defmodule Spandex do
         {:error, :no_span_context}
 
       {:ok, %Trace{stack: [span | tail], spans: spans} = trace} ->
-        finished_span = ensure_completion_time_set(span, adapter)
+        finished_span =
+          span
+          |> update_or_keep(opts)
+          |> ensure_completion_time_set(adapter)
 
         strategy.put_trace(opts[:trace_key], %{
           trace
