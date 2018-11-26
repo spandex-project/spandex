@@ -19,6 +19,13 @@ defmodule Spandex do
   @typedoc "Unix timestamp in nanoseconds"
   @type timestamp :: non_neg_integer()
 
+  @doc """
+  Starts a new trace.
+
+  Span updates for the first span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid it is
+  safer to perform a second call to `update_span/2` and check the return value.
+  """
   @spec start_trace(binary(), Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
@@ -37,11 +44,17 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Start a new span.
+
+  Span updates for that span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid it is
+  safer to perform a second call to `update_span/2` and check the return value.
+  """
   @spec start_span(String.t(), Tracer.opts()) ::
           {:ok, Span.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
-          | {:error, [Optimal.error()]}
   def start_span(_, :disabled), do: {:error, :disabled}
 
   def start_span(name, opts) do
@@ -59,6 +72,11 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Updates the current span.
+
+  In the case of an invalid update, validation errors are returned.
+  """
   @spec update_span(Tracer.opts(), boolean()) ::
           {:ok, Span.t()}
           | {:error, :disabled}
@@ -86,6 +104,15 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Updates the top most parent span.
+
+  Any spans that have already been started will not inherit any of the updates
+  from that span. For instance, if you change `service`, it will not be
+  reflected in already started spans.
+
+  In the case of an invalid update, validation errors are returned.
+  """
   @spec update_top_span(Tracer.opts()) ::
           {:ok, Span.t()}
           | {:error, :disabled}
@@ -95,6 +122,11 @@ defmodule Spandex do
 
   def update_top_span(opts), do: update_span(opts, true)
 
+  @doc """
+  Updates all spans, complete and in progress.
+
+  In the case of an invalid update for any span, validation errors are returned.
+  """
   @spec update_all_spans(Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
@@ -119,11 +151,18 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Finishes the current trace.
+
+  Span updates for that span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid it is
+  safer to perform a call to `update_span/2` and check the return value before
+  finishing the trace.
+  """
   @spec finish_trace(Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
-          | {:error, [Optimal.error()]}
   def finish_trace(:disabled), do: {:error, :disabled}
 
   def finish_trace(opts) do
@@ -151,12 +190,19 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Finishes the current span.
+
+  Span updates for that span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid it is
+  safer to perform a call to `update_span/2` and check the return value before
+  finishing the span.
+  """
   @spec finish_span(Tracer.opts()) ::
           {:ok, Span.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
           | {:error, :no_span_context}
-          | {:error, [Optimal.error()]}
   def finish_span(:disabled), do: {:error, :disabled}
 
   def finish_span(opts) do
@@ -190,6 +236,11 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Updates the current span with error details.
+
+  In the case of an invalid value, validation errors are returned.
+  """
   @spec span_error(Exception.t(), Enum.t(), Tracer.opts()) ::
           {:ok, Span.t()}
           | {:error, :disabled}
@@ -203,6 +254,9 @@ defmodule Spandex do
     update_span(Keyword.put_new(opts, :error, updates))
   end
 
+  @doc """
+  Returns the id of the currently running trace.
+  """
   @spec current_trace_id(Tracer.opts()) :: Spandex.id() | nil
   def current_trace_id(:disabled), do: nil
 
@@ -220,6 +274,9 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Returns the id of the currently running span.
+  """
   @spec current_span_id(Tracer.opts()) :: Spandex.id() | nil
   def current_span_id(:disabled), do: nil
 
@@ -230,6 +287,9 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Returns the `%Span{}` struct for the currently running span
+  """
   @spec current_span(Tracer.opts()) :: Span.t() | nil
   def current_span(:disabled), do: nil
 
@@ -250,12 +310,18 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Returns the current `%SpanContext{}` or an error.
+
+  Expect changes to this in the future, as this will eventualy be refactored to
+  only ever return a `%SpanContext{}`, or at least to always return something
+  consistent.
+  """
   @spec current_context(Tracer.opts()) ::
           {:ok, SpanContext.t()}
           | {:error, :disabled}
           | {:error, :no_span_context}
           | {:error, :no_trace_context}
-          | {:error, [Optimal.error()]}
   def current_context(:disabled), do: {:error, :disabled}
 
   def current_context(opts) do
@@ -273,11 +339,17 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Given a `%SpanContext{}` resumes a trace from a different process or service.
+
+  Span updates for that span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid it is
+  safer to perform a second call to `update_span/2` and check the return value.
+  """
   @spec continue_trace(String.t(), SpanContext.t(), Keyword.t()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
-          | {:error, [Optimal.error()]}
   def continue_trace(_, _, :disabled), do: {:error, :disabled}
 
   def continue_trace(name, %SpanContext{} = span_context, opts) do
@@ -291,11 +363,17 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Given a trace_id and span_id, resumes a trace from a different process or service.
+
+  Span updates for that span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid it is
+  safer to perform a second call to `update_span/2` and check the return value.
+  """
   @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Keyword.t()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
-          | {:error, [Optimal.error()]}
   @deprecated "Use continue_trace/3 instead"
   def continue_trace(_, _, _, :disabled), do: {:error, :disabled}
 
@@ -303,11 +381,17 @@ defmodule Spandex do
     continue_trace(name, %SpanContext{trace_id: trace_id, parent_id: span_id}, opts)
   end
 
+  @doc """
+  Given a span struct, resumes a trace from a different process or service.
+
+  Span updates for that span may be passed in. They are skipped if they are
+  invalid updates. As such, if you aren't sure if your updates are valid it is
+  safer to perform a second call to `update_span/2` and check the return value.
+  """
   @spec continue_trace_from_span(String.t(), Span.t(), Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
-          | {:error, [Optimal.error()]}
   def continue_trace_from_span(_name, _span, :disabled), do: {:error, :disabled}
 
   def continue_trace_from_span(name, span, opts) do
@@ -321,10 +405,12 @@ defmodule Spandex do
     end
   end
 
+  @doc """
+  Returns the context from a given set of HTTP headers, as determined by the adapter.
+  """
   @spec distributed_context(Plug.Conn.t(), Tracer.opts()) ::
           {:ok, SpanContext.t()}
           | {:error, :disabled}
-          | {:error, [Optimal.error()]}
   def distributed_context(_, :disabled), do: {:error, :disabled}
 
   def distributed_context(conn, opts) do
@@ -332,6 +418,10 @@ defmodule Spandex do
     adapter.distributed_context(conn, opts)
   end
 
+  @doc """
+  Alters headers to include the outgoing HTTP headers necessary to continue a
+  distributed trace, as determined by the adapter.
+  """
   @spec inject_context(headers(), SpanContext.t(), Tracer.opts()) :: headers()
   def inject_context(headers, %SpanContext{} = span_context, opts) do
     adapter = opts[:adapter]
