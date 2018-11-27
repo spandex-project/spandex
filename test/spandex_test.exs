@@ -130,8 +130,6 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.update_span(:disabled)
     end
 
-    # TODO: Currently, invalid opts are silently ignored. Should we change that?
-    @tag :skip
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
@@ -200,8 +198,6 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.update_top_span(:disabled)
     end
 
-    # TODO: Currently, invalid opts are silently ignored. Should we change that?
-    @tag :skip
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
@@ -237,8 +233,6 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.update_all_spans(:disabled)
     end
 
-    # TODO: Currently, invalid opts are silently ignored. Should we change that?
-    @tag :skip
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
@@ -325,15 +319,11 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.finish_trace(:disabled)
     end
 
-    # TODO: Currently, invalid opts are silently ignored. Should we change that?
-    @tag :skip
-    test "returns an error if invalid options are specified" do
+    test "does not return an error if invalid update options are supplied" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
 
-      assert {:error, validation_errors} = Spandex.finish_trace(@base_opts ++ [type: "not an atom"])
-
-      assert {:type, "must be of type :atom"} in validation_errors
+      assert {:ok, %Trace{id: trace_id}} = Spandex.finish_trace(@base_opts ++ [type: "not an atom"])
     end
   end
 
@@ -389,15 +379,11 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.finish_trace(:disabled)
     end
 
-    # TODO: Currently, invalid opts are silently ignored. Should we change that?
-    @tag :skip
-    test "returns an error if invalid options are specified" do
+    test "ignores any span update failures" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
 
-      assert {:error, validation_errors} = Spandex.finish_span(@base_opts ++ [type: "not an atom"])
-
-      assert {:type, "must be of type :atom"} in validation_errors
+      assert {:ok, %Span{}} = Spandex.finish_span(@base_opts ++ [type: "not an atom"])
     end
   end
 
@@ -427,8 +413,6 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.span_error(@runtime_error, @fake_stacktrace, :disabled)
     end
 
-    # TODO: Currently, invalid opts are silently ignored. Should we change that?
-    @tag :skip
     test "returns an error if invalid options are specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
@@ -439,7 +423,6 @@ defmodule Spandex.Test.SpandexTest do
                  @fake_stacktrace,
                  @base_opts ++ [type: "not an atom"]
                )
-
       assert {:type, "must be of type :atom"} in validation_errors
     end
   end
