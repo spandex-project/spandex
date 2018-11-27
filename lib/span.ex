@@ -219,7 +219,7 @@ defmodule Spandex.Span do
           {:ok, Span.t()}
           | {:error, [Optimal.error()]}
   def child_of(parent_span, name, id, start, opts) do
-    child = %Span{parent_span | id: id, name: name, start: start, parent_id: parent_span.id}
+    child = %Span{parent_span | id: id, name: name, start: start, parent_id: parent_span.id, completion_time: nil}
     update(child, opts)
   end
 

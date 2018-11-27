@@ -298,10 +298,18 @@ defmodule Spandex.Tracer do
 
           opts
           |> Optimal.validate!(schema)
-          |> Keyword.put_new(:trace_key, __MODULE__)
+          |> add_trace_key(env[:trace_key])
           |> Keyword.put(:strategy, env[:strategy] || Spandex.Strategy.Pdict)
           |> Keyword.put(:adapter, env[:adapter])
         end
+      end
+
+      defp add_trace_key(opts, nil) do
+        Keyword.put(opts, :trace_key, __MODULE__)
+      end
+
+      defp add_trace_key(opts, key) do
+        Keyword.put(opts, :trace_key, key)
       end
     end
   end
