@@ -3,7 +3,7 @@ defmodule Spandex.TestAdapter do
   @behaviour Spandex.Adapter
 
   require Logger
-  alias Spandex.SpanContext
+  alias Spandex.{SpanContext, Tracer}
 
   @max_id 9_223_372_036_854_775_807
 
