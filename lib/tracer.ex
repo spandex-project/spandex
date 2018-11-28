@@ -213,7 +213,6 @@ defmodule Spandex.Tracer do
         Spandex.continue_trace(span_name, span_context, config(opts, @otp_app))
       end
 
-      {:spandex, github: "spandex-project/spandex", branch: "allow-setting-trace-key"},
       # This is just to get around the ambiguous defaults until we fully remove this API
       def continue_trace(span_name, trace_id, span_id) do
         continue_trace(span_name, trace_id, span_id, [])
