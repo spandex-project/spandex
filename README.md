@@ -151,7 +151,7 @@ defmodule ManuallyTraced do
 
   # Handles exception at the span level. Trace still must be reported.
   def span_me_also() do
-    Tracer.span("span_me_also) do
+    Tracer.span("span_me_also") do
       ...
     end
   end
