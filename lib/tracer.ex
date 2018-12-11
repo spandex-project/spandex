@@ -107,7 +107,7 @@ defmodule Spandex.Tracer do
       Use to create and configure a tracer.
       """
       @impl Spandex.Tracer
-      @spec configure(Tracer.opts()) :: :ok
+      @spec configure(Spandex.Tracer.opts()) :: :ok
       def configure(opts) do
         case config(opts, @otp_app) do
           :disabled ->
