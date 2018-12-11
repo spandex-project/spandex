@@ -7,7 +7,9 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 ## [2.4.1](https://github.com/spandex-project/spandex/compare/2.4.0...2.4.1) (2018-12-11)
 
+### Bug Fixes:
 
+* Resolve unknown dialyzer type error
 
 
 ### Bug Fixes:
