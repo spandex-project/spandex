@@ -5,6 +5,17 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [2.4.1](https://github.com/spandex-project/spandex/compare/2.4.0...2.4.1) (2018-12-11)
+
+
+
+
+### Bug Fixes:
+
+* don't silence errors on span update calls (#90)
+
+* update span on finish trace/update (#88)
+
 ## [2.4.0](https://github.com/spandex-project/spandex/compare/2.4.0...2.4.0) (2018-10-11)
 
 
