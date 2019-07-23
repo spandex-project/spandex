@@ -19,9 +19,11 @@ defmodule Spandex.Mixfile do
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         "coveralls.circle": :test,
-        coveralls: :test
+        coveralls: :test,
+        dialyzer: :test
       ],
-      deps: deps()
+      deps: deps(),
+      dialyzer: dialyzer()
     ]
   end
 
@@ -58,7 +60,7 @@ defmodule Spandex.Mixfile do
     [
       {:benchee, "~> 0.13.2", only: [:dev, :test]},
       {:credo, "~> 0.9.2", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.19.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
       {:git_ops, "~> 0.3.3", only: :dev},
@@ -68,4 +70,21 @@ defmodule Spandex.Mixfile do
       {:decorator, "~> 1.2", optional: true}
     ]
   end
+
+  defp dialyzer do
+    [
+      flags: [:error_handling, :race_conditions, :underspecs, :unknown, :unmatched_returns],
+      list_unused_filters: true,
+      plt_add_apps: plt_apps()
+    ]
+  end
+
+  defp plt_apps,
+    do: [
+      :ex_unit,
+      :iex,
+      :jason,
+      :mix,
+      :plug
+    ]
 end

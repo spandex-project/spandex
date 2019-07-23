@@ -61,7 +61,7 @@ defmodule Spandex.Plug.StartTrace do
         Utils.trace(conn, true)
 
       {:error, :no_distributed_trace} ->
-        tracer.start_trace(opts[:span_name], tracer_opts)
+        _ = tracer.start_trace(opts[:span_name], tracer_opts)
         Utils.trace(conn, true)
 
       _ ->

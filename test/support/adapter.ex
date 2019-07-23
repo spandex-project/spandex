@@ -46,7 +46,7 @@ defmodule Spandex.TestAdapter do
   Injects test HTTP headers to represent the specified SpanContext
   """
   @impl Spandex.Adapter
-  @spec inject_context(Spandex.headers(), SpanContext.t(), Tracer.opts()) :: Spandex.headers()
+  @spec inject_context(Spandex.headers(), SpanContext.t(), Spandex.Tracer.opts()) :: Spandex.headers()
   def inject_context(headers, %SpanContext{} = span_context, _opts) when is_list(headers) do
     span_context
     |> tracing_headers()
@@ -62,7 +62,7 @@ defmodule Spandex.TestAdapter do
 
   # Private Helpers
 
-  @spec get_first_header(conn :: Plug.Conn.t(), header_name :: binary) :: binary | nil
+  @spec get_first_header(conn :: Plug.Conn.t(), header_name :: binary) :: integer() | nil
   defp get_first_header(conn, header_name) do
     conn
     |> Plug.Conn.get_req_header(header_name)

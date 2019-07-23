@@ -124,14 +124,14 @@ defmodule Spandex.Tracer do
           opts = unquote(opts)
 
           name = unquote(name)
-          unquote(__MODULE__).start_trace(name, opts)
+          _ = unquote(__MODULE__).start_trace(name, opts)
 
           try do
             unquote(body)
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              unquote(__MODULE__).span_error(exception, stacktrace, opts)
+              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_trace()
@@ -144,14 +144,20 @@ defmodule Spandex.Tracer do
         quote do
           opts = unquote(opts)
           name = unquote(name)
+<<<<<<< HEAD
           unquote(__MODULE__).start_span(name, opts)
+=======
+          _ = unquote(__MODULE__).start_span(name, opts)
+          span_id = unquote(__MODULE__).current_span_id()
+          _ = Logger.metadata(span_id: span_id)
+>>>>>>> fixed dialyzer
 
           try do
             unquote(body)
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              unquote(__MODULE__).span_error(exception, stacktrace, opts)
+              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
             unquote(__MODULE__).finish_span()

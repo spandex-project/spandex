@@ -37,7 +37,7 @@ defmodule Spandex do
     strategy = opts[:strategy]
 
     if strategy.trace_active?(opts[:trace_key]) do
-      Logger.error("Tried to start a trace over top of another trace.")
+      _ = Logger.error("Tried to start a trace over top of another trace.")
       {:error, :trace_running}
     else
       do_start_trace(name, opts)
@@ -164,7 +164,7 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:error, :no_trace_context} = error ->
-        Logger.error("Tried to finish a trace without an active trace.")
+        _ = Logger.error("Tried to finish a trace without an active trace.")
         error
 
       {:ok, %Trace{spans: spans, stack: stack} = trace} ->
@@ -175,7 +175,7 @@ defmodule Spandex do
 
         sender = opts[:sender] || adapter.default_sender()
         # TODO: We need to define a behaviour for the Sender API.
-        sender.send_trace(%Trace{trace | spans: spans ++ unfinished_spans, stack: []})
+        _ = sender.send_trace(%Trace{trace | spans: spans ++ unfinished_spans, stack: []})
         strategy.delete_trace(opts[:trace_key])
 
       {:error, _} = error ->
@@ -207,7 +207,7 @@ defmodule Spandex do
         error
 
       {:ok, %Trace{stack: []}} ->
-        Logger.error("Tried to finish a span without an active span.")
+        _ = Logger.error("Tried to finish a span without an active span.")
         {:error, :no_span_context}
 
       {:ok, %Trace{stack: [span | tail], spans: spans} = trace} ->
@@ -216,7 +216,7 @@ defmodule Spandex do
           |> update_or_keep(opts)
           |> ensure_completion_time_set(adapter)
 
-        strategy.put_trace(opts[:trace_key], %{
+        _ = strategy.put_trace(opts[:trace_key], %{
           trace
           | stack: tail,
             spans: [finished_span | spans]
@@ -351,7 +351,7 @@ defmodule Spandex do
     strategy = opts[:strategy]
 
     if strategy.trace_active?(opts[:trace_key]) do
-      Logger.error("Tried to continue a trace over top of another trace.")
+      _ = Logger.error("Tried to continue a trace over top of another trace.")
       {:error, :trace_already_present}
     else
       do_continue_trace(name, span_context, opts)
@@ -393,7 +393,7 @@ defmodule Spandex do
     strategy = opts[:strategy]
 
     if strategy.trace_active?(opts[:trace_key]) do
-      Logger.error("Tried to continue a trace over top of another trace.")
+      _ = Logger.error("Tried to continue a trace over top of another trace.")
       {:error, :trace_already_present}
     else
       do_continue_trace_from_span(name, span, opts)
