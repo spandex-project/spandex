@@ -52,7 +52,7 @@ Define your tracer:
 
 ```elixir
 defmodule MyApp.Tracer do
-  use Spandex.Tracer, otp_app: :mya_app
+  use Spandex.Tracer, otp_app: :my_app
 end
 ```
 
