@@ -125,8 +125,6 @@ defmodule Spandex.Tracer do
 
           name = unquote(name)
           unquote(__MODULE__).start_trace(name, opts)
-          span_id = unquote(__MODULE__).current_span_id()
-          Logger.metadata(span_id: span_id)
 
           try do
             unquote(body)
@@ -147,8 +145,6 @@ defmodule Spandex.Tracer do
           opts = unquote(opts)
           name = unquote(name)
           unquote(__MODULE__).start_span(name, opts)
-          span_id = unquote(__MODULE__).current_span_id()
-          Logger.metadata(span_id: span_id)
 
           try do
             unquote(body)
