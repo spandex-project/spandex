@@ -1,10 +1,12 @@
 defmodule Spandex.Mixfile do
   use Mix.Project
 
+  @version "2.4.2"
+
   def project do
     [
       app: :spandex,
-      version: "2.4.1",
+      version: @version,
       elixir: "~> 1.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
