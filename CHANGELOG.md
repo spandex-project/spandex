@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [2.4.2](https://github.com/spandex-project/spandex/compare/2.4.1...2.4.2) (2020-1-13)
+
+
+
+
+### Bug Fixes:
+
+* Add missing trace_id to logger metadata (#107)
+
 ## [2.4.1](https://github.com/spandex-project/spandex/compare/2.4.0...2.4.1) (2018-12-11)
 
 ### Bug Fixes:
