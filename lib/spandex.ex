@@ -482,7 +482,7 @@ defmodule Spandex do
 
     with {:ok, span} <- Span.child_of(current_span, name, adapter.span_id(), adapter.now(), opts),
          {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: [span | trace.stack]}) do
-      Logger.metadata(span_id: span.id)
+      Logger.metadata(span_id: span.id, trace_id: trace.id)
       {:ok, span}
     end
   end
@@ -494,7 +494,7 @@ defmodule Spandex do
 
     with {:ok, span} <- span(name, opts, span_context, adapter),
          {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: [span]}) do
-      Logger.metadata(span_id: span.id)
+      Logger.metadata(span_id: span.id, trace_id: trace_id)
       {:ok, span}
     end
   end

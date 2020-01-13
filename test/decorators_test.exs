@@ -1,5 +1,7 @@
 defmodule Spandex.DecoratorsTest do
   use ExUnit.Case, async: true
+  import ExUnit.CaptureLog
+  require Logger
 
   alias Spandex.Test.Support.Decorated
   alias Spandex.Test.Support.OtherTracer
@@ -40,5 +42,30 @@ defmodule Spandex.DecoratorsTest do
     OtherTracer.finish_trace()
 
     assert Util.find_span("Spandex.Test.Support.Decorated.test_other_tracer/0") != nil
+  end
+
+  test "when decorating with trace, it logs span_id and trace_id" do
+    log =
+      capture_log(fn ->
+        Decorated.test_trace()
+        Logger.info("test logs")
+      end)
+
+    assert String.contains?(log, "trace_id")
+    assert String.contains?(log, "span_id")
+  end
+
+  test "when decorating with span, it logs span_id and trace_id" do
+    log =
+      capture_log(fn ->
+        Tracer.start_trace("my_trace")
+        Decorated.test_span()
+        Tracer.finish_trace()
+
+        Logger.info("test logs")
+      end)
+
+    assert String.contains?(log, "trace_id")
+    assert String.contains?(log, "span_id")
   end
 end

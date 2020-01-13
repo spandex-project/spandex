@@ -1,6 +1,7 @@
 defmodule Spandex.Test.SpandexTest do
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
+  require Logger
 
   alias Spandex.Test.Util
 
@@ -57,6 +58,19 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, validation_errors} = Spandex.start_trace("root_span", @base_opts)
       assert {:service, "is required"} in validation_errors
     end
+
+    test "adds span_id, trace_id to log metadata" do
+      opts = @base_opts ++ @span_opts
+
+      log =
+        capture_log(fn ->
+          Spandex.start_trace("root_span", opts)
+          Logger.info("test logs")
+        end)
+
+      assert String.contains?(log, "trace_id")
+      assert String.contains?(log, "span_id")
+    end
   end
 
   describe "Spandex.start_span/2" do
@@ -91,6 +105,20 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, validation_errors} = Spandex.start_span("span_name", @base_opts ++ [type: "not an atom"])
 
       assert {:type, "must be of type :atom"} in validation_errors
+    end
+
+    test "adds span_id, trace_id to log metadata" do
+      opts = @base_opts ++ @span_opts
+
+      log =
+        capture_log(fn ->
+          Spandex.start_trace("root_span", opts)
+          Spandex.start_span("span_name", @base_opts)
+          Logger.info("test logs")
+        end)
+
+      assert String.contains?(log, "trace_id")
+      assert String.contains?(log, "span_id")
     end
   end
 
