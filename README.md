@@ -5,7 +5,7 @@
 [![Inline docs](http://inch-ci.org/github/spandex-project/spandex.svg)](http://inch-ci.org/github/spandex-project/spandex)
 [![Coverage Status](https://coveralls.io/repos/github/spandex-project/spandex/badge.svg)](https://coveralls.io/github/spandex-project/spandex)
 [![Hex pm](http://img.shields.io/hexpm/v/spandex.svg?style=flat)](https://hex.pm/packages/spandex)
-[![Ebert](https://ebertapp.io/github/spandex-project/spandex.svg)](https://ebertapp.io/github/spandex-project/spandex)
+[![SourceLevel](https://app.sourcelevel.io/github/spandex-project/spandex.svg)](https://app.sourcelevel.io/github/spandex-project/spandex)
 
 View the [documentation](https://hexdocs.pm/spandex)
 
