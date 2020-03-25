@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [2.4.3](https://github.com/spandex-project/spandex/compare/2.4.2...2.4.3) (2020-3-25)
+
+
+
+
+### Bug Fixes:
+
+* No unmatched returns (#109)
+
 ## [2.4.2](https://github.com/spandex-project/spandex/compare/2.4.1...2.4.2) (2020-1-13)
 
 
