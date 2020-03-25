@@ -124,17 +124,17 @@ defmodule Spandex.Tracer do
           opts = unquote(opts)
 
           name = unquote(name)
-          unquote(__MODULE__).start_trace(name, opts)
+          _ = unquote(__MODULE__).start_trace(name, opts)
 
           try do
             unquote(body)
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              unquote(__MODULE__).span_error(exception, stacktrace, opts)
+              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
-            unquote(__MODULE__).finish_trace()
+            _ = unquote(__MODULE__).finish_trace()
           end
         end
       end
@@ -144,17 +144,17 @@ defmodule Spandex.Tracer do
         quote do
           opts = unquote(opts)
           name = unquote(name)
-          unquote(__MODULE__).start_span(name, opts)
+          _ = unquote(__MODULE__).start_span(name, opts)
 
           try do
             unquote(body)
           rescue
             exception ->
               stacktrace = System.stacktrace()
-              unquote(__MODULE__).span_error(exception, stacktrace, opts)
+              _ = unquote(__MODULE__).span_error(exception, stacktrace, opts)
               reraise exception, stacktrace
           after
-            unquote(__MODULE__).finish_span()
+            _ = unquote(__MODULE__).finish_span()
           end
         end
       end
