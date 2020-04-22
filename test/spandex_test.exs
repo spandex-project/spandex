@@ -448,6 +448,7 @@ defmodule Spandex.Test.SpandexTest do
                  @fake_stacktrace,
                  @base_opts ++ [type: "not an atom"]
                )
+
       assert {:type, "must be of type :atom"} in validation_errors
     end
   end
@@ -573,6 +574,20 @@ defmodule Spandex.Test.SpandexTest do
 
       assert {:type, "must be of type :atom"} in validation_errors
     end
+
+    test "adds span_id, trace_id to log metadata" do
+      opts = @base_opts ++ @span_opts
+      span_context = %SpanContext{trace_id: 123, parent_id: 456}
+
+      log =
+        capture_log(fn ->
+          Spandex.continue_trace("root_span", span_context, opts)
+          Logger.info("test logs")
+        end)
+
+      assert String.contains?(log, "trace_id")
+      assert String.contains?(log, "span_id")
+    end
   end
 
   describe "Spandex.continue_trace/4 (DEPRECATED)" do
@@ -603,6 +618,19 @@ defmodule Spandex.Test.SpandexTest do
                Spandex.continue_trace("span_name", 123, 456, @base_opts ++ [type: "not an atom"])
 
       assert {:type, "must be of type :atom"} in validation_errors
+    end
+
+    test "adds span_id, trace_id to log metadata" do
+      opts = @base_opts ++ @span_opts
+
+      log =
+        capture_log(fn ->
+          Spandex.continue_trace("root_span", 123, 456, opts)
+          Logger.info("test logs")
+        end)
+
+      assert String.contains?(log, "trace_id")
+      assert String.contains?(log, "span_id")
     end
   end
 

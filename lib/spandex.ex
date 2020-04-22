@@ -454,6 +454,8 @@ defmodule Spandex do
     adapter = opts[:adapter]
 
     with {:ok, top_span} <- span(name, opts, span_context, adapter) do
+      Logger.metadata(trace_id: span_context.trace_id, span_id: top_span.id)
+
       trace = %Trace{
         id: span_context.trace_id,
         priority: span_context.priority,
