@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [2.4.4](https://github.com/spandex-project/spandex/compare/2.4.3...2.4.4) (2020-4-28)
+
+
+
+
+### Bug Fixes:
+
+* Set Logger.metadata when `continue_trace/3` is called as well (#111)
+
 ## [2.4.3](https://github.com/spandex-project/spandex/compare/2.4.2...2.4.3) (2020-3-25)
 
 
