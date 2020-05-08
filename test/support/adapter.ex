@@ -42,6 +42,36 @@ defmodule Spandex.TestAdapter do
     end
   end
 
+  @impl Spandex.Adapter
+  @spec distributed_context(headers :: Spandex.headers(), Keyword.t()) ::
+          {:ok, SpanContext.t()}
+          | {:error, :no_distributed_trace}
+  def distributed_context(headers, _opts) when is_list(headers) do
+    trace_id = get_first_header(headers, "x-test-trace-id")
+    parent_id = get_first_header(headers, "x-test-parent-id")
+    priority = get_first_header(headers, "x-test-sampling-priority")
+
+    if is_nil(trace_id) || is_nil(parent_id) do
+      {:error, :no_distributed_trace}
+    else
+      {:ok, %SpanContext{trace_id: trace_id, parent_id: parent_id, priority: priority}}
+    end
+  end
+
+  def distributed_context(headers, _opts) when is_map(headers) do
+    %{
+      "x-test-trace-id" => trace_id,
+      "x-test-parent-id" => parent_id,
+      "x-test-sampling-priority" => priority
+    } = headers
+
+    if is_nil(trace_id) || is_nil(parent_id) do
+      {:error, :no_distributed_trace}
+    else
+      {:ok, %SpanContext{trace_id: trace_id, parent_id: parent_id, priority: priority}}
+    end
+  end
+
   @doc """
   Injects test HTTP headers to represent the specified SpanContext
   """
@@ -61,6 +91,16 @@ defmodule Spandex.TestAdapter do
   end
 
   # Private Helpers
+
+  defp get_first_header(headers, key) when is_list(headers) do
+    headers
+    |> get_header(key)
+    |> List.first()
+  end
+
+  defp get_header(headers, key) do
+    for {^key, value} <- headers, do: value
+  end
 
   @spec get_first_header(conn :: Plug.Conn.t(), header_name :: binary) :: binary | nil
   defp get_first_header(conn, header_name) do
