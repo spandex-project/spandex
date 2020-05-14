@@ -678,7 +678,7 @@ defmodule Spandex.Test.SpandexTest do
     end
   end
 
-  describe "Spandex.distributed_context/2" do
+  describe "Spandex.distributed_context/2 with Plug.Conn" do
     test "returns a distributed context representation" do
       conn =
         :get
@@ -699,6 +699,28 @@ defmodule Spandex.Test.SpandexTest do
     test "returns an error if tracing is disabled" do
       conn = Plug.Test.conn(:get, "/")
       assert {:error, :disabled} == Spandex.distributed_context(conn, :disabled)
+    end
+  end
+
+  describe "Spandex.distributed_context/2 with headers()" do
+    test "returns a distributed context representation" do
+      list_headers = [
+        {"x-test-trace-id", 1234},
+        {"x-test-parent-id", 5678},
+        {"x-test-sampling-priority", 10}
+      ]
+
+      assert {:ok, %SpanContext{} = span_context} = Spandex.distributed_context(list_headers, @base_opts)
+      assert %SpanContext{trace_id: 1234, parent_id: 5678, priority: 10} = span_context
+
+      map_headers = %{
+        "x-test-trace-id" => 1234,
+        "x-test-parent-id" => 5678,
+        "x-test-sampling-priority" => 10
+      }
+
+      assert {:ok, %SpanContext{} = span_context} = Spandex.distributed_context(map_headers, @base_opts)
+      assert %SpanContext{trace_id: 1234, parent_id: 5678, priority: 10} = span_context
     end
   end
 

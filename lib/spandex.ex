@@ -403,14 +403,13 @@ defmodule Spandex do
   @doc """
   Returns the context from a given set of HTTP headers, as determined by the adapter.
   """
-  @spec distributed_context(Plug.Conn.t(), Tracer.opts()) ::
-          {:ok, SpanContext.t()}
-          | {:error, :disabled}
+  @spec distributed_context(Plug.Conn.t(), Tracer.opts()) :: {:ok, SpanContext.t()} | {:error, :disabled}
+  @spec distributed_context(headers(), Tracer.opts()) :: {:ok, SpanContext.t()} | {:error, :disabled}
   def distributed_context(_, :disabled), do: {:error, :disabled}
 
-  def distributed_context(conn, opts) do
+  def distributed_context(metadata, opts) do
     adapter = opts[:adapter]
-    adapter.distributed_context(conn, opts)
+    adapter.distributed_context(metadata, opts)
   end
 
   @doc """
