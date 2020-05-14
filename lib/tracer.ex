@@ -293,6 +293,7 @@ defmodule Spandex.Tracer do
           |> Keyword.put(:trace_key, __MODULE__)
           |> Keyword.put(:strategy, env[:strategy] || Spandex.Strategy.Pdict)
           |> Keyword.put(:adapter, env[:adapter])
+          |> Keyword.put(:sender, env[:sender])
         end
       end
     end
