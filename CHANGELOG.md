@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [3.0.1](https://github.com/spandex-project/spandex/compare/3.0.0...3.0.1) (2020-05-14)
+
+
+
+
+### Bug Fixes:
+
+* configure sender in tests
+
 ## [3.0.0](https://github.com/spandex-project/spandex/compare/2.4.4...3.0.0) (2020-05-14)
 ### Breaking Changes:
 
