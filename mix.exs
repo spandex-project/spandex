@@ -7,7 +7,7 @@ defmodule Spandex.Mixfile do
     [
       app: :spandex,
       version: @version,
-      elixir: "~> 1.3",
+      elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -61,6 +61,7 @@ defmodule Spandex.Mixfile do
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, ">= 0.19.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
+      {:nimble_parsec, "~> 0.4.0", only: :dev},
       {:git_ops, "~> 2.0.0", only: :dev},
       {:inch_ex, github: "rrrene/inch_ex", only: [:dev, :test]},
       {:optimal, "~> 0.3.3"},
