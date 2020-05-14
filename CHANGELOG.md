@@ -5,6 +5,13 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [3.0.0](https://github.com/spandex-project/spandex/compare/2.4.4...3.0.0) (2020-05-14)
+### Breaking Changes:
+
+* allow headers to be passed into `Spandex.distributed_context/2` (#113)
+
+
+
 ## [2.4.4](https://github.com/spandex-project/spandex/compare/2.4.3...2.4.4) (2020-4-28)
 
 

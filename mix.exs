@@ -1,7 +1,7 @@
 defmodule Spandex.Mixfile do
   use Mix.Project
 
-  @version "2.4.4"
+  @version "3.0.0"
 
   def project do
     [
@@ -61,7 +61,7 @@ defmodule Spandex.Mixfile do
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, ">= 0.19.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
-      {:git_ops, "~> 0.3.3", only: :dev},
+      {:git_ops, "~> 2.0.0", only: :dev},
       {:inch_ex, github: "rrrene/inch_ex", only: [:dev, :test]},
       {:optimal, "~> 0.3.3"},
       {:plug, ">= 1.0.0"},
