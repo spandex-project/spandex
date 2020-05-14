@@ -20,6 +20,10 @@ zipkin, Stackdriver, and any other trace viewer/aggregation tool you'd like to
 integrate with. We are still under active development, working on moving to a
 more standard/generic implementation of the internals. Contributions welcome!
 
+## 3.0 Release
+
+The 3.0 release only involves ensuring that you're using the latest adapter, which will be explicit in its dependency on a spandex version. This major version was done only to solve for breaking changes between the adapter and spandex core, in order to honor semver and also not break everyone's installation.
+
 ## 2.0 Upgrade Guide
 
 This is Datadog-specific since that's currently the only adapter.
