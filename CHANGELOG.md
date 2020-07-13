@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [3.0.2](https://github.com/spandex-project/spandex/compare/3.0.1...3.0.2) (2020-07-13)
+
+
+
+
+### Bug Fixes:
+
+* add a name to failed traces (#116)
+
 ## [3.0.1](https://github.com/spandex-project/spandex/compare/3.0.0...3.0.1) (2020-05-14)
 
 
