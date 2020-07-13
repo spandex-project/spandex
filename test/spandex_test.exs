@@ -47,7 +47,7 @@ defmodule Spandex.Test.SpandexTest do
           assert {:error, :trace_running} = Spandex.start_trace("duplicate_span", opts)
         end)
 
-      assert String.contains?(log, "[error] Tried to start a trace over top of another trace.")
+      assert String.contains?(log, "[error] Tried to start a trace over top of another trace")
     end
 
     test "returns an error if tracing is disabled" do
@@ -559,7 +559,7 @@ defmodule Spandex.Test.SpandexTest do
           assert {:error, :trace_already_present} = Spandex.continue_trace("span_name", span_context, opts)
         end)
 
-      assert String.contains?(log, "[error] Tried to continue a trace over top of another trace.")
+      assert String.contains?(log, "[error] Tried to continue a trace over top of another trace")
     end
 
     test "returns an error if tracing is disabled" do
@@ -606,7 +606,7 @@ defmodule Spandex.Test.SpandexTest do
           assert {:error, :trace_already_present} = Spandex.continue_trace("span_name", 123, 456, opts)
         end)
 
-      assert String.contains?(log, "[error] Tried to continue a trace over top of another trace.")
+      assert String.contains?(log, "[error] Tried to continue a trace over top of another trace")
     end
 
     test "returns an error if tracing is disabled" do
@@ -655,7 +655,7 @@ defmodule Spandex.Test.SpandexTest do
                    Spandex.continue_trace_from_span("root_span", existing_span, @base_opts)
         end)
 
-      assert String.contains?(log, "[error] Tried to continue a trace over top of another trace.")
+      assert String.contains?(log, "[error] Tried to continue a trace over top of another trace")
     end
 
     test "returns an error if tracing is disabled" do
