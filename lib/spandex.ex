@@ -453,7 +453,7 @@ defmodule Spandex do
     adapter = opts[:adapter]
 
     with {:ok, top_span} <- span(name, opts, span_context, adapter) do
-      Logger.metadata(trace_id: span_context.trace_id, span_id: top_span.id)
+      update_logger_metadata(trace_id: span_context.trace_id, span_id: top_span.id)
 
       trace = %Trace{
         id: span_context.trace_id,
@@ -483,7 +483,7 @@ defmodule Spandex do
 
     with {:ok, span} <- Span.child_of(current_span, name, adapter.span_id(), adapter.now(), opts),
          {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: [span | trace.stack]}) do
-      Logger.metadata(span_id: span.id, trace_id: trace.id)
+      update_logger_metadata(trace_id: trace.id, span_id: span.id)
       {:ok, span}
     end
   end
@@ -495,7 +495,7 @@ defmodule Spandex do
 
     with {:ok, span} <- span(name, opts, span_context, adapter),
          {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: [span]}) do
-      Logger.metadata(span_id: span.id, trace_id: trace_id)
+      update_logger_metadata(trace_id: trace_id, span_id: span.id)
       {:ok, span}
     end
   end
@@ -507,7 +507,7 @@ defmodule Spandex do
     span_context = %SpanContext{trace_id: trace_id}
 
     with {:ok, span} <- span(name, opts, span_context, adapter) do
-      Logger.metadata(trace_id: trace_id, span_id: span.id)
+      update_logger_metadata(trace_id: trace_id, span_id: span.id)
       trace = %Trace{spans: [], stack: [span], id: trace_id}
       strategy.put_trace(opts[:trace_key], trace)
     end
@@ -556,5 +556,9 @@ defmodule Spandex do
       {:error, _} -> span
       {:ok, span} -> span
     end
+  end
+
+  defp update_logger_metadata(trace_id: trace_id, span_id: span_id) do
+    Logger.metadata(trace_id: to_string(trace_id), span_id: to_string(span_id))
   end
 end
