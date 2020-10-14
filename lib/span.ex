@@ -112,7 +112,7 @@ defmodule Spandex.Span do
     ],
     error: [
       exception: ArgumentError.exception("foo"),
-      stacktrace: System.stacktrace(),
+      stacktrace: __STACKTRACE__,
       error?: true # Used for specifying that a span is an error when there is no exception or stacktrace.
     ],
     sql_query: [
