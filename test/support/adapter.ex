@@ -98,16 +98,15 @@ defmodule Spandex.TestAdapter do
     |> List.first()
   end
 
-  defp get_header(headers, key) do
-    for {^key, value} <- headers, do: value
-  end
-
-  @spec get_first_header(conn :: Plug.Conn.t(), header_name :: binary) :: binary | nil
   defp get_first_header(conn, header_name) do
     conn
     |> Plug.Conn.get_req_header(header_name)
     |> List.first()
     |> parse_header()
+  end
+
+  defp get_header(headers, key) do
+    for {^key, value} <- headers, do: value
   end
 
   defp parse_header(header) when is_bitstring(header) do
