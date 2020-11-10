@@ -5,6 +5,11 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [3.0.3](https://github.com/spandex-project/spandex/compare/3.0.2...3.0.3) (2020-11-10)
+
+
+
+
 ## [3.0.2](https://github.com/spandex-project/spandex/compare/3.0.1...3.0.2) (2020-07-13)
 
 

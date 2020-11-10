@@ -46,7 +46,7 @@ This is Datadog-specific since that's currently the only adapter.
 
 ```elixir
 def deps do
-  [{:spandex, "~> 3.0.2"}]
+  [{:spandex, "~> 3.0.3"}]
 end
 ```
 
