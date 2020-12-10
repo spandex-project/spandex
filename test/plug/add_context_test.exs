@@ -50,8 +50,8 @@ defmodule Spandex.Plug.AddContextTest do
 
       assert {:ok, expected_span} = Tracer.start_span("foobar")
 
-      assert Keyword.fetch!(Logger.metadata(), :trace_id) == tid
-      assert Keyword.fetch!(Logger.metadata(), :span_id) == expected_span.id
+      assert Keyword.fetch!(Logger.metadata(), :trace_id) == to_string(tid)
+      assert Keyword.fetch!(Logger.metadata(), :span_id) == to_string(expected_span.id)
 
       {:ok, _} = Tracer.finish_trace()
 
