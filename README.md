@@ -5,7 +5,8 @@
 [![Inline docs](http://inch-ci.org/github/spandex-project/spandex.svg)](http://inch-ci.org/github/spandex-project/spandex)
 [![Coverage Status](https://coveralls.io/repos/github/spandex-project/spandex/badge.svg)](https://coveralls.io/github/spandex-project/spandex)
 [![Hex pm](http://img.shields.io/hexpm/v/spandex.svg?style=flat)](https://hex.pm/packages/spandex)
-[![SourceLevel](https://app.sourcelevel.io/github/spandex-project/spandex.svg)](https://app.sourcelevel.io/github/spandex-project/spandex)
+[![Total Download](https://img.shields.io/hexpm/dt/spandex.svg)](https://hex.pm/packages/spandex)
+[![License](https://img.shields.io/hexpm/l/spandex.svg)](https://github.com/spandex-project/spandex/blob/master/LICENSE)
 
 View the [documentation](https://hexdocs.pm/spandex)
 
@@ -15,8 +16,8 @@ runtime of your system. Using distributed tracing, you can also get a view of
 how requests make their way through your entire ecosystem of microservices or
 applications. Currently, Spandex only supports integrating with
 [datadog](https://www.datadoghq.com/), but it is built to be agnostic to what
-platform you choose to view your trace data. Eventually it should support open
-zipkin, Stackdriver, and any other trace viewer/aggregation tool you'd like to
+platform you choose to view your trace data. Eventually it should support Open
+Zipkin, Stackdriver, and any other trace viewer/aggregation tool you'd like to
 integrate with. We are still under active development, working on moving to a
 more standard/generic implementation of the internals. Contributions welcome!
 
@@ -31,7 +32,7 @@ This is Datadog-specific since that's currently the only adapter.
 * Include the adapter as a dependency (see below).
 * Replace any occurrences of `Spandex.Adapters.Datadog` with
   `SpandexDatadog.Adapter` in your code.
-* Replace any occurences of `Spandex.Adapters.ApiSender` with
+* Replace any occurrences of `Spandex.Adapters.ApiSender` with
   `SpandexDatadog.ApiSender` in your code.
 
 ## Adapters
@@ -100,9 +101,9 @@ For adapter configuration, see the documentation for that adapter
 
 There are 3 plugs provided for usage w/ Phoenix:
 
-* `Spandex.Plug.StartTrace` - See moduledocs for options. Goes as early in your
+* `Spandex.Plug.StartTrace` - See module docs for options. Goes as early in your
   pipeline as possible.
-* `Spandex.Plug.AddContext` - See moduledocs for options. Either after the
+* `Spandex.Plug.AddContext` - See moduledoc for options. Either after the
   router, or inside a pipeline in the router.
 * `Spandex.Plug.EndTrace` - Must go *after* your router.
 
