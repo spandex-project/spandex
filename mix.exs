@@ -1,6 +1,7 @@
 defmodule Spandex.Mixfile do
   use Mix.Project
 
+  @source_url "https://github.com/spandex-project/spandex"
   @version "3.0.3"
 
   def project do
@@ -15,7 +16,6 @@ defmodule Spandex.Mixfile do
       package: package(),
       name: "Spandex",
       docs: docs(),
-      source_url: "https://github.com/spandex-project/spandex",
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         "coveralls.circle": :test,
@@ -32,25 +32,25 @@ defmodule Spandex.Mixfile do
   end
 
   defp package do
-    # These are the default files included in the package
     [
       name: :spandex,
       maintainers: ["Zachary Daniel", "Andrew Summers", "Greg Mefford"],
       licenses: ["MIT License"],
-      links: %{"GitHub" => "https://github.com/spandex-project/spandex"}
+      links: %{"GitHub" => @source_url}
     ]
   end
 
   defp docs do
     [
       main: "readme",
-      extras: [
-        "README.md"
-      ]
+      logo: "static/spandex.png",
+      source_url: @source_url,
+      source_ref: @version,
+      extras: ["CHANGELOG.md", "README.md"],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
   end
 
-  # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
@@ -61,14 +61,15 @@ defmodule Spandex.Mixfile do
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, ">= 0.19.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
-      {:nimble_parsec, "~> 0.5.3", only: :dev},
-      {:makeup_elixir, "~> 0.14.0", only: :dev},
       {:git_ops, "~> 2.0.0", only: :dev},
-      {:makeup, "~> 1.0.1", only: :dev},
       {:inch_ex, github: "rrrene/inch_ex", only: [:dev, :test]},
+      {:makeup, "~> 1.0.1", only: :dev},
+      {:makeup_elixir, "~> 0.14.0", only: :dev},
+      {:nimble_parsec, "~> 0.5.3", only: :dev},
+
+      {:decorator, "~> 1.2", optional: true},
       {:optimal, "~> 0.3.3"},
-      {:plug, ">= 1.0.0"},
-      {:decorator, "~> 1.2", optional: true}
+      {:plug, ">= 1.0.0"}
     ]
   end
 end
