@@ -37,7 +37,7 @@ defmodule Spandex do
     strategy = opts[:strategy]
 
     if strategy.trace_active?(opts[:trace_key]) do
-      Logger.error("Tried to start a trace over top of another trace: #{name}.")
+      Logger.error("Tried to start a trace over top of another trace. name: #{inspect(name)}")
       {:error, :trace_running}
     else
       do_start_trace(name, opts)
@@ -351,7 +351,7 @@ defmodule Spandex do
     strategy = opts[:strategy]
 
     if strategy.trace_active?(opts[:trace_key]) do
-      Logger.error("Tried to continue a trace over top of another trace: #{name}.")
+      Logger.error("Tried to continue a trace over top of another trace. name: #{inspect(name)}")
       {:error, :trace_already_present}
     else
       do_continue_trace(name, span_context, opts)
@@ -393,7 +393,7 @@ defmodule Spandex do
     strategy = opts[:strategy]
 
     if strategy.trace_active?(opts[:trace_key]) do
-      Logger.error("Tried to continue a trace over top of another trace: #{name}.")
+      Logger.error("Tried to continue a trace over top of another trace. name: #{inspect(name)}")
       {:error, :trace_already_present}
     else
       do_continue_trace_from_span(name, span, opts)
