@@ -119,7 +119,7 @@ defmodule Spandex.Tracer do
       end
 
       @impl Spandex.Tracer
-      defmacro trace(name, opts \\ [], do: body) do
+      defmacro trace(name, opts \\ [], do: body) when is_binary(name) do
         quote do
           opts = unquote(opts)
 
@@ -140,7 +140,7 @@ defmodule Spandex.Tracer do
       end
 
       @impl Spandex.Tracer
-      defmacro span(name, opts \\ [], do: body) do
+      defmacro span(name, opts \\ [], do: body) when is_binary(name) do
         quote do
           opts = unquote(opts)
           name = unquote(name)
