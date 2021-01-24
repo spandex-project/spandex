@@ -9,6 +9,20 @@ defmodule Spandex.Tracer do
     use Spandex.Tracer, otp_app: :my_app
   end
   ```
+
+  ## Options
+
+  All tracer functions accept the following tracer options:
+
+  * `:adapter` - The third party adapter to use. Required.
+  * `:service` - The default service name to use for spans declared without a service. Required.
+  * `:disabled?` - Allows for wholesale disabling a tracer.
+  * `:env` - A name used to identify the environment name, e.g `prod` or `development`.
+  * `:services` - A mapping of service name to the default span types.
+  * `:strategy` - The storage and tracing strategy. Currently only supports local process dictionary.
+  * `:sender` - Once a trace is complete, it is sent using this module. Defaults to the `default_sender/0` of the selected adapter.
+
+  Additionally, you can pass any `Spandex.Span.option()` and it will be merged into the span.
   """
 
   alias Spandex.{
@@ -19,7 +33,17 @@ defmodule Spandex.Tracer do
 
   @type tagged_tuple(arg) :: {:ok, arg} | {:error, term()}
   @type span_name() :: String.t()
-  @type opts :: Keyword.t() | :disabled
+  @type option ::
+          {:adapter, atom()}
+          | {:service, atom()}
+          | {:disabled?, boolean()}
+          | {:env, String.t()}
+          | {:services, keyword(atom())}
+          | {:strategy, atom()}
+          | {:sender, atom()}
+          | {:trace_key, atom()}
+          | Span.option()
+  @type opts :: [option()] | :disabled
 
   @callback configure(opts) :: :ok
   @callback start_trace(span_name, opts) :: tagged_tuple(Trace.t())
@@ -39,60 +63,10 @@ defmodule Spandex.Tracer do
               | {:error, :disabled}
               | {:error, :no_span_context}
               | {:error, :no_trace_context}
-              | {:error, [Optimal.error()]}
   @callback distributed_context(Plug.Conn.t(), opts) :: tagged_tuple(map)
   @callback inject_context(Spandex.headers(), opts) :: Spandex.headers()
   @macrocallback span(span_name, opts, do: Macro.t()) :: Macro.t()
   @macrocallback trace(span_name, opts, do: Macro.t()) :: Macro.t()
-
-  @tracer_opts Optimal.schema(
-                 opts: [
-                   adapter: :atom,
-                   service: :atom,
-                   disabled?: :boolean,
-                   env: :string,
-                   services: {:keyword, :atom},
-                   strategy: :atom,
-                   sender: :atom,
-                   trace_key: :atom
-                 ],
-                 required: [:adapter, :service],
-                 defaults: [
-                   disabled?: false,
-                   services: [],
-                   strategy: Spandex.Strategy.Pdict
-                 ],
-                 describe: [
-                   adapter: "The third party adapter to use",
-                   trace_key: "Don't set manually. This option is passed automatically.",
-                   sender:
-                     "Once a trace is complete, it is sent using this module. Defaults to the `default_sender/0` of the selected adapter",
-                   service: "The default service name to use for spans declared without a service",
-                   disabled?: "Allows for wholesale disabling a tracer",
-                   env: "A name used to identify the environment name, e.g `prod` or `development`",
-                   services: "A mapping of service name to the default span types.",
-                   strategy: "The storage and tracing strategy. Currently only supports local process dictionary."
-                 ]
-               )
-
-  @all_tracer_opts @tracer_opts
-                   |> Optimal.merge(
-                     Span.span_opts(),
-                     annotate: "Span Creation",
-                     add_required?: false
-                   )
-                   |> Map.put(:extra_keys?, false)
-
-  @doc """
-  A schema for the opts that a tracer accepts.
-
-  #{Optimal.Doc.document(@all_tracer_opts)}
-
-  All tracer functions that take opts use this schema.
-  This also accepts defaults for any value that can
-  be given to a span.
-  """
-  def tracer_opts(), do: @all_tracer_opts
 
   defmacro __using__(opts) do
     # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
@@ -101,7 +75,7 @@ defmodule Spandex.Tracer do
 
       @behaviour Spandex.Tracer
 
-      @opts Spandex.Tracer.tracer_opts()
+      @default_opts [disabled?: false, services: [], strategy: Spandex.Strategy.Pdict]
 
       @doc """
       Use to create and configure a tracer.
@@ -171,25 +145,25 @@ defmodule Spandex.Tracer do
 
       @impl Spandex.Tracer
       def update_span(opts) do
-        Spandex.update_span(validate_update_config(opts, @otp_app))
+        Spandex.update_span(update_config(opts, @otp_app))
       end
 
       @impl Spandex.Tracer
       def update_top_span(opts) do
-        Spandex.update_top_span(validate_update_config(opts, @otp_app))
+        Spandex.update_top_span(update_config(opts, @otp_app))
       end
 
       @impl Spandex.Tracer
       def finish_trace(opts \\ []) do
         opts
-        |> validate_update_config(@otp_app)
+        |> update_config(@otp_app)
         |> Spandex.finish_trace()
       end
 
       @impl Spandex.Tracer
       def finish_span(opts \\ []) do
         opts
-        |> validate_update_config(@otp_app)
+        |> update_config(@otp_app)
         |> Spandex.finish_span()
       end
 
@@ -259,11 +233,11 @@ defmodule Spandex.Tracer do
       end
 
       defp merge_config(opts, otp_app) do
-        otp_app
-        |> Application.get_env(__MODULE__)
-        |> Kernel.||([])
+        env = Application.get_env(otp_app, __MODULE__)
+
+        @default_opts
+        |> Keyword.merge(env || [])
         |> Keyword.merge(opts || [])
-        |> Optimal.validate!(@opts)
         |> Keyword.put(:trace_key, __MODULE__)
       end
 
@@ -277,19 +251,13 @@ defmodule Spandex.Tracer do
         end
       end
 
-      defp validate_update_config(opts, otp_app) do
-        env = Application.get_env(otp_app, __MODULE__)
+      defp update_config(opts, otp_app) do
+        env = Application.get_env(otp_app, __MODULE__, [])
 
         if env[:disabled?] do
           :disabled
         else
-          schema = %{@opts | defaults: [], required: []}
-
-          # TODO: We may want to have some concept of "the quintessential tracer configs"
-          # So that we can take those here, instead of embedding that knowledge here.
-
           opts
-          |> Optimal.validate!(schema)
           |> Keyword.put(:trace_key, __MODULE__)
           |> Keyword.put(:strategy, env[:strategy] || Spandex.Strategy.Pdict)
           |> Keyword.put(:adapter, env[:adapter])

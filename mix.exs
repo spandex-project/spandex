@@ -58,6 +58,7 @@ defmodule Spandex.Mixfile do
     [
       {:benchee, "~> 0.13.2", only: [:dev, :test]},
       {:credo, "~> 0.9.2", only: [:dev, :test], runtime: false},
+      {:decorator, "~> 1.2", optional: true},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, ">= 0.19.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
@@ -66,8 +67,6 @@ defmodule Spandex.Mixfile do
       {:makeup, "~> 1.0.1", only: :dev},
       {:makeup_elixir, "~> 0.14.0", only: :dev},
       {:nimble_parsec, "~> 0.5.3", only: :dev},
-      {:decorator, "~> 1.2", optional: true},
-      {:optimal, "~> 0.3.3"},
       {:plug, ">= 1.0.0"}
     ]
   end

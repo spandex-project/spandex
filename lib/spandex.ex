@@ -22,15 +22,12 @@ defmodule Spandex do
   @doc """
   Starts a new trace.
 
-  Span updates for the first span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid, it is
-  safer to perform a second call to `update_span/2` and check the return value.
+  Span updates for the first span may be passed in.
   """
   @spec start_trace(binary(), Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_running}
-          | {:error, [Optimal.error()]}
   def start_trace(_, :disabled), do: {:error, :disabled}
 
   def start_trace(name, opts) do
@@ -47,9 +44,7 @@ defmodule Spandex do
   @doc """
   Start a new span.
 
-  Span updates for that span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid, it is
-  safer to perform a second call to `update_span/2` and check the return value.
+  Span updates for that span may be passed in.
   """
   @spec start_span(String.t(), Tracer.opts()) ::
           {:ok, Span.t()}
@@ -74,15 +69,12 @@ defmodule Spandex do
 
   @doc """
   Updates the current span.
-
-  In the case of an invalid update, validation errors are returned.
   """
   @spec update_span(Tracer.opts(), boolean()) ::
           {:ok, Span.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
           | {:error, :no_span_context}
-          | {:error, [Optimal.error()]}
   def update_span(opts, top? \\ false)
   def update_span(:disabled, _), do: {:error, :disabled}
 
@@ -110,28 +102,22 @@ defmodule Spandex do
   Any spans that have already been started will not inherit any of the updates
   from that span. For instance, if you change `service`, it will not be
   reflected in already-started spans.
-
-  In the case of an invalid update, validation errors are returned.
   """
   @spec update_top_span(Tracer.opts()) ::
           {:ok, Span.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
-          | {:error, [Optimal.error()]}
   def update_top_span(:disabled), do: {:error, :disabled}
 
   def update_top_span(opts), do: update_span(opts, true)
 
   @doc """
   Updates all spans, whether complete or in-progress.
-
-  In the case of an invalid update for any span, validation errors are returned.
   """
   @spec update_all_spans(Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
-          | {:error, [Optimal.error()]}
   def update_all_spans(:disabled), do: {:error, :disabled}
 
   def update_all_spans(opts) do
@@ -147,10 +133,7 @@ defmodule Spandex do
   @doc """
   Finishes the current trace.
 
-  Span updates for the top span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid, it is
-  safer to perform a call to `update_span/2` and check the return value before
-  finishing the trace.
+  Span updates for the top span may be passed in.
   """
   @spec finish_trace(Tracer.opts()) ::
           {:ok, Trace.t()}
@@ -186,10 +169,7 @@ defmodule Spandex do
   @doc """
   Finishes the current span.
 
-  Span updates for that span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid, it is
-  safer to perform a call to `update_span/2` and check the return value before
-  finishing the span.
+  Span updates for that span may be passed in.
   """
   @spec finish_span(Tracer.opts()) ::
           {:ok, Span.t()}
@@ -231,15 +211,12 @@ defmodule Spandex do
 
   @doc """
   Updates the current span with error details.
-
-  In the case of an invalid value, validation errors are returned.
   """
   @spec span_error(Exception.t(), Enum.t(), Tracer.opts()) ::
           {:ok, Span.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
           | {:error, :no_span_context}
-          | {:error, [Optimal.error()]}
   def span_error(_error, _stacktrace, :disabled), do: {:error, :disabled}
 
   def span_error(exception, stacktrace, opts) do
@@ -337,9 +314,7 @@ defmodule Spandex do
   @doc """
   Given a `%SpanContext{}`, resumes a trace from a different process or service.
 
-  Span updates for the top span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid, it is
-  safer to perform a second call to `update_span/2` and check the return value.
+  Span updates for the top span may be passed in.
   """
   @spec continue_trace(String.t(), SpanContext.t(), Keyword.t()) ::
           {:ok, Trace.t()}
@@ -361,9 +336,7 @@ defmodule Spandex do
   @doc """
   Given a trace_id and span_id, resumes a trace from a different process or service.
 
-  Span updates for the top span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid, it is
-  safer to perform a second call to `update_span/2` and check the return value.
+  Span updates for the top span may be passed in.
   """
   @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Keyword.t()) ::
           {:ok, Trace.t()}
@@ -379,9 +352,7 @@ defmodule Spandex do
   @doc """
   Given a span struct, resumes a trace from a different process or service.
 
-  Span updates for the top span may be passed in. They are skipped if they are
-  invalid updates. As such, if you aren't sure if your updates are valid, it is
-  safer to perform a second call to `update_span/2` and check the return value.
+  Span updates for the top span may be passed in.
   """
   @spec continue_trace_from_span(String.t(), Span.t(), Tracer.opts()) ::
           {:ok, Trace.t()}

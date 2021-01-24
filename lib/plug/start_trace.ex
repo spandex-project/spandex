@@ -2,44 +2,34 @@ defmodule Spandex.Plug.StartTrace do
   @moduledoc """
   Starts a trace, skipping ignored routes or methods.
   Store info in Conn assigns if we actually trace the request.
+
+  ## Options
+
+  This plug accepts the following options:
+
+  * `:tracer` - The tracing module to be used to start the trace. Required.
+  * `:ignored_methods` - A list of strings representing methods to ignore. A good example would be `["OPTIONS"]`.
+  * `:ignored_routes` - A list of strings or regexes. If it is a string, it must match exactly.
+  * `:tracer_opts` - Any opts to be passed to the tracer when starting or continuing the trace.
+  * `:span_name` - The name to be used for the top level span.
   """
   @behaviour Plug
 
   alias Spandex.Plug.Utils
   alias Spandex.SpanContext
 
-  @init_opts Optimal.schema(
-               opts: [
-                 ignored_methods: {:list, :string},
-                 ignored_routes: {:list, [:regex, :string]},
-                 tracer: :atom,
-                 tracer_opts: :keyword,
-                 span_name: :string
-               ],
-               defaults: [
-                 ignored_methods: [],
-                 ignored_routes: [],
-                 tracer_opts: [],
-                 span_name: "request"
-               ],
-               required: [:tracer],
-               describe: [
-                 ignored_methods:
-                   "A list of strings representing methods to ignore. A good example would be `[\"OPTIONS\"]`",
-                 ignored_routes: "A list of strings or regexes. If it is a string, it must match exactly.",
-                 tracer: "The tracing module to be used to start the trace.",
-                 tracer_opts: "Any opts to be passed to the tracer when starting or continuing the trace.",
-                 span_name: "The name to be used for the top level span."
-               ]
-             )
+  @default_opts [
+    ignored_methods: [],
+    ignored_routes: [],
+    tracer_opts: [],
+    span_name: "request"
+  ]
 
   @doc """
-  Accepts and validates opts for the plug, and underlying tracer.
-
-  #{Optimal.Doc.document(@init_opts)}
+  Accepts opts for the plug, and underlying tracer.
   """
   @spec init(opts :: Keyword.t()) :: Keyword.t()
-  def init(opts), do: Optimal.validate!(opts, @init_opts)
+  def init(opts), do: Keyword.merge(@default_opts, opts)
 
   @spec call(conn :: Plug.Conn.t(), opts :: Keyword.t()) :: Plug.Conn.t()
   def call(conn, opts) do
