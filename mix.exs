@@ -34,9 +34,12 @@ defmodule Spandex.Mixfile do
   defp package do
     [
       name: :spandex,
-      maintainers: ["Zachary Daniel", "Andrew Summers", "Greg Mefford"],
+      maintainers: ["Greg Mefford"],
       licenses: ["MIT License"],
-      links: %{"GitHub" => @source_url}
+      links: %{
+        "GitHub" => @source_url,
+        "Sponsor" => "https://github.com/sponsors/GregMefford"
+      }
     ]
   end
 
