@@ -5,6 +5,13 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [3.1.0](https://github.com/spandex-project/spandex/compare/3.0.3...3.1.0) (2021-10-23)
+
+* Encode logger metadata as string. by @aselder in https://github.com/spandex-project/spandex/pull/127
+* Set up sponsorship links by @GregMefford in https://github.com/spandex-project/spandex/pull/132
+* Guard clauses for trace and span macros by @GregMefford in https://github.com/spandex-project/spandex/pull/130
+* Misc doc changes by @kianmeng in https://github.com/spandex-project/spandex/pull/128
+
 ## [3.0.3](https://github.com/spandex-project/spandex/compare/3.0.2...3.0.3) (2020-11-10)
 
 
