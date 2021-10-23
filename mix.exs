@@ -2,7 +2,7 @@ defmodule Spandex.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/spandex-project/spandex"
-  @version "3.0.3"
+  @version "3.1.0"
 
   def project do
     [
