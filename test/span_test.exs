@@ -56,4 +56,35 @@ defmodule Spandex.Test.SpanTest do
 
     assert(span.service == :your_app)
   end
+
+  test "trace names must be strings" do
+    # This is the current desired behaviour
+    assert_raise FunctionClauseError,
+                 "no function clause matching in Spandex.Test.Support.Tracer.\"MACRO-trace\"/4",
+                 fn ->
+                   defmodule WillFail do
+                     def fun do
+                       Tracer.trace name: "trace_name", service: :special_service do
+                         :noop
+                       end
+                     end
+                   end
+                 end
+  end
+
+  test "trace names can be interpolated" do
+    # This is the unintentionally broken behavior I want to fix
+
+    assert_raise FunctionClauseError,
+                 "no function clause matching in Spandex.Test.Support.Tracer.trace/3",
+                 fn ->
+                   defmodule WillFail do
+                     def fun do
+                       Tracer.trace Enum.join(["trace", "_", "name"]), service: :special_service do
+                         :noop
+                       end
+                     end
+                   end
+                 end
+  end
 end
