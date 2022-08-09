@@ -120,7 +120,7 @@ defmodule Spandex.TestAdapter do
   defp tracing_headers(%SpanContext{trace_id: trace_id, parent_id: parent_id} = span_context) do
     [
       {"x-test-trace-id", to_string(trace_id)},
-      {"x-test-parent-id", to_string(parent_id)},
+      {"x-test-parent-id", to_string(parent_id)}
     ] ++ priority_header(span_context)
   end
 
