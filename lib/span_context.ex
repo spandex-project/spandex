@@ -12,12 +12,12 @@ defmodule Spandex.SpanContext do
   @type t :: %__MODULE__{
           trace_id: Spandex.id(),
           parent_id: Spandex.id(),
-          priority: integer(),
+          priority: integer() | nil,
           baggage: Keyword.t()
         }
 
   defstruct trace_id: nil,
             parent_id: nil,
-            priority: 1,
+            priority: nil,
             baggage: []
 end

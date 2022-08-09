@@ -26,14 +26,13 @@ defmodule Spandex.TestAdapter do
   if they are present.
   """
   @impl Spandex.Adapter
-  @spec distributed_context(conn :: Plug.Conn.t(), Keyword.t()) ::
+  @spec distributed_context(conn :: Plug.Conn.t(), Tracer.opts()) ::
           {:ok, SpanContext.t()}
           | {:error, :no_distributed_trace}
   def distributed_context(%Plug.Conn{} = conn, _opts) do
     trace_id = get_first_header(conn, "x-test-trace-id")
     parent_id = get_first_header(conn, "x-test-parent-id")
-    # We default the priority to 1 so that we capture all traces by default until we implement trace sampling
-    priority = get_first_header(conn, "x-test-sampling-priority") || 1
+    priority = get_first_header(conn, "x-test-sampling-priority")
 
     if is_nil(trace_id) || is_nil(parent_id) do
       {:error, :no_distributed_trace}
@@ -43,7 +42,7 @@ defmodule Spandex.TestAdapter do
   end
 
   @impl Spandex.Adapter
-  @spec distributed_context(headers :: Spandex.headers(), Keyword.t()) ::
+  @spec distributed_context(headers :: Spandex.headers(), Tracer.opts()) ::
           {:ok, SpanContext.t()}
           | {:error, :no_distributed_trace}
   def distributed_context(headers, _opts) when is_list(headers) do
@@ -118,11 +117,18 @@ defmodule Spandex.TestAdapter do
 
   defp parse_header(_header), do: nil
 
-  defp tracing_headers(%SpanContext{trace_id: trace_id, parent_id: parent_id, priority: priority}) do
+  defp tracing_headers(%SpanContext{trace_id: trace_id, parent_id: parent_id} = span_context) do
     [
       {"x-test-trace-id", to_string(trace_id)},
       {"x-test-parent-id", to_string(parent_id)},
-      {"x-test-sampling-priority", to_string(priority)}
-    ]
+    ] ++ priority_header(span_context)
+  end
+
+  defp priority_header(%SpanContext{priority: nil}) do
+    []
+  end
+
+  defp priority_header(%SpanContext{priority: priority}) do
+    [{"x-test-sampling-priority", to_string(priority)}]
   end
 end

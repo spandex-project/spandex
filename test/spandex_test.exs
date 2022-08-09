@@ -739,5 +739,19 @@ defmodule Spandex.Test.SpandexTest do
                {"header2", "value2"}
              ]
     end
+
+    test "Default priority is nil" do
+      span_context = %SpanContext{trace_id: 123, parent_id: 456}
+      headers = [{"header1", "value1"}, {"header2", "value2"}]
+
+      result = Spandex.inject_context(headers, span_context, @base_opts)
+
+      assert result == [
+               {"x-test-trace-id", "123"},
+               {"x-test-parent-id", "456"},
+               {"header1", "value1"},
+               {"header2", "value2"}
+             ]
+    end
   end
 end
