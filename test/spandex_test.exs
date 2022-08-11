@@ -453,6 +453,42 @@ defmodule Spandex.Test.SpandexTest do
     end
   end
 
+  describe "Spandex.current_priority/1" do
+    test "returns the priority if a trace is active" do
+      opts = @base_opts ++ @span_opts
+      adapter = opts[:adapter]
+      trace_id = adapter.trace_id()
+      span_context = %Spandex.SpanContext{trace_id: trace_id, priority: 2}
+      assert {:ok, %Trace{id: ^trace_id}} = Spandex.continue_trace("root_span", span_context, opts)
+      assert 2 == Spandex.current_priority(@base_opts)
+    end
+
+    test "returns nil if no trace is active" do
+      assert nil == Spandex.current_priority(@base_opts)
+    end
+
+    test "returns nil if tracing is disabled" do
+      assert nil == Spandex.current_priority(:disabled)
+    end
+  end
+
+  describe "Spandex.update_priority/1" do
+    test "updates the priority" do
+      opts = @base_opts ++ @span_opts
+      adapter = opts[:adapter]
+      trace_id = adapter.trace_id()
+      span_context = %Spandex.SpanContext{trace_id: trace_id, priority: 1}
+      assert {:ok, %Trace{id: ^trace_id}} = Spandex.continue_trace("root_span", span_context, opts)
+      assert 1 == Spandex.current_priority(@base_opts)
+      assert {:ok, _trace} = Spandex.update_priority(2, @base_opts)
+      assert 2 == Spandex.current_priority(@base_opts)
+    end
+
+    test "returns error if tracing is disabled" do
+      assert {:error, :no_trace_context} == Spandex.update_priority(2, @base_opts)
+    end
+  end
+
   describe "Spandex.current_trace_id/1" do
     test "returns the active trace ID if a trace is active" do
       opts = @base_opts ++ @span_opts

@@ -105,6 +105,25 @@ defmodule Spandex do
   end
 
   @doc """
+  Update the priority of the current trace.
+  """
+  @spec update_priority(integer(), Tracer.opts()) ::
+          {:ok, Trace.t()}
+          | {:error, :disabled}
+          | {:error, :no_trace_context}
+          | {:error, [Optimal.error()]}
+  def update_priority(_, :disabled), do: {:error, :disabled}
+
+  def update_priority(priority, opts) do
+    strategy = opts[:strategy]
+
+    with {:ok, trace} <- strategy.get_trace(opts[:trace_key]) do
+      strategy.put_trace(opts[:trace_key], %{trace | priority: priority})
+    end
+  end
+
+
+  @doc """
   Updates the top-most parent span.
 
   Any spans that have already been started will not inherit any of the updates
@@ -245,6 +264,26 @@ defmodule Spandex do
   def span_error(exception, stacktrace, opts) do
     updates = [exception: exception, stacktrace: stacktrace]
     update_span(Keyword.put_new(opts, :error, updates))
+  end
+
+  @doc """
+  Returns the priority of the currently running trace.
+  """
+  @spec current_priority(Tracer.opts()) :: integer() | nil
+  def current_priority(:disabled), do: nil
+
+  def current_priority(opts) do
+    strategy = opts[:strategy]
+
+    case strategy.get_trace(opts[:trace_key]) do
+      {:ok, %Trace{priority: priority}} ->
+        priority
+
+      {:error, _} ->
+        # TODO: Alter the return type of this interface to allow for returning
+        # errors from fetching the trace.
+        nil
+    end
   end
 
   @doc """
