@@ -5,6 +5,18 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+### Breaking Changes:
+
+* Don't set default priority to support distributed traces and sampling
+* Use new `Config` instead of `Mix.Config` in `config` files
+* Update libraries
+
+### Bug Fixes:
+* Apply fix for interpolated string span and trace names from PR #136
+
+### Features:
+* Add functions to get and set trace priority
+
 ## [3.1.0](https://github.com/spandex-project/spandex/compare/3.0.3...3.1.0) (2021-10-23)
 
 * Encode logger metadata as string. by @aselder in https://github.com/spandex-project/spandex/pull/127
