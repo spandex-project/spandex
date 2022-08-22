@@ -316,6 +316,19 @@ with a feature flag to debug a feature in production.
 Spandex has functions to read and set the priority
 (`Spandex.Tracer.current_priority/1` and `Spandex.Tracer.update_priority/2`).
 
+The following code overrides the priority in when there is an error on a trace:
+
+```elixir
+defmodule Foo.Tracer do
+  use Spandex.Tracer, otp_app: :foo
+
+  @impl Spandex.Tracer
+  def span_error(error, stacktrace, opts) do
+    super(error, stacktrace, opts)
+    __MODULE__.update_priority(2)
+  end
+```
+
 The specific details of priority and other sampling and rate limiting are specific
 to the observability back end, so look to e.g.
 [spandex_datadog](https://github.com/spandex-project/spandex_datadog) for details.
