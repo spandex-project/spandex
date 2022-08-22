@@ -15,7 +15,7 @@ monitoring tool that allows you get extremely granular information about the
 runtime of your system. Using distributed tracing, you can also get a view of
 how requests make their way through your entire ecosystem of microservices or
 applications. Currently, Spandex only supports integrating with
-[datadog](https://www.datadoghq.com/), but it is built to be agnostic to what
+[Datadog](https://www.datadoghq.com/), but it is built to be agnostic to what
 platform you choose to view your trace data. Eventually it should support Open
 Zipkin, Stackdriver, and any other trace viewer/aggregation tool you'd like to
 integrate with. We are still under active development, working on moving to a
@@ -38,7 +38,7 @@ This is Datadog-specific since that's currently the only adapter.
 ## Adapters
 
 * [Datadog](https://github.com/spandex-project/spandex_datadog)
-* Thats it so far! If you want another adapter, it should be relatively easy to
+* That's it so far! If you want another adapter, it should be relatively easy to
   write! This library is in charge of handling the state management of spans,
   and the adapter is just in charge of generating certain values and ultimately
   sending the values to the service.
@@ -282,3 +282,40 @@ Check out [spandex_ecto](https://github.com/spandex-project/spandex_ecto).
 ## Phoenix Tracing
 
 Check out [spandex_phoenix](https://github.com/spandex-project/spandex_phoenix).
+
+## Sampling and Rate Limiting
+
+When the load or cost from tracing increases, it is useful to use rate limiting
+or sampling to reduce tracing. When many traces are the same, it's enough to
+trace only e.g. 10% of them, reducing the bill by 90% while still preserving
+the ability to troubleshoot the system. The tracing still happens, but it
+may not be sent to the monitoring service, or the service may drop it or not
+retain detailed information.
+
+Spandex stores the `priority` as an integer in the top level `Trace`.
+
+In Datadog, there are four values:
+* `USER_KEEP`(2) indicates that the application wants to ensure that a trace is
+  sampled, e.g. if there is an error
+* `AUTO_KEEP` (1) indicates that a trace has been selected for sampling
+* `AUTO_REJECT` (0) indicates that the trace has not been selected for sampling
+* `USER_REJECT` (-1) indicates that the application wants a trace to be dropped
+
+Similarly, OpenZipkin uses 0 and 1 to indicate that a trace is sampled.
+
+In distributed tracing, multiple processes contribute to the same trace.  When
+sampling, the process that starts the trace can make a decision about whether
+it should be sampled. It then passes that information to downstream processes
+via a HTTP header.
+
+A trace may be sampled out, i.e. priority of 0, but tracing enabled manually in
+the application. This is usually done for requests with errors, as they are the
+ones that need troubleshooting. You can also enable tracing dynamically
+with a feature flag to debug a feature in production.
+
+Spandex has functions to read and set the priority
+(`Spandex.Tracer.current_priority/1` and `Spandex.Tracer.update_priority/2`).
+
+The specific details of priority and other sampling and rate limiting are specific
+to the observability back end, so look to e.g.
+[spandex_datadog](https://github.com/spandex-project/spandex_datadog) for details.
