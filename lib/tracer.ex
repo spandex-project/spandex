@@ -98,8 +98,8 @@ defmodule Spandex.Tracer do
 
   defmacro __using__(opts) do
     # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
-    quote do
-      @otp_app unquote(opts)[:otp_app] || raise("Must provide `otp_app` to `use Spandex.Tracer`")
+    quote location: :keep, bind_quoted: [opts: opts] do
+      @otp_app Keytword.get(opts, :otp_app) || raise("Must provide `otp_app` to `use Spandex.Tracer`")
 
       @behaviour Spandex.Tracer
 
