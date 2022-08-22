@@ -308,6 +308,8 @@ defmodule Spandex.Tracer do
           |> Keyword.put(:sender, env[:sender])
         end
       end
+
+      defoverridable Spandex.Tracer
     end
   end
 end
