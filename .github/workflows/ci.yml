@@ -53,7 +53,7 @@ jobs:
       - name: Run Tests
         run: |
           mix test
-          mix coverall
+          mix coveralls
           mix inch.report
 
       # - name: Publish unit test results to GitHub
