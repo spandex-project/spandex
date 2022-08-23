@@ -46,12 +46,12 @@ jobs:
         env:
           MIX_ENV: test
         run: |
+          # Use of @deprecated causes warnings
           # mix compile --warnings-as-errors
           mix compile
 
       - name: Run Tests
         run: |
-          # mix test --warnings-as-errors
           mix test
           mix coverall
           mix inch.report
