@@ -1,0 +1,62 @@
+name: CI
+on: push
+
+jobs:
+  elixir:
+    name: Elixir Tests
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.5.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v2.3.1
+
+      - name: Setup Elixir
+        uses: actions/setup-elixir@v1.5.0
+        with:
+          otp-version: 24.3.4
+          elixir-version: 1.13.4
+          experimental-otp: true
+
+      - name: Retrieve Cached Dependencies
+        id: mix-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Install Dependencies
+        run: |
+          mix local.rebar --force
+          mix local.hex --force
+          mix deps.get
+
+      - name: Check Formatting
+        run: mix format --check-formatted
+
+      - name: Compile Code
+        env:
+          MIX_ENV: test
+        run: |
+          mix compile --warnings-as-errors
+
+      - name: Run Tests
+        run: |
+          # mix test --warnings-as-errors
+          mix test
+          mix coverall
+          mix inch.report
+
+      # - name: Publish unit test results to GitHub
+      #   uses: EnricoMi/publish-unit-test-result-action@v1
+      #   if: always() # always run even if tests fail
+      #   with:
+      #     files: _build/test/lib/*/test-junit-report.xml
