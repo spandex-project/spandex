@@ -59,12 +59,12 @@ defmodule Spandex.Test.SpanTest do
 
   test "trace names must be strings" do
     assert_raise FunctionClauseError,
-      "no function clause matching in Spandex.start_trace/2",
-    fn ->
-      Tracer.trace name: "trace_name", service: :special_service do
-      :noop
-    end
-    end
+                 "no function clause matching in Spandex.start_trace/2",
+                 fn ->
+                   Tracer.trace name: "trace_name", service: :special_service do
+                     :noop
+                   end
+                 end
   end
 
   test "trace names can be interpolated at runtime" do

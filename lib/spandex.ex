@@ -122,7 +122,6 @@ defmodule Spandex do
     end
   end
 
-
   @doc """
   Updates the top-most parent span.
 
