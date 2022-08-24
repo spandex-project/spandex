@@ -306,17 +306,18 @@ Similarly, OpenTracing uses 0 and 1 to indicate that a trace is sampled.
 In distributed tracing, multiple processes contribute to the same trace.  When
 sampling, the process that starts the trace can make a decision about whether
 it should be sampled. It then passes that information to downstream processes
-via a HTTP header.
+via an HTTP header.
 
-A trace may be sampled out, i.e. priority of 0, but tracing enabled manually in
-the application. This is usually done for requests with errors, as they are the
-ones that need troubleshooting. You can also enable tracing dynamically
-with a feature flag to debug a feature in production.
+A trace may be sampled out, i.e. priority of 0, but the application can
+override the priority manually. This is usually done for requests with errors,
+as they are the ones that need troubleshooting. You can also enable tracing
+dynamically with a feature flag to debug a feature in production.
 
 Spandex has functions to read and set the priority
 (`Spandex.Tracer.current_priority/1` and `Spandex.Tracer.update_priority/2`).
 
-The following code overrides the priority in when there is an error on a trace:
+The following code overrides the `span_error` function on the tracer to set the
+priority to `MANUAL_KEEP` when there is an error on a trace:
 
 ```elixir
 defmodule Foo.Tracer do
