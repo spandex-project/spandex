@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Elixir
-        uses: actions/setup-beam@v1
+        uses: actions/setup-elixir@v1
         with:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.otp }}
@@ -59,7 +59,7 @@ jobs:
           mix inch.report
 
       # - name: Publish unit test results to GitHub
-      #   uses: EnricoMi/publish-unit-test-result-action@v1
+      #   uses: EnricoMi/publish-unit-test-result-action@v2
       #   if: always() # always run even if tests fail
       #   with:
-      #     files: _build/test/lib/*/test-junit-report.xml
+      #     junit_files: _build/test/lib/*/test-junit-report.xml
