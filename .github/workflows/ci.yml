@@ -1,3 +1,4 @@
+---
 name: CI
 on: push
 
@@ -5,54 +6,55 @@ jobs:
   elixir:
     name: Elixir Tests
     runs-on: ubuntu-20.04
-
+    env:
+      MIX_ENV: test
+    strategy:
+      matrix:
+        elixir: ['1.11', '1.13.4']
+        otp: ['24', '25']
     steps:
-      - name: Cancel Previous Runs
+      - name: Cancel previous runs
         uses: styfle/cancel-workflow-action@0.5.0
         with:
           access_token: ${{ github.token }}
 
-      - name: Checkout Code
-        uses: actions/checkout@v2.3.1
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: Setup Elixir
-        uses: actions/setup-elixir@v1.5.0
+        uses: actions/setup-beam@v1
         with:
-          otp-version: 24.3.4
-          elixir-version: 1.13.4
-          experimental-otp: true
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.otp }}
 
-      - name: Retrieve Cached Dependencies
-        id: mix-cache
+      - name: Get deps cache
         uses: actions/cache@v2
         with:
-          path: |
-            deps
-            _build
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-mix-
+          path: deps/
+          key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
-      - name: Install Dependencies
+      - name: Get build cache
+        uses: actions/cache@v2
+        with:
+          path: _build/test/
+          key: build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+
+      - name: Install deps
         run: |
           mix local.rebar --force
           mix local.hex --force
           mix deps.get
 
-      - name: Check Formatting
-        run: mix format --check-formatted
-
-      - name: Compile Code
-        env:
-          MIX_ENV: test
+      - name: Compile code
         run: |
-          # Use of @deprecated causes warnings
+          # Use of @deprecated causes compile warnings
           # mix compile --warnings-as-errors
           mix compile
 
-      - name: Run Tests
+      - name: Run tests
         run: |
           mix test
+          mix format --check-formatted
           mix coveralls
           mix inch.report
 
