@@ -22,5 +22,7 @@ jobs:
       - run: mix deps.get
       - run: mix format --check-formatted
       - run: mix compile --warnings-as-errors
-      - run: mix coveralls.circle
+      # (ExCoveralls.ReportUploadError) Failed to upload the report to 'https://coveralls.io' (reason: status_code = 422, body = {"message":"Couldn't find a repository matching this job.","error":true}).
+      # - run: mix coveralls.circle
+      - run: mix coveralls
       - run: mix inch.report
