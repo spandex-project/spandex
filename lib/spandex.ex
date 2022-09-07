@@ -31,9 +31,9 @@ defmodule Spandex do
           | {:error, :disabled}
           | {:error, :trace_running}
           | {:error, [Optimal.error()]}
-  def start_trace(_, :disabled), do: {:error, :disabled}
+  def start_trace(name, :disabled) when is_binary(name), do: {:error, :disabled}
 
-  def start_trace(name, opts) do
+  def start_trace(name, opts) when is_binary(name) do
     strategy = opts[:strategy]
 
     if strategy.trace_active?(opts[:trace_key]) do
@@ -55,9 +55,9 @@ defmodule Spandex do
           {:ok, Span.t()}
           | {:error, :disabled}
           | {:error, :no_trace_context}
-  def start_span(_, :disabled), do: {:error, :disabled}
+  def start_span(name, :disabled) when is_binary(name), do: {:error, :disabled}
 
-  def start_span(name, opts) do
+  def start_span(name, opts) when is_binary(name) do
     strategy = opts[:strategy]
 
     case strategy.get_trace(opts[:trace_key]) do

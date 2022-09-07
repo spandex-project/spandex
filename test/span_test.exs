@@ -56,4 +56,22 @@ defmodule Spandex.Test.SpanTest do
 
     assert(span.service == :your_app)
   end
+
+  test "trace names must be strings" do
+    assert_raise FunctionClauseError,
+                 "no function clause matching in Spandex.start_trace/2",
+                 fn ->
+                   Tracer.trace name: "trace_name", service: :special_service do
+                     :noop
+                   end
+                 end
+  end
+
+  test "trace names can be interpolated at runtime" do
+    Tracer.trace Enum.join(["trace", "_", "name"]), service: :special_service do
+      :noop
+    end
+
+    assert Util.find_span("trace_name")
+  end
 end
