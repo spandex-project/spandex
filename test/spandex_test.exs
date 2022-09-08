@@ -25,6 +25,7 @@ defmodule Spandex.Test.SpandexTest do
 
   @span_opts [
     service: :test_service,
+    service_version: "v1",
     resource: "test_resource"
   ]
 
@@ -91,11 +92,11 @@ defmodule Spandex.Test.SpandexTest do
       assert {:error, :disabled} = Spandex.start_span("root_span", :disabled)
     end
 
-    test "inherits service and resource from parent span if not specified" do
+    test "inherits service, service_version and resource from parent span if not specified" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: _trace_id}} = Spandex.start_trace("root_span", opts)
       assert {:ok, %Span{} = span} = Spandex.start_span("span_name", @base_opts)
-      assert %Span{name: "span_name", service: :test_service, resource: "test_resource"} = span
+      assert %Span{name: "span_name", service: :test_service, service_version: "v1", resource: "test_resource"} = span
     end
 
     test "returns an error if invalid options are specified" do
