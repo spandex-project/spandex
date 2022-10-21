@@ -1,21 +1,33 @@
 # Change Log
 
-All notable changes to this project will be documented in this file.
-See [Conventional Commits](Https://conventionalcommits.org) for commit guidelines.
-
 <!-- changelog -->
 
 ### Breaking Changes:
 
 * Don't set default priority to support distributed traces and sampling
-* Use new `Config` instead of `Mix.Config` in `config` files
-* Update libraries
 
 ### Bug Fixes:
 * Apply fix for interpolated string span and trace names from PR #136
 
+### Chores
+* Use new `Config` instead of `Mix.Config` in `config` files
+* Update libraries
+
 ### Features:
 * Add functions to get and set trace priority
+## [3.2.0](https://github.com/spandex-project/spandex/compare/3.1.0...3.2.0) (2022-10-20)
+
+### Features:
+
+* Add Service Version Support by @kamilkowalski in https://github.com/spandex-project/spandex/pull/122
+
+## Bug Fixes:
+
+* Fix interpolated string span and trace names by @gerbal in https://github.com/spandex-project/spandex/pull/136
+
+## New Contributors:
+* @gerbal made their first contribution in https://github.com/spandex-project/spandex/pull/136
+
 
 ## [3.1.0](https://github.com/spandex-project/spandex/compare/3.0.3...3.1.0) (2021-10-23)
 
