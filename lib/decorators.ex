@@ -24,7 +24,7 @@ if Code.ensure_loaded?(Decorator.Define) do
         end
     """
 
-    @tracer Application.get_env(:spandex, :decorators)[:tracer]
+    @tracer Application.compile_env(:spandex, :decorators)[:tracer]
 
     use Decorator.Define, span: 0, span: 1, trace: 0, trace: 1
 
