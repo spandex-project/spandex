@@ -38,7 +38,7 @@ This is Datadog-specific since that's currently the only adapter.
 ## Adapters
 
 * [Datadog](https://github.com/spandex-project/spandex_datadog)
-* Thats it so far! If you want another adapter, it should be relatively easy to
+* That's it so far! If you want another adapter, it should be relatively easy to
   write! This library is in charge of handling the state management of spans,
   and the adapter is just in charge of generating certain values and ultimately
   sending the values to the service.

@@ -308,7 +308,7 @@ defmodule Spandex do
 
   ### DEPRECATION WARNING
 
-  Expect changes to this in the future, as this will eventualy be refactored to
+  Expect changes to this in the future, as this will eventually be refactored to
   only ever return a `%SpanContext{}`, or at least to always return something
   consistent.
   """
