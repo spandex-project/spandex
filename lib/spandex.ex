@@ -546,7 +546,7 @@ defmodule Spandex do
     |> Keyword.put_new(:name, name)
     |> Keyword.put(:trace_id, span_context.trace_id)
     |> Keyword.put(:parent_id, span_context.parent_id)
-    |> Keyword.put(:start, adapter.now())
+    |> Keyword.put_new(:start, adapter.now())
     |> Keyword.put(:id, adapter.span_id())
     |> Span.new()
   end
