@@ -72,6 +72,16 @@ defmodule Spandex.Test.SpandexTest do
       assert String.contains?(log, "trace_id")
       assert String.contains?(log, "span_id")
     end
+
+    test "retains :start if passed in opts" do
+      start = System.monotonic_time()
+      completion_time = start + 1_234
+      opts = @base_opts ++ @span_opts ++ [start: start, completion_time: completion_time]
+      assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
+
+      assert %Span{name: "root_span", start: ^start, completion_time: ^completion_time} =
+               Spandex.current_span(@base_opts)
+    end
   end
 
   describe "Spandex.start_span/2" do
