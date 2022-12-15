@@ -176,6 +176,7 @@ defmodule Spandex do
         sender = opts[:sender] || adapter.default_sender()
         # TODO: We need to define a behaviour for the Sender API.
         sender.send_trace(%Trace{trace | spans: spans ++ unfinished_spans, stack: []})
+        Logger.metadata(trace_id: nil, span_id: nil, service: nil, service_version: nil)
         strategy.delete_trace(opts[:trace_key])
 
       {:error, _} = error ->
@@ -221,6 +222,16 @@ defmodule Spandex do
           | stack: tail,
             spans: [finished_span | spans]
         })
+
+        current = current_span(opts)
+
+        if current do
+          Logger.metadata(
+            span_id: to_string(current.id),
+            service: to_string(current.service),
+            service_version: to_string(current.service_version)
+          )
+        end
 
         {:ok, finished_span}
 
@@ -453,7 +464,12 @@ defmodule Spandex do
     adapter = opts[:adapter]
 
     with {:ok, top_span} <- span(name, opts, span_context, adapter) do
-      Logger.metadata(trace_id: to_string(span_context.trace_id), span_id: to_string(top_span.id))
+      Logger.metadata(
+        trace_id: to_string(span_context.trace_id),
+        span_id: to_string(top_span.id),
+        service: to_string(top_span.service),
+        service_version: to_string(top_span.service_version)
+      )
 
       trace = %Trace{
         id: span_context.trace_id,
@@ -483,7 +499,13 @@ defmodule Spandex do
 
     with {:ok, span} <- Span.child_of(current_span, name, adapter.span_id(), adapter.now(), opts),
          {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: [span | trace.stack]}) do
-      Logger.metadata(span_id: to_string(span.id), trace_id: to_string(trace.id))
+      Logger.metadata(
+        span_id: to_string(span.id),
+        trace_id: to_string(trace.id),
+        service: to_string(span.service),
+        service_version: to_string(span.service_version)
+      )
+
       {:ok, span}
     end
   end
@@ -495,7 +517,13 @@ defmodule Spandex do
 
     with {:ok, span} <- span(name, opts, span_context, adapter),
          {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: [span]}) do
-      Logger.metadata(span_id: to_string(span.id), trace_id: to_string(trace_id))
+      Logger.metadata(
+        span_id: to_string(span.id),
+        trace_id: to_string(trace_id),
+        service: to_string(span.service),
+        service_version: to_string(span.service_version)
+      )
+
       {:ok, span}
     end
   end
@@ -507,7 +535,13 @@ defmodule Spandex do
     span_context = %SpanContext{trace_id: trace_id}
 
     with {:ok, span} <- span(name, opts, span_context, adapter) do
-      Logger.metadata(trace_id: to_string(trace_id), span_id: to_string(span.id))
+      Logger.metadata(
+        trace_id: to_string(trace_id),
+        span_id: to_string(span.id),
+        service: to_string(span.service),
+        service_version: to_string(span.service_version)
+      )
+
       trace = %Trace{spans: [], stack: [span], id: trace_id}
       strategy.put_trace(opts[:trace_key], trace)
     end
