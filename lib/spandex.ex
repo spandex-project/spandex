@@ -580,7 +580,13 @@ defmodule Spandex do
         service_version: to_string(span.service_version)
       )
 
-      trace = %Trace{spans: [], stack: [span], id: trace_id}
+      trace = %Trace{
+        spans: [],
+        stack: [span],
+        id: trace_id,
+        priority: Application.get_env(:spandex, :default_priority, 1)
+      }
+
       strategy.put_trace(opts[:trace_key], trace)
     end
   end
