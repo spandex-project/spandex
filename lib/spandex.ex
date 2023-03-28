@@ -503,7 +503,8 @@ defmodule Spandex do
   defp do_start_trace(name, opts) do
     strategy = opts[:strategy]
     adapter = opts[:adapter]
-    priority = calculate_priority(opts[:sample_rate])
+    sample_rate = Keyword.get(opts, :sample_rate, 1.0)
+    priority = calculate_priority(sample_rate)
     trace_id = adapter.trace_id()
     span_context = %SpanContext{trace_id: trace_id}
 
@@ -562,7 +563,6 @@ defmodule Spandex do
 
   defp calculate_priority(sample_rate) do
     cond do
-      sample_rate == nil -> 1
       sample_rate == 0 -> 0
       sample_rate == 1 -> 1
       :rand.uniform() <= sample_rate -> 1
