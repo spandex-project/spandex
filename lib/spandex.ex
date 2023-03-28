@@ -503,12 +503,13 @@ defmodule Spandex do
   defp do_start_trace(name, opts) do
     strategy = opts[:strategy]
     adapter = opts[:adapter]
+    priority = calculate_priority(opts[:sample_rate])
     trace_id = adapter.trace_id()
     span_context = %SpanContext{trace_id: trace_id}
 
     with {:ok, span} <- span(name, opts, span_context, adapter) do
       Logger.metadata(trace_id: to_string(trace_id), span_id: to_string(span.id))
-      trace = %Trace{spans: [], stack: [span], id: trace_id}
+      trace = %Trace{spans: [], stack: [span], id: trace_id, priority: priority}
       strategy.put_trace(opts[:trace_key], trace)
     end
   end
@@ -548,6 +549,7 @@ defmodule Spandex do
     |> Keyword.put(:parent_id, span_context.parent_id)
     |> Keyword.put(:start, adapter.now())
     |> Keyword.put(:id, adapter.span_id())
+    |> Keyword.put(:priority, span_context.priority)
     |> Span.new()
   end
 
@@ -555,6 +557,16 @@ defmodule Spandex do
     case Span.update(span, opts) do
       {:error, _} -> span
       {:ok, span} -> span
+    end
+  end
+
+  defp calculate_priority(sample_rate) do
+    cond do
+      sample_rate == nil -> 1
+      sample_rate == 0 -> 0
+      sample_rate == 1 -> 1
+      :rand.uniform() <= sample_rate -> 1
+      true -> 0
     end
   end
 end

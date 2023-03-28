@@ -60,6 +60,34 @@ defmodule Spandex.Test.SpandexTest do
       assert {:service, "is required"} in validation_errors
     end
 
+    test "sets priority to 1 if no priority is set" do
+      assert {:ok, %Trace{priority: 1}} =
+               Spandex.start_trace("root_span", @base_opts ++ @span_opts ++ [sample_rate: nil])
+    end
+
+    test "sets priority to 1 if priority is set to 100" do
+      assert {:ok, %Trace{priority: 1}} =
+               Spandex.start_trace("root_span", @base_opts ++ @span_opts ++ [sample_rate: 100])
+    end
+
+    test "sets priority to 0 if no priority is set to 0" do
+      assert {:ok, %Trace{priority: 0}} = Spandex.start_trace("root_span", @base_opts ++ @span_opts ++ [sample_rate: 0])
+    end
+
+    test "sets priority based on sample rate value" do
+      sample_rate = 0.10
+
+      total_priority =
+        Enum.reduce(1..5000, 0, fn _, acc ->
+          {:ok, trace} = Spandex.start_trace("root_span", @base_opts ++ @span_opts ++ [sample_rate: sample_rate])
+          Spandex.finish_trace(@base_opts)
+          acc + trace.priority
+        end)
+
+      diff = abs(total_priority - 500)
+      assert diff <= 50
+    end
+
     test "adds span_id, trace_id to log metadata" do
       opts = @base_opts ++ @span_opts
 
