@@ -51,6 +51,7 @@ defmodule Spandex.Tracer do
                    service: :atom,
                    disabled?: :boolean,
                    env: :string,
+                   sample_rate: :float,
                    service_version: :string,
                    services: {:keyword, :atom},
                    strategy: :atom,
@@ -61,7 +62,8 @@ defmodule Spandex.Tracer do
                  defaults: [
                    disabled?: false,
                    services: [],
-                   strategy: Spandex.Strategy.Pdict
+                   strategy: Spandex.Strategy.Pdict,
+                   sample_rate: 1.0
                  ],
                  describe: [
                    adapter: "The third party adapter to use",
@@ -73,7 +75,8 @@ defmodule Spandex.Tracer do
                    disabled?: "Allows for wholesale disabling a tracer",
                    env: "A name used to identify the environment name, e.g `prod` or `development`",
                    services: "A mapping of service name to the default span types.",
-                   strategy: "The storage and tracing strategy. Currently only supports local process dictionary."
+                   strategy: "The storage and tracing strategy. Currently only supports local process dictionary.",
+                   sample_rate: "The rate at which to sample traces. 1.0 means 100% of traces are sampled."
                  ]
                )
 
