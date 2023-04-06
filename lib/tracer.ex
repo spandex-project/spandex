@@ -63,7 +63,7 @@ defmodule Spandex.Tracer do
                    disabled?: false,
                    services: [],
                    strategy: Spandex.Strategy.Pdict,
-                   sample_rate: 1
+                   sample_rate: 1.0
                  ],
                  describe: [
                    adapter: "The third party adapter to use",
