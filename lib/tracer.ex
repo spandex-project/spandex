@@ -301,6 +301,8 @@ defmodule Spandex.Tracer do
           |> Keyword.put(:sender, env[:sender])
         end
       end
+
+      defoverridable finish_trace: 1
     end
   end
 end

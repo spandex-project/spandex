@@ -768,4 +768,61 @@ defmodule Spandex.Test.SpandexTest do
              ]
     end
   end
+
+  describe "Spandex.Tracer.finish_trace/1" do
+    defmodule Test.MyTracer do
+      use Spandex.Tracer, otp_app: :test_impl
+
+      @impl true
+      def finish_trace(opts) do
+        if __MODULE__.current_trace_id(opts) do
+          super(opts)
+        else
+          {:ok, "NOOP no active trace to finish"}
+        end
+      end
+    end
+
+    @opts @base_opts ++ @span_opts
+
+    test "with an active trace" do
+      Test.MyTracer.configure(@opts)
+      Test.MyTracer.start_trace("test trace")
+
+      log =
+        capture_log(fn ->
+          {:ok, _} = Test.MyTracer.finish_trace()
+        end)
+
+      refute log =~ "[error] Tried to finish a trace without an active trace."
+      assert log == ""
+    end
+
+    test "without an active trace" do
+      Test.MyTracer.configure(@opts)
+
+      log =
+        capture_log(fn ->
+          {:ok, message} = Test.MyTracer.finish_trace()
+          assert message == "NOOP no active trace to finish"
+        end)
+
+      assert log =~ ""
+    end
+
+    test "Spandex.Tracer without an active trace" do
+      defmodule Test.MyTracerNoOverride do
+        use Spandex.Tracer, otp_app: :test_impl
+      end
+
+      Test.MyTracerNoOverride.configure(@opts)
+
+      log =
+        capture_log(fn ->
+          Test.MyTracerNoOverride.finish_trace()
+        end)
+
+      assert log =~ "[error] Tried to finish a trace without an active trace."
+    end
+  end
 end
