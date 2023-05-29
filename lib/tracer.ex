@@ -53,6 +53,7 @@ defmodule Spandex.Tracer do
                    service: :atom,
                    disabled?: :boolean,
                    env: :string,
+                   service_version: :string,
                    services: {:keyword, :atom},
                    strategy: :atom,
                    sender: :atom,
@@ -70,6 +71,7 @@ defmodule Spandex.Tracer do
                    sender:
                      "Once a trace is complete, it is sent using this module. Defaults to the `default_sender/0` of the selected adapter",
                    service: "The default service name to use for spans declared without a service",
+                   service_version: "The version of the service, used for tracking deployments.",
                    disabled?: "Allows for wholesale disabling a tracer",
                    env: "A name used to identify the environment name, e.g `prod` or `development`",
                    services: "A mapping of service name to the default span types.",

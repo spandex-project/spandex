@@ -2,7 +2,7 @@ defmodule Spandex.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/spandex-project/spandex"
-  @version "3.1.0"
+  @version "3.2.0"
 
   def project do
     [
@@ -63,18 +63,14 @@ defmodule Spandex.Mixfile do
 
   defp deps do
     [
-      {:benchee, "~> 0.13.2", only: [:dev, :test]},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, ">= 0.19.0", only: :dev, runtime: false},
+      {:benchee, "~> 1.0", only: [:dev, :test]},
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
-      {:git_ops, "~> 2.0.0", only: :dev},
-      {:makeup, "~> 1.0.1", only: :dev},
-      {:makeup_elixir, "~> 0.14.0", only: :dev},
-      {:nimble_parsec, "~> 0.5.3", only: :dev},
       {:decorator, "~> 1.2", optional: true},
       {:optimal, "~> 0.3.3"},
-      {:plug, ">= 1.0.0"}
+      {:plug, "~> 1.0"}
     ]
   end
 end
