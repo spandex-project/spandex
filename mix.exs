@@ -18,8 +18,8 @@ defmodule Spandex.Mixfile do
       docs: docs(),
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
-        "coveralls.circle": :test,
-        coveralls: :test
+        coveralls: :test,
+        "coveralls.github": :test
       ],
       deps: deps()
     ]
@@ -65,7 +65,6 @@ defmodule Spandex.Mixfile do
       {:ex_doc, ">= 0.19.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
       {:git_ops, "~> 2.0.0", only: :dev},
-      {:inch_ex, "~> 2.0", only: [:dev, :test]},
       {:makeup, "~> 1.0.1", only: :dev},
       {:makeup_elixir, "~> 0.14.0", only: :dev},
       {:nimble_parsec, "~> 0.5.3", only: :dev},

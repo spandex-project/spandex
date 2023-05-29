@@ -1,8 +1,6 @@
-![Spandex](https://github.com/spandex-project/spandex/blob/master/static/spandex.png?raw=true)
-=========
+# ![Spandex](https://github.com/spandex-project/spandex/blob/master/static/spandex.png?raw=true)
 
-[![CircleCI](https://circleci.com/gh/spandex-project/spandex.svg?style=svg)](https://circleci.com/gh/spandex-project/spandex)
-[![Inline docs](http://inch-ci.org/github/spandex-project/spandex.svg)](http://inch-ci.org/github/spandex-project/spandex)
+[![GitHub Actions](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)](https://github.com/spandex-project/spandex/actions)
 [![Coverage Status](https://coveralls.io/repos/github/spandex-project/spandex/badge.svg)](https://coveralls.io/github/spandex-project/spandex)
 [![Hex pm](http://img.shields.io/hexpm/v/spandex.svg?style=flat)](https://hex.pm/packages/spandex)
 [![Total Download](https://img.shields.io/hexpm/dt/spandex.svg)](https://hex.pm/packages/spandex)
@@ -29,16 +27,16 @@ The 3.0 release only involves ensuring that you're using the latest adapter, whi
 
 This is Datadog-specific since that's currently the only adapter.
 
-* Include the adapter as a dependency (see below).
-* Replace any occurrences of `Spandex.Adapters.Datadog` with
+- Include the adapter as a dependency (see below).
+- Replace any occurrences of `Spandex.Adapters.Datadog` with
   `SpandexDatadog.Adapter` in your code.
-* Replace any occurrences of `Spandex.Adapters.ApiSender` with
+- Replace any occurrences of `Spandex.Adapters.ApiSender` with
   `SpandexDatadog.ApiSender` in your code.
 
 ## Adapters
 
-* [Datadog](https://github.com/spandex-project/spandex_datadog)
-* That's it so far! If you want another adapter, it should be relatively easy to
+- [Datadog](https://github.com/spandex-project/spandex_datadog)
+- That's it so far! If you want another adapter, it should be relatively easy to
   write! This library is in charge of handling the state management of spans,
   and the adapter is just in charge of generating certain values and ultimately
   sending the values to the service.
@@ -101,11 +99,11 @@ For adapter configuration, see the documentation for that adapter
 
 There are 3 plugs provided for usage w/ Phoenix:
 
-* `Spandex.Plug.StartTrace` - See module docs for options. Goes as early in your
+- `Spandex.Plug.StartTrace` - See module docs for options. Goes as early in your
   pipeline as possible.
-* `Spandex.Plug.AddContext` - See moduledoc for options. Either after the
+- `Spandex.Plug.AddContext` - See moduledoc for options. Either after the
   router, or inside a pipeline in the router.
-* `Spandex.Plug.EndTrace` - Must go *after* your router.
+- `Spandex.Plug.EndTrace` - Must go _after_ your router.
 
 ## Distributed Tracing
 
@@ -202,14 +200,14 @@ changed via the `strategy` option. See Tracer opt documentation for an example
 of setting it. To implement your own (ETS adapter should be on its way), simply
 implement the `Spandex.Strategy` behaviour. Keep in mind that the strategy is
 not an atomic pattern. It represents retrieving and wholesale replacing a
-trace, meaning that it is *not* safe to use across processes or concurrently.
+trace, meaning that it is _not_ safe to use across processes or concurrently.
 Each process should have its own store for its own generated spans. This should
 be fine because you can send multiple batches of spans for the same trace
 separately.
 
 ## Decorators
 
-Because the  `decorator` library can cause conflicts when it interacts with other dependencies in the same project, we support it as an optional dependency. This allows you to disable it if it causes problems for you, but it also means that you need to explicitly include some version of `decorator` in your application's dependency list:
+Because the `decorator` library can cause conflicts when it interacts with other dependencies in the same project, we support it as an optional dependency. This allows you to disable it if it causes problems for you, but it also means that you need to explicitly include some version of `decorator` in your application's dependency list:
 
 ```elixir
 # mix.exs
@@ -295,15 +293,16 @@ retain detailed information.
 Spandex stores the `priority` as an integer in the top level `Trace`.
 
 In Datadog, there are four values:
-* `MANUAL_KEEP`(2) indicates that the application wants to ensure that a trace is
+
+- `MANUAL_KEEP`(2) indicates that the application wants to ensure that a trace is
   sampled, e.g. if there is an error
-* `AUTO_KEEP` (1) indicates that a trace has been selected for sampling
-* `AUTO_REJECT` (0) indicates that the trace has not been selected for sampling
-* `MANUAL_REJECT` (-1) indicates that the application wants a trace to be dropped
+- `AUTO_KEEP` (1) indicates that a trace has been selected for sampling
+- `AUTO_REJECT` (0) indicates that the trace has not been selected for sampling
+- `MANUAL_REJECT` (-1) indicates that the application wants a trace to be dropped
 
 Similarly, OpenTracing uses 0 and 1 to indicate that a trace is sampled.
 
-In distributed tracing, multiple processes contribute to the same trace.  When
+In distributed tracing, multiple processes contribute to the same trace. When
 sampling, the process that starts the trace can make a decision about whether
 it should be sampled. It then passes that information to downstream processes
 via an HTTP header.

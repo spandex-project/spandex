@@ -3,63 +3,55 @@ name: CI
 on: push
 
 jobs:
-  elixir:
-    name: Elixir Tests
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.14.5'
+          otp-version: '25.3.2'
+      - run: mix format --check-formatted
+  test:
+    name: Test on Elixir ${{ matrix.elixir }} (OTP ${{ matrix.otp }})
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: test
     strategy:
       matrix:
-        elixir: ['1.11.4', '1.13.4']
-        otp: ['24.3']
+        elixir: ['1.11.4', '1.12.3', '1.13.4', '1.14.5']
+        otp: ['23.3.4.18', '24.3.4.11']
+        include:
+          - elixir: '1.14.5'
+            otp: '25.3.2'
     steps:
-      - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.5.0
+      - uses: actions/checkout@v3
+      - uses: erlef/setup-beam@v1
         with:
-          access_token: ${{ github.token }}
-
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Setup Elixir
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
-
+          otp-version: ${{ matrix.otp }}
       - name: Get deps cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: deps/
-          key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
-
+          key: deps-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            deps-${{ hashFiles('mix.lock') }}
+            deps-
       - name: Get build cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
-          path: _build/test/
-          key: build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
-
+          path: _build/
+          key: build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+            build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
       - name: Install deps
-        run: |
-          mix local.rebar --force
-          mix local.hex --force
-          mix deps.get
-
+        run: mix deps.get
       - name: Compile code
-        run: |
-          # Use of @deprecated causes compile warnings
-          # mix compile --warnings-as-errors
-          mix compile
-
+        run: mix compile --warnings-as-errors
       - name: Run tests
-        run: |
-          mix test
-          mix format --check-formatted
-          mix coveralls
-          mix inch.report
-
-      # - name: Publish unit test results to GitHub
-      #   uses: EnricoMi/publish-unit-test-result-action@v2
-      #   if: always() # always run even if tests fail
-      #   with:
-      #     junit_files: _build/test/lib/*/test-junit-report.xml
+        run: mix test
+      - name: Calculate coverage
+        run: mix coveralls.github
