@@ -79,7 +79,7 @@ defmodule Spandex.Span do
                extra_keys?: true
              )
 
-  def span_opts(), do: @span_opts
+  def span_opts, do: @span_opts
 
   @doc """
   Create a new span.

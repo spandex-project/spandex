@@ -13,6 +13,34 @@ jobs:
           elixir-version: '1.14.5'
           otp-version: '25.3.2'
       - run: mix format --check-formatted
+  lint:
+    name: Perform static code analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.14.5'
+          otp-version: '25.3.2'
+      - name: Get deps cache
+        uses: actions/cache@v3
+        with:
+          path: deps/
+          key: deps-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            deps-${{ hashFiles('mix.lock') }}
+            deps-
+      - name: Get build cache
+        uses: actions/cache@v3
+        with:
+          path: _build/
+          key: build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+            build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+      - name: Install deps
+        run: mix deps.get
+      - run: mix credo --strict
   test:
     name: Test on Elixir ${{ matrix.elixir }} (OTP ${{ matrix.otp }})
     runs-on: ubuntu-20.04

@@ -5,6 +5,7 @@ defmodule Spandex.Plug.AddContext do
   """
   @behaviour Plug
 
+  alias Plug.Conn.Query
   alias Spandex.Plug.Utils
 
   @init_opts Optimal.schema(
@@ -136,7 +137,7 @@ defmodule Spandex.Plug.AddContext do
     if to_encode == %{} do
       uri
     else
-      uri <> "?" <> Plug.Conn.Query.encode(to_encode)
+      uri <> "?" <> Query.encode(to_encode)
     end
   end
 end

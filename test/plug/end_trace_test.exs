@@ -5,6 +5,7 @@ defmodule Spandex.Plug.EndTraceTest do
   alias Spandex.Plug.EndTrace
   alias Spandex.Plug.Utils
   alias Spandex.Test.Support.Tracer
+  alias Spandex.Test.Util
 
   setup do
     {:ok, trace} = Tracer.start_trace("request")
@@ -46,7 +47,7 @@ defmodule Spandex.Plug.EndTraceTest do
 
       assert String.contains?(log, "[error] Tried to finish a trace without an active trace.")
 
-      %{trace_id: trace_id, http: http, error: error} = Spandex.Test.Util.find_span("request")
+      %{trace_id: trace_id, http: http, error: error} = Util.find_span("request")
 
       assert trace_id == tid
       assert http[:status_code] == 200
@@ -72,7 +73,7 @@ defmodule Spandex.Plug.EndTraceTest do
 
       assert String.contains?(log, "[error] Tried to finish a trace without an active trace.")
 
-      %{trace_id: trace_id, http: http, error: error} = Spandex.Test.Util.find_span("request")
+      %{trace_id: trace_id, http: http, error: error} = Util.find_span("request")
 
       assert trace_id == tid
       assert http[:status_code] == 404

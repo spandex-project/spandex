@@ -86,7 +86,7 @@ defmodule Spandex.Plug.StartTrace do
     end)
   end
 
-  @spec match_route?(route :: String.t(), ignore :: %Regex{} | String.t()) :: boolean
+  @spec match_route?(route :: String.t(), ignore :: Regex.t() | String.t()) :: boolean
   defp match_route?(ignore, ignore) when is_bitstring(ignore), do: true
   defp match_route?(_, ignore) when is_bitstring(ignore), do: false
 
