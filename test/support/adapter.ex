@@ -21,6 +21,11 @@ defmodule Spandex.TestAdapter do
     Spandex.TestSender
   end
 
+  @impl Spandex.Adapter
+  def default_priority() do
+    1
+  end
+
   @doc """
   Fetches the test trace & parent IDs from the conn request headers
   if they are present.

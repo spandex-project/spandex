@@ -18,7 +18,7 @@ defmodule Spandex.Trace do
   @type t :: %__MODULE__{
           baggage: Keyword.t(),
           id: Spandex.id(),
-          priority: integer() | nil,
+          priority: integer(),
           spans: [Spandex.Span.t()],
           stack: [Spandex.Span.t()]
         }
