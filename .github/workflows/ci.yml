@@ -51,7 +51,5 @@ jobs:
         run: mix deps.get
       - name: Compile code
         run: mix compile --warnings-as-errors
-      - name: Run tests
-        run: mix test
       - name: Calculate coverage
         run: mix coveralls.github
