@@ -1,8 +1,6 @@
-![Spandex](https://github.com/spandex-project/spandex/blob/master/static/spandex.png?raw=true)
-=========
+# ![Spandex](https://github.com/spandex-project/spandex/blob/master/static/spandex.png?raw=true)
 
-[![CircleCI](https://circleci.com/gh/spandex-project/spandex.svg?style=svg)](https://circleci.com/gh/spandex-project/spandex)
-[![Inline docs](http://inch-ci.org/github/spandex-project/spandex.svg)](http://inch-ci.org/github/spandex-project/spandex)
+[![GitHub Actions](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)](https://github.com/spandex-project/spandex/actions)
 [![Coverage Status](https://coveralls.io/repos/github/spandex-project/spandex/badge.svg)](https://coveralls.io/github/spandex-project/spandex)
 [![Hex pm](http://img.shields.io/hexpm/v/spandex.svg?style=flat)](https://hex.pm/packages/spandex)
 [![Total Download](https://img.shields.io/hexpm/dt/spandex.svg)](https://hex.pm/packages/spandex)
@@ -15,7 +13,7 @@ monitoring tool that allows you get extremely granular information about the
 runtime of your system. Using distributed tracing, you can also get a view of
 how requests make their way through your entire ecosystem of microservices or
 applications. Currently, Spandex only supports integrating with
-[datadog](https://www.datadoghq.com/), but it is built to be agnostic to what
+[Datadog](https://www.datadoghq.com/), but it is built to be agnostic to what
 platform you choose to view your trace data. Eventually it should support Open
 Zipkin, Stackdriver, and any other trace viewer/aggregation tool you'd like to
 integrate with. We are still under active development, working on moving to a
@@ -29,16 +27,16 @@ The 3.0 release only involves ensuring that you're using the latest adapter, whi
 
 This is Datadog-specific since that's currently the only adapter.
 
-* Include the adapter as a dependency (see below).
-* Replace any occurrences of `Spandex.Adapters.Datadog` with
+- Include the adapter as a dependency (see below).
+- Replace any occurrences of `Spandex.Adapters.Datadog` with
   `SpandexDatadog.Adapter` in your code.
-* Replace any occurrences of `Spandex.Adapters.ApiSender` with
+- Replace any occurrences of `Spandex.Adapters.ApiSender` with
   `SpandexDatadog.ApiSender` in your code.
 
 ## Adapters
 
-* [Datadog](https://github.com/spandex-project/spandex_datadog)
-* Thats it so far! If you want another adapter, it should be relatively easy to
+- [Datadog](https://github.com/spandex-project/spandex_datadog)
+- That's it so far! If you want another adapter, it should be relatively easy to
   write! This library is in charge of handling the state management of spans,
   and the adapter is just in charge of generating certain values and ultimately
   sending the values to the service.
@@ -101,11 +99,11 @@ For adapter configuration, see the documentation for that adapter
 
 There are 3 plugs provided for usage w/ Phoenix:
 
-* `Spandex.Plug.StartTrace` - See module docs for options. Goes as early in your
+- `Spandex.Plug.StartTrace` - See module docs for options. Goes as early in your
   pipeline as possible.
-* `Spandex.Plug.AddContext` - See moduledoc for options. Either after the
+- `Spandex.Plug.AddContext` - See moduledoc for options. Either after the
   router, or inside a pipeline in the router.
-* `Spandex.Plug.EndTrace` - Must go *after* your router.
+- `Spandex.Plug.EndTrace` - Must go _after_ your router.
 
 ## Distributed Tracing
 
@@ -202,14 +200,14 @@ changed via the `strategy` option. See Tracer opt documentation for an example
 of setting it. To implement your own (ETS adapter should be on its way), simply
 implement the `Spandex.Strategy` behaviour. Keep in mind that the strategy is
 not an atomic pattern. It represents retrieving and wholesale replacing a
-trace, meaning that it is *not* safe to use across processes or concurrently.
+trace, meaning that it is _not_ safe to use across processes or concurrently.
 Each process should have its own store for its own generated spans. This should
 be fine because you can send multiple batches of spans for the same trace
 separately.
 
 ## Decorators
 
-Because the  `decorator` library can cause conflicts when it interacts with other dependencies in the same project, we support it as an optional dependency. This allows you to disable it if it causes problems for you, but it also means that you need to explicitly include some version of `decorator` in your application's dependency list:
+Because the `decorator` library can cause conflicts when it interacts with other dependencies in the same project, we support it as an optional dependency. This allows you to disable it if it causes problems for you, but it also means that you need to explicitly include some version of `decorator` in your application's dependency list:
 
 ```elixir
 # mix.exs
@@ -282,3 +280,35 @@ Check out [spandex_ecto](https://github.com/spandex-project/spandex_ecto).
 ## Phoenix Tracing
 
 Check out [spandex_phoenix](https://github.com/spandex-project/spandex_phoenix).
+
+## Sampling and Rate Limiting
+
+When the load or cost from tracing increases, it is useful to use rate limiting
+or sampling to reduce traffic generated by tracing. When many traces are the
+same, it's enough to keep only e.g. 10% of them, reducing the bill by 90% while
+still preserving the ability to troubleshoot the system. The tracing still
+happens, but it may not be sent to the monitoring service, or the service may
+drop it or not retain detailed information.
+
+In distributed tracing, multiple processes contribute to the same trace. When
+sampling, the process that starts the trace can make a decision about whether
+it should be sampled. It then passes that information to downstream processes
+via an HTTP header.
+
+Every trace in Spandex has a `priority` describing whether it should be sampled
+or not. This priority is set by the adapter automatically when starting a new
+trace - either based on the distributed context or by configuration.
+
+A trace may be sampled out by the adapter, but you can always override its
+`priority` manually. This is usually done for requests with errors, as they are
+the ones that need troubleshooting. You can also enable tracing dynamically with
+a feature flag to debug a feature in production.
+
+While Spandex implements functions to read and set the `priority`
+(`Spandex.Tracer.current_priority/1` and `Spandex.Tracer.update_priority/2`
+respectively), it's best to use `priority`-modifying functions exposed by a
+particular adapter as the field has different meaning across observability
+backends.
+
+You can find more information on sampling and rate limiting in documentation for
+adapters like [spandex_datadog](https://github.com/spandex-project/spandex_datadog).

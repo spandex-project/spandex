@@ -26,11 +26,13 @@ defmodule Spandex.Tracer do
   @callback start_span(span_name, opts) :: tagged_tuple(Span.t())
   @callback update_span(opts) :: tagged_tuple(Span.t())
   @callback update_top_span(opts) :: tagged_tuple(Span.t())
+  @callback update_priority(priority :: integer(), opts) :: tagged_tuple(Trace.t())
   @callback finish_trace(opts) :: tagged_tuple(Trace.t())
   @callback finish_span(opts) :: tagged_tuple(Span.t())
   @callback span_error(error :: Exception.t(), stacktrace :: [term], opts) :: tagged_tuple(Span.t())
   @callback continue_trace(span_name :: String.t(), trace_context :: SpanContext.t(), opts) :: tagged_tuple(Trace.t())
   @callback continue_trace_from_span(span_name, span :: term, opts) :: tagged_tuple(Trace.t())
+  @callback current_priority(opts) :: nil | integer()
   @callback current_trace_id(opts) :: nil | Spandex.id()
   @callback current_span_id(opts) :: nil | Spandex.id()
   @callback current_span(opts) :: nil | Span.t()
@@ -94,12 +96,12 @@ defmodule Spandex.Tracer do
   This also accepts defaults for any value that can
   be given to a span.
   """
-  def tracer_opts(), do: @all_tracer_opts
+  def tracer_opts, do: @all_tracer_opts
 
   defmacro __using__(opts) do
     # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
-    quote do
-      @otp_app unquote(opts)[:otp_app] || raise("Must provide `otp_app` to `use Spandex.Tracer`")
+    quote location: :keep, bind_quoted: [opts: opts] do
+      @otp_app Keyword.get(opts, :otp_app) || raise("Must provide `otp_app` to `use Spandex.Tracer`")
 
       @behaviour Spandex.Tracer
 
@@ -182,6 +184,11 @@ defmodule Spandex.Tracer do
       end
 
       @impl Spandex.Tracer
+      def update_priority(priority, opts \\ []) do
+        Spandex.update_priority(priority, config(opts, @otp_app))
+      end
+
+      @impl Spandex.Tracer
       def finish_trace(opts \\ []) do
         opts
         |> validate_update_config(@otp_app)
@@ -220,6 +227,11 @@ defmodule Spandex.Tracer do
       @impl Spandex.Tracer
       def continue_trace_from_span(span_name, span, opts \\ []) do
         Spandex.continue_trace_from_span(span_name, span, config(opts, @otp_app))
+      end
+
+      @impl Spandex.Tracer
+      def current_priority(opts \\ []) do
+        Spandex.current_priority(config(opts, @otp_app))
       end
 
       @impl Spandex.Tracer
@@ -298,6 +310,8 @@ defmodule Spandex.Tracer do
           |> Keyword.put(:sender, env[:sender])
         end
       end
+
+      defoverridable Spandex.Tracer
     end
   end
 end

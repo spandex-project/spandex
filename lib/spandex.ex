@@ -105,6 +105,24 @@ defmodule Spandex do
   end
 
   @doc """
+  Update the priority of the current trace.
+  """
+  @spec update_priority(integer(), Tracer.opts()) ::
+          {:ok, Trace.t()}
+          | {:error, :disabled}
+          | {:error, :no_trace_context}
+          | {:error, [Optimal.error()]}
+  def update_priority(_, :disabled), do: {:error, :disabled}
+
+  def update_priority(priority, opts) do
+    strategy = opts[:strategy]
+
+    with {:ok, trace} <- strategy.get_trace(opts[:trace_key]) do
+      strategy.put_trace(opts[:trace_key], %{trace | priority: priority})
+    end
+  end
+
+  @doc """
   Updates the top-most parent span.
 
   Any spans that have already been started will not inherit any of the updates
@@ -137,7 +155,8 @@ defmodule Spandex do
   def update_all_spans(opts) do
     strategy = opts[:strategy]
 
-    with {:ok, %Trace{stack: stack, spans: spans} = trace} <- strategy.get_trace(opts[:trace_key]),
+    with {:ok, %Trace{stack: stack, spans: spans} = trace} <-
+           strategy.get_trace(opts[:trace_key]),
          {:ok, new_spans} <- update_many_spans(spans, opts),
          {:ok, new_stack} <- update_many_spans(stack, opts) do
       strategy.put_trace(opts[:trace_key], %{trace | stack: new_stack, spans: new_spans})
@@ -248,6 +267,26 @@ defmodule Spandex do
   end
 
   @doc """
+  Returns the priority of the currently running trace.
+  """
+  @spec current_priority(Tracer.opts()) :: integer() | nil
+  def current_priority(:disabled), do: nil
+
+  def current_priority(opts) do
+    strategy = opts[:strategy]
+
+    case strategy.get_trace(opts[:trace_key]) do
+      {:ok, %Trace{priority: priority}} ->
+        priority
+
+      {:error, _} ->
+        # TODO: Alter the return type of this interface to allow for returning
+        # errors from fetching the trace.
+        nil
+    end
+  end
+
+  @doc """
   Returns the id of the currently-running trace.
   """
   @spec current_trace_id(Tracer.opts()) :: Spandex.id() | nil
@@ -324,7 +363,13 @@ defmodule Spandex do
 
     case strategy.get_trace(opts[:trace_key]) do
       {:ok, %Trace{id: trace_id, priority: priority, baggage: baggage, stack: [%Span{id: span_id} | _]}} ->
-        {:ok, %SpanContext{trace_id: trace_id, priority: priority, baggage: baggage, parent_id: span_id}}
+        {:ok,
+         %SpanContext{
+           trace_id: trace_id,
+           priority: priority,
+           baggage: baggage,
+           parent_id: span_id
+         }}
 
       {:ok, %Trace{stack: []}} ->
         {:error, :no_span_context}
@@ -341,7 +386,7 @@ defmodule Spandex do
   invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a second call to `update_span/2` and check the return value.
   """
-  @spec continue_trace(String.t(), SpanContext.t(), Keyword.t()) ::
+  @spec continue_trace(String.t(), SpanContext.t(), Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
@@ -365,7 +410,7 @@ defmodule Spandex do
   invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a second call to `update_span/2` and check the return value.
   """
-  @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Keyword.t()) ::
+  @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
@@ -373,7 +418,13 @@ defmodule Spandex do
   def continue_trace(_, _, _, :disabled), do: {:error, :disabled}
 
   def continue_trace(name, trace_id, span_id, opts) do
-    continue_trace(name, %SpanContext{trace_id: trace_id, parent_id: span_id}, opts)
+    adapter = opts[:adapter]
+
+    continue_trace(
+      name,
+      %SpanContext{trace_id: trace_id, parent_id: span_id, priority: adapter.default_priority()},
+      opts
+    )
   end
 
   @doc """
@@ -403,8 +454,10 @@ defmodule Spandex do
   @doc """
   Returns the context from a given set of HTTP headers, as determined by the adapter.
   """
-  @spec distributed_context(Plug.Conn.t(), Tracer.opts()) :: {:ok, SpanContext.t()} | {:error, :disabled}
-  @spec distributed_context(headers(), Tracer.opts()) :: {:ok, SpanContext.t()} | {:error, :disabled}
+  @spec distributed_context(Plug.Conn.t(), Tracer.opts()) ::
+          {:ok, SpanContext.t()} | {:error, :disabled}
+  @spec distributed_context(headers(), Tracer.opts()) ::
+          {:ok, SpanContext.t()} | {:error, :disabled}
   def distributed_context(_, :disabled), do: {:error, :disabled}
 
   def distributed_context(metadata, opts) do
@@ -472,7 +525,7 @@ defmodule Spandex do
     adapter = opts[:adapter]
 
     with {:ok, span} <- Span.child_of(span, name, adapter.span_id(), adapter.now(), opts) do
-      trace = %Trace{id: adapter.trace_id(), stack: [span], spans: []}
+      trace = %Trace{id: adapter.trace_id(), priority: adapter.default_priority(), stack: [span], spans: []}
       strategy.put_trace(opts[:trace_key], trace)
     end
   end
@@ -482,16 +535,17 @@ defmodule Spandex do
     adapter = opts[:adapter]
 
     with {:ok, span} <- Span.child_of(current_span, name, adapter.span_id(), adapter.now(), opts),
-         {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: [span | trace.stack]}) do
+         {:ok, _trace} <-
+           strategy.put_trace(opts[:trace_key], %{trace | stack: [span | trace.stack]}) do
       Logger.metadata(span_id: to_string(span.id), trace_id: to_string(trace.id))
       {:ok, span}
     end
   end
 
-  defp do_start_span(name, %Trace{stack: [], id: trace_id} = trace, opts) do
+  defp do_start_span(name, %Trace{stack: [], id: trace_id, priority: priority} = trace, opts) do
     strategy = opts[:strategy]
     adapter = opts[:adapter]
-    span_context = %SpanContext{trace_id: trace_id}
+    span_context = %SpanContext{trace_id: trace_id, priority: priority}
 
     with {:ok, span} <- span(name, opts, span_context, adapter),
          {:ok, _trace} <- strategy.put_trace(opts[:trace_key], %{trace | stack: [span]}) do
@@ -504,11 +558,12 @@ defmodule Spandex do
     strategy = opts[:strategy]
     adapter = opts[:adapter]
     trace_id = adapter.trace_id()
-    span_context = %SpanContext{trace_id: trace_id}
+    priority = adapter.default_priority()
+    span_context = %SpanContext{trace_id: trace_id, priority: priority}
 
     with {:ok, span} <- span(name, opts, span_context, adapter) do
       Logger.metadata(trace_id: to_string(trace_id), span_id: to_string(span.id))
-      trace = %Trace{spans: [], stack: [span], id: trace_id}
+      trace = %Trace{spans: [], stack: [span], id: trace_id, priority: priority}
       strategy.put_trace(opts[:trace_key], trace)
     end
   end

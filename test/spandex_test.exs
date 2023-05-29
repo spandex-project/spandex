@@ -39,6 +39,17 @@ defmodule Spandex.Test.SpandexTest do
       assert %Span{name: "root_span"} = Spandex.current_span(@base_opts)
     end
 
+    test "uses the adapter to generate a trace_id, span_id and priority" do
+      opts = @base_opts ++ @span_opts
+
+      assert {:ok, %Trace{id: trace_id, stack: [%Span{id: span_id}], priority: priority}} =
+               Spandex.start_trace("root_span", opts)
+
+      assert trace_id != nil
+      assert span_id != nil
+      assert priority == 1
+    end
+
     test "returns an error if there is already a trace in progress" do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
@@ -425,6 +436,7 @@ defmodule Spandex.Test.SpandexTest do
 
     test "returns an error if there is not a trace in progress" do
       opts = @base_opts ++ @span_opts
+
       assert {:error, :no_trace_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, opts)
     end
 
@@ -432,6 +444,7 @@ defmodule Spandex.Test.SpandexTest do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{}} = Spandex.start_trace("root_span", opts)
       assert {:ok, %Span{}} = Spandex.finish_span(@base_opts)
+
       assert {:error, :no_span_context} = Spandex.span_error(@runtime_error, @fake_stacktrace, @base_opts)
     end
 
@@ -451,6 +464,46 @@ defmodule Spandex.Test.SpandexTest do
                )
 
       assert {:type, "must be of type :atom"} in validation_errors
+    end
+  end
+
+  describe "Spandex.current_priority/1" do
+    test "returns the priority if a trace is active" do
+      opts = @base_opts ++ @span_opts
+      adapter = opts[:adapter]
+      trace_id = adapter.trace_id()
+      span_context = %Spandex.SpanContext{trace_id: trace_id, priority: 2}
+
+      assert {:ok, %Trace{id: ^trace_id}} = Spandex.continue_trace("root_span", span_context, opts)
+
+      assert 2 == Spandex.current_priority(@base_opts)
+    end
+
+    test "returns nil if no trace is active" do
+      assert nil == Spandex.current_priority(@base_opts)
+    end
+
+    test "returns nil if tracing is disabled" do
+      assert nil == Spandex.current_priority(:disabled)
+    end
+  end
+
+  describe "Spandex.update_priority/1" do
+    test "updates the priority" do
+      opts = @base_opts ++ @span_opts
+      adapter = opts[:adapter]
+      trace_id = adapter.trace_id()
+      span_context = %Spandex.SpanContext{trace_id: trace_id, priority: 1}
+
+      assert {:ok, %Trace{id: ^trace_id}} = Spandex.continue_trace("root_span", span_context, opts)
+
+      assert 1 == Spandex.current_priority(@base_opts)
+      assert {:ok, _trace} = Spandex.update_priority(2, @base_opts)
+      assert 2 == Spandex.current_priority(@base_opts)
+    end
+
+    test "returns error if tracing is disabled" do
+      assert {:error, :no_trace_context} == Spandex.update_priority(2, @base_opts)
     end
   end
 
@@ -523,6 +576,7 @@ defmodule Spandex.Test.SpandexTest do
       opts = @base_opts ++ @span_opts
       assert {:ok, %Trace{id: trace_id}} = Spandex.start_trace("root_span", opts)
       assert {:ok, %Span{id: span_id}} = Spandex.start_span("span_name", @base_opts)
+
       assert {:ok, %SpanContext{trace_id: ^trace_id, parent_id: ^span_id}} = Spandex.current_context(@base_opts)
     end
 
@@ -557,6 +611,7 @@ defmodule Spandex.Test.SpandexTest do
       log =
         capture_log(fn ->
           span_context = %SpanContext{trace_id: 123, parent_id: 456}
+
           assert {:error, :trace_already_present} = Spandex.continue_trace("span_name", span_context, opts)
         end)
 
@@ -662,7 +717,8 @@ defmodule Spandex.Test.SpandexTest do
     test "returns an error if tracing is disabled" do
       existing_span = %Span{id: 456, trace_id: 123, name: "existing"}
 
-      assert {:error, :disabled} == Spandex.continue_trace_from_span("root_span", existing_span, :disabled)
+      assert {:error, :disabled} ==
+               Spandex.continue_trace_from_span("root_span", existing_span, :disabled)
     end
 
     test "returns an error if invalid options are specified" do
@@ -712,6 +768,7 @@ defmodule Spandex.Test.SpandexTest do
       ]
 
       assert {:ok, %SpanContext{} = span_context} = Spandex.distributed_context(list_headers, @base_opts)
+
       assert %SpanContext{trace_id: 1234, parent_id: 5678, priority: 10} = span_context
 
       map_headers = %{
@@ -721,6 +778,7 @@ defmodule Spandex.Test.SpandexTest do
       }
 
       assert {:ok, %SpanContext{} = span_context} = Spandex.distributed_context(map_headers, @base_opts)
+
       assert %SpanContext{trace_id: 1234, parent_id: 5678, priority: 10} = span_context
     end
   end
@@ -736,6 +794,20 @@ defmodule Spandex.Test.SpandexTest do
                {"x-test-trace-id", "123"},
                {"x-test-parent-id", "456"},
                {"x-test-sampling-priority", "10"},
+               {"header1", "value1"},
+               {"header2", "value2"}
+             ]
+    end
+
+    test "Default priority is nil" do
+      span_context = %SpanContext{trace_id: 123, parent_id: 456}
+      headers = [{"header1", "value1"}, {"header2", "value2"}]
+
+      result = Spandex.inject_context(headers, span_context, @base_opts)
+
+      assert result == [
+               {"x-test-trace-id", "123"},
+               {"x-test-parent-id", "456"},
                {"header1", "value1"},
                {"header2", "value2"}
              ]

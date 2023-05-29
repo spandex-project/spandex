@@ -18,6 +18,6 @@ defmodule Spandex.SpanContext do
 
   defstruct trace_id: nil,
             parent_id: nil,
-            priority: 1,
+            priority: nil,
             baggage: []
 end

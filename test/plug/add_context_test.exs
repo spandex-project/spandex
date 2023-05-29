@@ -4,6 +4,7 @@ defmodule Spandex.Plug.AddContextTest do
   alias Spandex.Plug.AddContext
   alias Spandex.Plug.Utils
   alias Spandex.Test.Support.Tracer
+  alias Spandex.Test.Util
 
   setup do
     {:ok, trace} = Tracer.start_trace("request")
@@ -30,7 +31,7 @@ defmodule Spandex.Plug.AddContextTest do
 
       {:ok, _} = Tracer.finish_trace()
 
-      %{resource: resource, http: http} = Spandex.Test.Util.find_span("request")
+      %{resource: resource, http: http} = Util.find_span("request")
 
       assert is_nil(http[:url])
       assert is_nil(http[:method])
@@ -55,7 +56,7 @@ defmodule Spandex.Plug.AddContextTest do
 
       {:ok, _} = Tracer.finish_trace()
 
-      %{trace_id: trace_id, type: type, http: http, resource: resource} = Spandex.Test.Util.find_span("request")
+      %{trace_id: trace_id, type: type, http: http, resource: resource} = Util.find_span("request")
 
       assert trace_id == tid
       assert type == :web

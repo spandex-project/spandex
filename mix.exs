@@ -8,7 +8,7 @@ defmodule Spandex.Mixfile do
     [
       app: :spandex,
       version: @version,
-      elixir: "~> 1.7",
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -18,10 +18,14 @@ defmodule Spandex.Mixfile do
       docs: docs(),
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
-        "coveralls.circle": :test,
-        coveralls: :test
+        coveralls: :test,
+        "coveralls.github": :test
       ],
-      deps: deps()
+      deps: deps(),
+      dialyzer: [
+        plt_local_path: "priv/plts",
+        plt_core_path: "priv/plts"
+      ]
     ]
   end
 
@@ -61,10 +65,9 @@ defmodule Spandex.Mixfile do
     [
       {:benchee, "~> 1.0", only: [:dev, :test]},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:makeup, "~> 1.0", only: :dev},
-      {:makeup_elixir, "~> 0.16", only: :dev},
+      {:excoveralls, "~> 0.10", only: :test},
       {:decorator, "~> 1.2", optional: true},
       {:optimal, "~> 0.3.3"},
       {:plug, "~> 1.0"}

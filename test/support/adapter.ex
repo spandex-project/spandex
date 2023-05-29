@@ -8,32 +8,25 @@ defmodule Spandex.TestAdapter do
   @max_id 9_223_372_036_854_775_807
 
   @impl Spandex.Adapter
-  def trace_id(), do: :rand.uniform(@max_id)
+  def trace_id, do: :rand.uniform(@max_id)
 
   @impl Spandex.Adapter
-  def span_id(), do: trace_id()
+  def span_id, do: trace_id()
 
   @impl Spandex.Adapter
-  def now(), do: :os.system_time(:nano_seconds)
+  def now, do: :os.system_time(:nano_seconds)
 
   @impl Spandex.Adapter
-  def default_sender() do
-    Spandex.TestSender
-  end
+  def default_sender, do: Spandex.TestSender
 
-  @doc """
-  Fetches the test trace & parent IDs from the conn request headers
-  if they are present.
-  """
   @impl Spandex.Adapter
-  @spec distributed_context(conn :: Plug.Conn.t(), Keyword.t()) ::
-          {:ok, SpanContext.t()}
-          | {:error, :no_distributed_trace}
+  def default_priority, do: 1
+
+  @impl Spandex.Adapter
   def distributed_context(%Plug.Conn{} = conn, _opts) do
     trace_id = get_first_header(conn, "x-test-trace-id")
     parent_id = get_first_header(conn, "x-test-parent-id")
-    # We default the priority to 1 so that we capture all traces by default until we implement trace sampling
-    priority = get_first_header(conn, "x-test-sampling-priority") || 1
+    priority = get_first_header(conn, "x-test-sampling-priority")
 
     if is_nil(trace_id) || is_nil(parent_id) do
       {:error, :no_distributed_trace}
@@ -43,9 +36,6 @@ defmodule Spandex.TestAdapter do
   end
 
   @impl Spandex.Adapter
-  @spec distributed_context(headers :: Spandex.headers(), Keyword.t()) ::
-          {:ok, SpanContext.t()}
-          | {:error, :no_distributed_trace}
   def distributed_context(headers, _opts) when is_list(headers) do
     trace_id = get_first_header(headers, "x-test-trace-id")
     parent_id = get_first_header(headers, "x-test-parent-id")
@@ -58,6 +48,7 @@ defmodule Spandex.TestAdapter do
     end
   end
 
+  @impl Spandex.Adapter
   def distributed_context(headers, _opts) when is_map(headers) do
     %{
       "x-test-trace-id" => trace_id,
@@ -72,17 +63,14 @@ defmodule Spandex.TestAdapter do
     end
   end
 
-  @doc """
-  Injects test HTTP headers to represent the specified SpanContext
-  """
   @impl Spandex.Adapter
-  @spec inject_context(Spandex.headers(), SpanContext.t(), Tracer.opts()) :: Spandex.headers()
   def inject_context(headers, %SpanContext{} = span_context, _opts) when is_list(headers) do
     span_context
     |> tracing_headers()
     |> Kernel.++(headers)
   end
 
+  @impl Spandex.Adapter
   def inject_context(headers, %SpanContext{} = span_context, _opts) when is_map(headers) do
     span_context
     |> tracing_headers()
@@ -118,11 +106,18 @@ defmodule Spandex.TestAdapter do
 
   defp parse_header(_header), do: nil
 
-  defp tracing_headers(%SpanContext{trace_id: trace_id, parent_id: parent_id, priority: priority}) do
+  defp tracing_headers(%SpanContext{trace_id: trace_id, parent_id: parent_id} = span_context) do
     [
       {"x-test-trace-id", to_string(trace_id)},
-      {"x-test-parent-id", to_string(parent_id)},
-      {"x-test-sampling-priority", to_string(priority)}
-    ]
+      {"x-test-parent-id", to_string(parent_id)}
+    ] ++ priority_header(span_context)
+  end
+
+  defp priority_header(%SpanContext{priority: nil}) do
+    []
+  end
+
+  defp priority_header(%SpanContext{priority: priority}) do
+    [{"x-test-sampling-priority", to_string(priority)}]
   end
 end

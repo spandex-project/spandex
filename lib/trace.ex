@@ -10,7 +10,7 @@ defmodule Spandex.Trace do
   """
   defstruct baggage: [],
             id: nil,
-            priority: 1,
+            priority: nil,
             spans: [],
             stack: []
 
