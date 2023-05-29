@@ -95,6 +95,24 @@ jobs:
         with:
           elixir-version: ${{ env.DEFAULT_ELIXIR_VERSION }}
           otp-version: ${{ env.DEFAULT_OTP_VERSION }}
+      - name: Get deps cache
+        uses: actions/cache@v3
+        with:
+          path: deps/
+          key: deps-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            deps-${{ hashFiles('mix.lock') }}
+            deps-
+      - name: Get build cache
+        uses: actions/cache@v3
+        with:
+          path: _build/
+          key: build-${{ runner.os }}-${{ env.DEFAULT_OTP_VERSION }}-${{ env.DEFAULT_ELIXIR_VERSION }}-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            build-${{ runner.os }}-${{ env.DEFAULT_OTP_VERSION }}-${{ env.DEFAULT_ELIXIR_VERSION }}-${{ hashFiles('mix.lock') }}
+            build-${{ runner.os }}-${{ env.DEFAULT_OTP_VERSION }}-${{ env.DEFAULT_ELIXIR_VERSION }}-
+      - name: Install deps
+        run: mix deps.get
       - name: Restore PLT cache
         id: plt_cache
         uses: actions/cache/restore@v3
