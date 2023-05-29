@@ -5,6 +5,7 @@ on: push
 env:
   DEFAULT_ELIXIR_VERSION: '1.14.5'
   DEFAULT_OTP_VERSION: '25.3.2'
+  MIX_ENV: test
 
 jobs:
   format:
@@ -49,7 +50,6 @@ jobs:
     name: Test on Elixir ${{ matrix.elixir }} (OTP ${{ matrix.otp }})
     runs-on: ubuntu-20.04
     env:
-      MIX_ENV: test
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       matrix:

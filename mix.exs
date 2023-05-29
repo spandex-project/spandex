@@ -21,7 +21,11 @@ defmodule Spandex.Mixfile do
         coveralls: :test,
         "coveralls.github": :test
       ],
-      deps: deps()
+      deps: deps(),
+      dialyzer: [
+        plt_local_path: "priv/plts",
+        plt_core_path: "priv/plts"
+      ]
     ]
   end
 
