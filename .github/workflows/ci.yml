@@ -2,6 +2,10 @@
 name: CI
 on: push
 
+env:
+  DEFAULT_ELIXIR_VERSION: '1.14.5'
+  DEFAULT_OTP_VERSION: '35.3.2'
+
 jobs:
   format:
     name: Check formatting
@@ -10,8 +14,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: erlef/setup-beam@v1
         with:
-          elixir-version: '1.14.5'
-          otp-version: '25.3.2'
+          elixir-version: ${{ env.DEFAULT_ELIXIR_VERSION }}
+          otp-version: ${{ env.DEFAULT_OTP_VERSION }}
       - run: mix format --check-formatted
   lint:
     name: Perform static code analysis
@@ -20,8 +24,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: erlef/setup-beam@v1
         with:
-          elixir-version: '1.14.5'
-          otp-version: '25.3.2'
+          elixir-version: ${{ env.DEFAULT_ELIXIR_VERSION }}
+          otp-version: ${{ env.DEFAULT_OTP_VERSION }}
       - name: Get deps cache
         uses: actions/cache@v3
         with:
@@ -34,10 +38,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: _build/
-          key: build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+          key: build-${{ runner.os }}-${{ env.DEFAULT_OTP_VERSION }}-${{ env.DEFAULT_ELIXIR_VERSION }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
-            build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
-            build-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+            build-${{ runner.os }}-${{ env.DEFAULT_OTP_VERSION }}-${{ env.DEFAULT_ELIXIR_VERSION }}-${{ hashFiles('mix.lock') }}
+            build-${{ runner.os }}-${{ env.DEFAULT_OTP_VERSION }}-${{ env.DEFAULT_ELIXIR_VERSION }}-
       - name: Install deps
         run: mix deps.get
       - run: mix credo --strict
@@ -82,3 +86,31 @@ jobs:
         run: mix compile --warnings-as-errors
       - name: Calculate coverage
         run: mix coveralls.github
+  dialyze:
+    name: Dialyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.DEFAULT_ELIXIR_VERSION }}
+          otp-version: ${{ env.DEFAULT_OTP_VERSION }}
+      - name: Restore PLT cache
+        id: plt_cache
+        uses: actions/cache/restore@v3
+        with:
+          key: plt-${{ runner.os }}-${{ env.DEFAULT_OTP_VERSION }}-${{ env.DEFAULT_ELIXIR_VERSION }}-${{ hashFiles('mix.lock') }}
+          restore-keys: plt-${{ runner.os }}-${{ env.DEFAULT_OTP_VERSION }}-${{ env.DEFAULT_ELIXIR_VERSION }}-
+          path: priv/plts
+      - name: Create PLTs
+        if: steps.plt_cache.outputs.cache-hit != 'true'
+        run: mix dialyzer --plt
+      - name: Save PLT cache
+        id: plt_cache_save
+        uses: actions/cache/save@v3
+        if: steps.plt_cache.outputs.cache-hit != 'true'
+        with:
+          key: plt-${{ runner.os }}-${{ env.DEFAULT_OTP_VERSION }}-${{ env.DEFAULT_ELIXIR_VERSION }}-${{ hashFiles('mix.lock') }}
+          path: priv/plts
+      - name: Run dialyzer
+        run: mix dialyzer --format github

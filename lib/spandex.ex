@@ -386,7 +386,7 @@ defmodule Spandex do
   invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a second call to `update_span/2` and check the return value.
   """
-  @spec continue_trace(String.t(), SpanContext.t(), Keyword.t()) ::
+  @spec continue_trace(String.t(), SpanContext.t(), Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
@@ -410,7 +410,7 @@ defmodule Spandex do
   invalid updates. As such, if you aren't sure if your updates are valid, it is
   safer to perform a second call to `update_span/2` and check the return value.
   """
-  @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Keyword.t()) ::
+  @spec continue_trace(String.t(), Spandex.id(), Spandex.id(), Tracer.opts()) ::
           {:ok, Trace.t()}
           | {:error, :disabled}
           | {:error, :trace_already_present}
@@ -418,7 +418,13 @@ defmodule Spandex do
   def continue_trace(_, _, _, :disabled), do: {:error, :disabled}
 
   def continue_trace(name, trace_id, span_id, opts) do
-    continue_trace(name, %SpanContext{trace_id: trace_id, parent_id: span_id}, opts)
+    adapter = opts[:adapter]
+
+    continue_trace(
+      name,
+      %SpanContext{trace_id: trace_id, parent_id: span_id, priority: adapter.default_priority()},
+      opts
+    )
   end
 
   @doc """
