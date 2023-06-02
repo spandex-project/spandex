@@ -302,7 +302,17 @@ defmodule Spandex.Tracer do
         end
       end
 
-      defoverridable finish_trace: 1
+      defoverridable continue_trace: 3,
+        continue_trace_from_span: 3,
+        distributed_context: 2,
+        finish_span: 1,
+        finish_trace: 1,
+        inject_context:2,
+        span_error: 3,
+        start_span: 2,
+        start_trace: 2,
+        update_span: 1,
+        update_top_span: 1
     end
   end
 end
